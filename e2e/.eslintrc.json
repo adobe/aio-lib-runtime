@@ -1,0 +1,6 @@
+{
+  "rules": {
+    "node/no-unpublished-require": 0,
+    "dot-notation": [2, {"allowPattern": "^[a-z|A-Z]+(_[a-z|A-Z]+)+$"}]
+  }
+}
