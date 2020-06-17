@@ -14,6 +14,7 @@ const logger = require('@adobe/aio-lib-core-logging')(loggerNamespace, { level: 
 const { codes } = require('./SDKErrors')
 const ow = require('openwhisk')
 const Triggers = require('./triggers')
+const utils = require('./utils')
 
 /**
  * @typedef {object} OpenwhiskOptions
@@ -108,5 +109,6 @@ class RuntimeAPI {
 }
 
 module.exports = {
-  init: init
+  init,
+  utils
 }

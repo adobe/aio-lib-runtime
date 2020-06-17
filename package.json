@@ -7,7 +7,10 @@
     "@adobe/aio-lib-core-errors": "^3.0.0",
     "@adobe/aio-lib-core-logging": "1.0.0",
     "cross-fetch": "^3.0.4",
-    "openwhisk": "^3.21.2"
+    "lodash.clonedeep": "^4.5.0",
+    "openwhisk": "^3.21.2",
+    "openwhisk-fqn": "0.0.2",
+    "sha1": "^1.1.1"
   },
   "deprecated": false,
   "description": "Adobe I/O Lib",

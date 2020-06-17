@@ -9,7 +9,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { createKeyValueObjectFromArray } = require('./helpers')
+const { createKeyValueObjectFromArray } = require('./utils')
 const FEED_ANNOTATION_KEY = 'feed'
 
 class Triggers {
