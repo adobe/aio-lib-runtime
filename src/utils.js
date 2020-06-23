@@ -11,8 +11,6 @@ governing permissions and limitations under the License.
 */
 
 const fs = require('fs')
-const yaml = require('js-yaml')
-const debug = require('debug')('aio-cli-plugin-runtime/deploy')
 const sha1 = require('sha1')
 const cloneDeep = require('lodash.clonedeep')
 
@@ -1106,7 +1104,8 @@ async function findProjectHashonServer (ow, projectName) {
   for (const rule of resultRules) {
     if (rule.annotations.length > 0) {
       const whiskManaged = rule.annotations.find(elem => elem.key === 'whisk-managed')
-      if (whiskManaged !== undefined && whiskManaged.value.projectName === projectName) {
+      if (whiskManaged !== undefined &&
+          whiskManaged.value.projectName === projectName) {
         projectHash = whiskManaged.value.projectHash
         return projectHash
       }
