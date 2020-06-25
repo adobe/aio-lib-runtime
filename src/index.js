@@ -9,8 +9,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const loggerNamespace = '@adobe/aio-lib-runtime'
-const logger = require('@adobe/aio-lib-core-logging')(loggerNamespace, { level: process.env.LOG_LEVEL })
+const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:index', { level: process.env.LOG_LEVEL })
 const { codes } = require('./SDKErrors')
 const ow = require('openwhisk')
 const Triggers = require('./triggers')

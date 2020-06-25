@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 const fs = require('fs')
 const sha1 = require('sha1')
 const cloneDeep = require('lodash.clonedeep')
+const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:index', { level: process.env.LOG_LEVEL })
 
 // for lines starting with date-time-string followed by stdout|stderr a ':' and a log-line, return only the logline
 const dtsRegex = /\d{4}-[01]{1}\d{1}-[0-3]{1}\d{1}T[0-2]{1}\d{1}:[0-6]{1}\d{1}:[0-6]{1}\d{1}.\d+Z( *(stdout|stderr):)?\s(.*)/
@@ -548,7 +549,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
 
         // check if the annotation is defined AND the action is a web action
         if ((isWeb || isWebExport) && thisAction.annotations && thisAction.annotations[ADOBE_AUTH_ANNOTATION]) {
-          debug(`found annotation '${ADOBE_AUTH_ANNOTATION}' in action '${key}/${actionName}'`)
+          logger.debug(`found annotation '${ADOBE_AUTH_ANNOTATION}' in action '${key}/${actionName}'`)
 
           // 1. rename the action
           const renamedAction = REWRITE_ACTION_PREFIX + actionName
@@ -579,7 +580,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
           }
           delete newPackages[key]['actions'][renamedAction]['annotations'][ADOBE_AUTH_ANNOTATION]
 
-          debug(`renamed action '${key}/${actionName}' to '${key}/${renamedAction}'`)
+          logger.debug(`renamed action '${key}/${actionName}' to '${key}/${renamedAction}'`)
 
           // 3. create the sequence
           if (newPackages[key]['sequences'] === undefined) {
@@ -596,7 +597,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
             web: (isRaw && 'raw') || 'yes'
           }
 
-          debug(`defined new sequence '${key}/${actionName}': '${ADOBE_AUTH_ACTION},${key}/${renamedAction}'`)
+          logger.debug(`defined new sequence '${key}/${actionName}': '${ADOBE_AUTH_ACTION},${key}/${renamedAction}'`)
         }
       })
     }
@@ -776,7 +777,7 @@ function setPaths (flags) {
   } else {
     manifestPath = flags.manifest
   }
-  debug(`Using manifest file: ${manifestPath}`)
+  logger.debug(`Using manifest file: ${manifestPath}`)
 
   let deploymentPath
   let deploymentPackages = {}
@@ -869,7 +870,7 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
     if (!res.ok) {
       throw new Error(`failed setting ims_org_id=${imsOrgId} into state lib, received status=${res.status}, please make sure your runtime credentials are correct`)
     }
-    debug(`set IMS org id into cloud state, response: ${JSON.stringify(await res.json())}`)
+    logger.debug(`set IMS org id into cloud state, response: ${JSON.stringify(await res.json())}`)
   }
 }
 
