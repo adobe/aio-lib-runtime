@@ -1,0 +1,63 @@
+{
+    "pkgAndDeps": [
+        {
+            "name": "hello"
+        },
+        {
+            "name": "mypackage",
+            "package": {
+                "binding": {
+                    "namespace": "adobeio",
+                    "name": "oauth"
+                }
+            }
+        }
+    ],
+    "apis": [
+        {
+            "action": "hello/helloAction",
+            "basepath": "/hello",
+            "name": "hello-world",
+            "operation": "GET",
+            "relpath": "/world",
+            "responsetype": "json"
+        }
+    ],
+    "triggers": [
+        {
+            "name": "hellotrigger",
+            "trigger": {
+                "parameters": [
+                    {
+                        "key": "cron",
+                        "value": "* * * * *"
+                    },
+                    {
+                        "key": "trigger_payload",
+                        "value": "{\"message\": \"hello world!\"}"
+                    }
+                ],
+                "feed": "/whisk.system/alarms/alarm"
+            }
+        }
+    ],
+    "rules": [
+        {
+            "name": "reportEveryMinute",
+            "trigger": "hellotrigger",
+            "action": "hello/helloAction"
+        }
+    ],
+    "actions": [
+        {
+            "name": "hello/helloAction",
+            "action": "\nfunction main (params) {\n  const msg = 'Hello ' + params.name + ', ' + params.message + '.'\n  return { msg }\n}\n\nmodule.exports.main = main\n",
+            "annotations": {
+                "web-export": true
+            },
+            "params": {
+                "param1": "value1"
+            }
+        }
+    ]
+}

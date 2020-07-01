@@ -13,10 +13,24 @@ const ow = require('openwhisk')()
 const fs = require('fs')
 
 const utils = require('../src/utils')
+const activationLog = { logs: [ '2020-06-25T05:50:23.641Z       stdout: logged from action code' ] }
+const owPackage = 'packages.update'
+const owAction = 'actions.update'
+const owAPI = 'routes.create'
+const owTriggers = 'triggers.update'
+const owRules = 'rules.update'
+const owActionDel = 'actions.delete'
+const owPackageDel = 'packages.delete'
+const owRulesDel = 'rules.delete'
+const owTriggerDel = 'triggers.delete'
+const owAPIDel = 'routes.delete'
 
 beforeEach(() => {
   const json = {
-    'file.json': global.fixtureFile('/trigger/parameters.json')
+    'file.json': global.fixtureFile('/trigger/parameters.json'),
+    'hello.js': global.fixtureFile('/deploy/hello.js'),
+    'basic_manifest.json': global.fixtureFile('/deploy/basic_manifest.json'),
+    'basic_manifest_res.json': global.fixtureFile('/deploy/basic_manifest_res.json')
   }
   global.fakeFileSystem.addJson(json)
 })
@@ -66,9 +80,43 @@ describe('utils has the right functions', () => {
   })
 })
 
-describe('createKeyValueArrayFromObject', () => { /* TODO */ })
-describe('parsePackageName', () => { /* TODO */ })
-describe('createComponentsfromSequence', () => { /* TODO */ })
+describe('createKeyValueArrayFromObject', () => {
+  test('array of key:value (string) pairs', () => {
+    const res = utils.createKeyValueArrayFromObject({ key1: 'val2' })
+    expect(res).toMatchObject([{ key: 'key1', value: 'val2' }])
+  })
+})
+describe('parsePackageName', () => {
+  test('only package name', () => {
+    const res = utils.parsePackageName('packagename')
+    expect(res).toMatchObject({namespace: '_', name: 'packagename'})
+  })
+  test('package name and namespace', () => {
+    const res = utils.parsePackageName('namespace/packagename')
+    expect(res).toMatchObject({namespace: 'namespace', name: 'packagename'})
+  })
+  test('package name and namespace with leading slash', () => {
+    const res = utils.parsePackageName('/namespace/packagename')
+    expect(res).toMatchObject({namespace: 'namespace', name: 'packagename'})
+  })
+  test('invalid 1', () => {
+    const func = () => utils.parsePackageName('/ns/p/a')
+    expect(func).toThrow(new Error('Package name is not valid'))
+  })
+  test('invalid 2', () => {
+    const func = () => utils.parsePackageName('/ns/')
+    expect(func).toThrow(new Error('Package name is not valid'))
+  })
+})
+describe('createComponentsfromSequence', () => {
+  test('sequence components', () => {
+    const res = utils.createComponentsfromSequence([ 'a', 'p/b', '/ns/p/c', '/ns2/p/d', '/ns3/e' ])
+    expect(res).toMatchObject({ 
+      kind: 'sequence',
+      components: [ '/_/a', '/_/p/b', '/ns/p/c', '/ns2/p/d', '/ns3/e' ] 
+    })
+  })
+})
 describe('processInputs', () => { /* TODO */ })
 describe('createKeyValueInput', () => { /* TODO */ })
 describe('setManifestPath', () => { /* TODO */ })
@@ -80,14 +128,71 @@ describe('checkWebFlags', () => { /* TODO */ })
 describe('createSequenceObject', () => { /* TODO */ })
 describe('createApiRoutes', () => { /* TODO */ })
 describe('returnAnnotations', () => { /* TODO */ })
-describe('deployPackage', () => { /* TODO */ })
-describe('undeployPackage', () => { /* TODO */ })
-describe('processPackage', () => { /* TODO */ })
+describe('deployPackage', () => {
+  test('basic manifest', async () => {
+    const mockLogger = jest.fn()
+    const cmdPkg = ow.mockResolved(owPackage, '')
+    const cmdAction = ow.mockResolved(owAction, '')
+    const cmdAPI = ow.mockResolved(owAPI, '')
+    const cmdTrigger = ow.mockResolved(owTriggers, '')
+    const cmdRule = ow.mockResolved(owRules, '')
+    ow.mockResolved('actions.client.options', '')
+    
+    await utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger)
+    expect(cmdPkg).toHaveBeenCalledWith(expect.objectContaining({name: "hello"}))
+    expect(cmdPkg).toHaveBeenCalledWith(expect.objectContaining({name: "mypackage", package:{binding:{name:'oauth',namespace:'adobeio'}}}))
+    expect(cmdAction).toHaveBeenCalled()
+    expect(cmdAPI).toHaveBeenCalled()
+    expect(cmdTrigger).toHaveBeenCalled()
+    expect(cmdRule).toHaveBeenCalled()
+  })
+})
+describe('undeployPackage', () => {
+  test('basic manifest', async () => {
+    const mockLogger = jest.fn()
+    const cmdPkgDel = ow.mockResolved(owPackageDel, '')
+    const cmdActionDel = ow.mockResolved(owActionDel, '')
+    const cmdAPIDel = ow.mockResolved(owAPIDel, '')
+    const cmdTriggerDel = ow.mockResolved(owTriggerDel, '')
+    const cmdRuleDel = ow.mockResolved(owRulesDel, '')
+    await utils.undeployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger)
+    expect(cmdPkgDel).toHaveBeenCalledWith(expect.objectContaining({name: "hello"}))
+    expect(cmdPkgDel).toHaveBeenCalledWith(expect.objectContaining({name: "mypackage"}))
+    expect(cmdActionDel).toHaveBeenCalled()
+    expect(cmdAPIDel).toHaveBeenCalled()
+    expect(cmdTriggerDel).toHaveBeenCalled()
+    expect(cmdRuleDel).toHaveBeenCalled()
+
+  })
+})
+describe('processPackage', () => {
+  test('basic manifest', async () => {
+    const entities = utils.processPackage(JSON.parse(fs.readFileSync('/basic_manifest.json')), {}, {}, {})
+    expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/basic_manifest_res.json')))    
+  })
+})
 describe('setPaths', () => { /* TODO */ })
 describe('getProjectEntities', () => { /* TODO */ })
 describe('syncProject', () => { /* TODO */ })
 describe('addManagedProjectAnnotations', () => { /* TODO */ })
-describe('printLogs', () => { /* TODO */ })
+
+describe('printLogs', () => {
+  test('activation logs', () => {
+    const mockLogger = jest.fn()
+    utils.printLogs(activationLog, false, mockLogger)
+    expect(mockLogger).toHaveBeenCalledWith('2020-06-25T05:50:23.641Z       stdout: logged from action code')
+  })
+  test('activation logs with --strip', () => {
+    const mockLogger = jest.fn()
+    utils.printLogs(activationLog, true, mockLogger)
+    expect(mockLogger).toHaveBeenCalledWith('logged from action code')
+  })
+  test('activation logs with --strip no timestamp', () => {
+    const mockLogger = jest.fn()
+    utils.printLogs({ logs: ['logged from action code'] }, true, mockLogger)
+    expect(mockLogger).toHaveBeenCalledWith('logged from action code')
+  })
+})
 
 describe('createKeyValueObjectFromArray', () => {
   test('fail when array item does not have key or value', () => {
