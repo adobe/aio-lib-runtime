@@ -25,6 +25,13 @@ class Triggers {
     const ret = await this.owclient.triggers.create(options)
     if (options && options.trigger && options.trigger.feed) {
       try {
+        // Feed update does not work if the feed is not already present and create fails if it's already there.
+        // So we are deleting it and ignoring the error if any.
+        try {
+          await this.owclient.feeds.delete({ name: options.trigger.feed, trigger: options.name })
+        } catch (err) {
+          // Ignore
+        }
         await this.owclient.feeds.create({ name: options.trigger.feed, trigger: options.name, params: createKeyValueObjectFromArray(options.trigger.parameters) })
       } catch (err) {
         await this.owclient.triggers.delete(options)
