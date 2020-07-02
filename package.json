@@ -1,6 +1,6 @@
 {
   "bugs": {
-    "url": "https://github.com/@adobe/aio-lib-runtime/issues"
+    "url": "https://github.com/adobe/aio-lib-runtime/issues"
   },
   "bundleDependencies": false,
   "dependencies": {
@@ -10,7 +10,7 @@
     "openwhisk": "^3.21.2"
   },
   "deprecated": false,
-  "description": "Adobe I/O Lib",
+  "description": "Adobe I/O Runtime Lib",
   "devDependencies": {
     "@adobe/eslint-config-aio-lib-config": "^1.2.0",
     "@types/node-fetch": "^2.5.4",
@@ -38,11 +38,11 @@
   "engines": {
     "node": ">=10.0.0"
   },
-  "homepage": "https://github.com/@adobe/aio-lib-runtime",
+  "homepage": "https://github.com/adobe/aio-lib-runtime",
   "license": "Apache-2.0",
   "main": "src/index.js",
   "name": "@adobe/aio-lib-runtime",
-  "repository": "https://github.com/@adobe/aio-lib-runtime",
+  "repository": "https://github.com/adobe/aio-lib-runtime",
   "scripts": {
     "e2e": "jest --config e2e/jest.config.js",
     "generate-docs": "npm run typings && npm run jsdoc",
