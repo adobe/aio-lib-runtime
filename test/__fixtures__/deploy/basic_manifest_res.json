@@ -51,7 +51,7 @@
     "actions": [
         {
             "name": "hello/helloAction",
-            "action": "\nfunction main (params) {\n  const msg = 'Hello ' + params.name + ', ' + params.message + '.'\n  return { msg }\n}\n\nmodule.exports.main = main\n",
+            "action": "\n/** @private */\nfunction main (params) {\n  const msg = 'Hello ' + params.name + ', ' + params.message + '.'\n  return { msg }\n}\n\nmodule.exports.main = main\n",
             "annotations": {
                 "web-export": true
             },
