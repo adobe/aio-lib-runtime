@@ -13,7 +13,7 @@ const ow = require('openwhisk')()
 const fs = require('fs')
 
 const utils = require('../src/utils')
-const activationLog = { logs: [ '2020-06-25T05:50:23.641Z       stdout: logged from action code' ] }
+const activationLog = { logs: ['2020-06-25T05:50:23.641Z       stdout: logged from action code'] }
 const owPackage = 'packages.update'
 const owAction = 'actions.update'
 const owAPI = 'routes.create'
@@ -89,15 +89,15 @@ describe('createKeyValueArrayFromObject', () => {
 describe('parsePackageName', () => {
   test('only package name', () => {
     const res = utils.parsePackageName('packagename')
-    expect(res).toMatchObject({namespace: '_', name: 'packagename'})
+    expect(res).toMatchObject({ namespace: '_', name: 'packagename' })
   })
   test('package name and namespace', () => {
     const res = utils.parsePackageName('namespace/packagename')
-    expect(res).toMatchObject({namespace: 'namespace', name: 'packagename'})
+    expect(res).toMatchObject({ namespace: 'namespace', name: 'packagename' })
   })
   test('package name and namespace with leading slash', () => {
     const res = utils.parsePackageName('/namespace/packagename')
-    expect(res).toMatchObject({namespace: 'namespace', name: 'packagename'})
+    expect(res).toMatchObject({ namespace: 'namespace', name: 'packagename' })
   })
   test('invalid 1', () => {
     const func = () => utils.parsePackageName('/ns/p/a')
@@ -110,10 +110,10 @@ describe('parsePackageName', () => {
 })
 describe('createComponentsfromSequence', () => {
   test('sequence components', () => {
-    const res = utils.createComponentsfromSequence([ 'a', 'p/b', '/ns/p/c', '/ns2/p/d', '/ns3/e' ])
-    expect(res).toMatchObject({ 
+    const res = utils.createComponentsfromSequence(['a', 'p/b', '/ns/p/c', '/ns2/p/d', '/ns3/e'])
+    expect(res).toMatchObject({
       kind: 'sequence',
-      components: [ '/_/a', '/_/p/b', '/ns/p/c', '/ns2/p/d', '/ns3/e' ] 
+      components: ['/_/a', '/_/p/b', '/ns/p/c', '/ns2/p/d', '/ns3/e']
     })
   })
 })
@@ -137,10 +137,10 @@ describe('deployPackage', () => {
     const cmdTrigger = ow.mockResolved(owTriggers, '')
     const cmdRule = ow.mockResolved(owRules, '')
     ow.mockResolved('actions.client.options', '')
-    
+
     await utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger)
-    expect(cmdPkg).toHaveBeenCalledWith(expect.objectContaining({name: "hello"}))
-    expect(cmdPkg).toHaveBeenCalledWith(expect.objectContaining({name: "mypackage", package:{binding:{name:'oauth',namespace:'adobeio'}}}))
+    expect(cmdPkg).toHaveBeenCalledWith(expect.objectContaining({ name: 'hello' }))
+    expect(cmdPkg).toHaveBeenCalledWith(expect.objectContaining({ name: 'mypackage', package: { binding: { name: 'oauth', namespace: 'adobeio' } } }))
     expect(cmdAction).toHaveBeenCalled()
     expect(cmdAPI).toHaveBeenCalled()
     expect(cmdTrigger).toHaveBeenCalled()
@@ -156,19 +156,18 @@ describe('undeployPackage', () => {
     const cmdTriggerDel = ow.mockResolved(owTriggerDel, '')
     const cmdRuleDel = ow.mockResolved(owRulesDel, '')
     await utils.undeployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger)
-    expect(cmdPkgDel).toHaveBeenCalledWith(expect.objectContaining({name: "hello"}))
-    expect(cmdPkgDel).toHaveBeenCalledWith(expect.objectContaining({name: "mypackage"}))
+    expect(cmdPkgDel).toHaveBeenCalledWith(expect.objectContaining({ name: 'hello' }))
+    expect(cmdPkgDel).toHaveBeenCalledWith(expect.objectContaining({ name: 'mypackage' }))
     expect(cmdActionDel).toHaveBeenCalled()
     expect(cmdAPIDel).toHaveBeenCalled()
     expect(cmdTriggerDel).toHaveBeenCalled()
     expect(cmdRuleDel).toHaveBeenCalled()
-
   })
 })
 describe('processPackage', () => {
   test('basic manifest', async () => {
     const entities = utils.processPackage(JSON.parse(fs.readFileSync('/basic_manifest.json')), {}, {}, {})
-    expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/basic_manifest_res.json')))    
+    expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/basic_manifest_res.json')))
   })
 })
 describe('setPaths', () => { /* TODO */ })
@@ -385,4 +384,3 @@ describe('kindForFileExtension', () => {
     expect(utils.kindForFileExtension('???')).toEqual(undefined)
   })
 })
-

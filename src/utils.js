@@ -15,6 +15,7 @@ const sha1 = require('sha1')
 const cloneDeep = require('lodash.clonedeep')
 const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:index', { level: process.env.LOG_LEVEL })
 const yaml = require('js-yaml')
+const fetch = require('node-fetch')
 
 // for lines starting with date-time-string followed by stdout|stderr a ':' and a log-line, return only the logline
 const dtsRegex = /\d{4}-[01]{1}\d{1}-[0-3]{1}\d{1}T[0-2]{1}\d{1}:[0-6]{1}\d{1}:[0-6]{1}\d{1}.\d+Z( *(stdout|stderr):)?\s(.*)/
@@ -71,9 +72,9 @@ function createKeyValueObjectFromArray (inputsArray = []) {
   return tempObj
 }
 
-
 /**
  * @description returns key value array from the object supplied.
+ * @param object
  * @param object: JSON object
  * @returns An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
  */
@@ -92,13 +93,13 @@ function createKeyValueArrayFromFlag (flag) {
     const tempArray = []
     for (i = 0; i < flag.length; i += 2) {
       const obj = {}
-      obj['key'] = flag[i]
+      obj.key = flag[i]
       try {
         // assume it is JSON, there is only 1 way to find out
-        obj['value'] = JSON.parse(flag[i + 1])
+        obj.value = JSON.parse(flag[i + 1])
       } catch (ex) {
         // hmm ... not json, treat as string
-        obj['value'] = flag[i + 1]
+        obj.value = flag[i + 1]
       }
       tempArray.push(obj)
     }
@@ -120,8 +121,8 @@ function createKeyValueArrayFromFile (file) {
   Object.entries(jsonParams).forEach(
     ([key, value]) => {
       const obj = {}
-      obj['key'] = key
-      obj['value'] = value
+      obj.key = key
+      obj.value = value
       tempArray.push(obj)
     }
   )
@@ -155,6 +156,7 @@ function createKeyValueObjectFromFlag (flag) {
 /**
  * @description parses a string and returns the namespace and entity name for a package.
  * @returns An object { namespace: string, name: string }
+ * @param name
  */
 function parsePackageName (name) {
   const delimiter = '/'
@@ -186,22 +188,32 @@ function createKeyValueObjectFromFile (file) {
   return JSON.parse(jsonData)
 }
 
+/**
+ * @param sequenceAction
+ */
 function createComponentsfromSequence (sequenceAction) {
   const fqn = require('openwhisk-fqn')
   const objSequence = {}
-  objSequence['kind'] = 'sequence'
+  objSequence.kind = 'sequence'
   // The components array requires fully qualified names [/namespace/package_name/action_name] of all the actions passed as sequence
   sequenceAction = sequenceAction.map(component => {
     return fqn(component)
   })
-  objSequence['components'] = sequenceAction
+  objSequence.components = sequenceAction
   return objSequence
 }
 
+/**
+ * @param firstObject
+ * @param secondObject
+ */
 function returnUnion (firstObject, secondObject) {
   return Object.assign(firstObject, secondObject)
 }
 
+/**
+ * @param path
+ */
 function parsePathPattern (path) {
   const pattern = /^\/(.+)\/(.+)$/i
   const defaultMatch = [null, null, path]
@@ -209,6 +221,10 @@ function parsePathPattern (path) {
   return (pattern.exec(path) || defaultMatch)
 }
 
+/**
+ * @param input
+ * @param params
+ */
 function processInputs (input, params) {
   // check if the value of a key is an object (Advanced parameters)
   const dictDataTypes = {
@@ -251,6 +267,9 @@ function processInputs (input, params) {
   return input
 }
 
+/**
+ * @param input
+ */
 function createKeyValueInput (input) {
   input = Object.keys(input).map(function (k) {
     return { key: k, value: input[k] }
@@ -258,6 +277,9 @@ function createKeyValueInput (input) {
   return input
 }
 
+/**
+ *
+ */
 function setDeploymentPath () {
   let deploymentPath
   if (fs.existsSync('./deployment.yaml')) {
@@ -268,6 +290,9 @@ function setDeploymentPath () {
   return deploymentPath
 }
 
+/**
+ *
+ */
 function setManifestPath () {
   let manifestPath
   if (fs.existsSync('./manifest.yaml')) {
@@ -280,27 +305,33 @@ function setManifestPath () {
   return manifestPath
 }
 
+/**
+ * @param deploymentPackages
+ */
 function returnDeploymentTriggerInputs (deploymentPackages) {
   const deploymentTriggers = {}
   Object.keys(deploymentPackages).forEach((key) => {
-    if (deploymentPackages[key]['triggers']) {
-      Object.keys(deploymentPackages[key]['triggers']).forEach((trigger) => {
-        deploymentTriggers[trigger] = deploymentPackages[key]['triggers'][trigger]['inputs'] || {}
+    if (deploymentPackages[key].triggers) {
+      Object.keys(deploymentPackages[key].triggers).forEach((trigger) => {
+        deploymentTriggers[trigger] = deploymentPackages[key].triggers[trigger].inputs || {}
       })
     }
   })
   return deploymentTriggers
 }
 
+/**
+ * @param action
+ */
 function returnAnnotations (action) {
   let annotationParams = {}
 
-  if (action['annotations'] && action['annotations']['conductor'] !== undefined) {
-    annotationParams['conductor'] = action['annotations']['conductor']
+  if (action.annotations && action.annotations.conductor !== undefined) {
+    annotationParams.conductor = action.annotations.conductor
   }
 
-  if (action['web'] !== undefined) {
-    annotationParams = checkWebFlags(action['web'])
+  if (action.web !== undefined) {
+    annotationParams = checkWebFlags(action.web)
   } else if (action['web-export'] !== undefined) {
     annotationParams = checkWebFlags(action['web-export'])
   } else {
@@ -309,21 +340,21 @@ function returnAnnotations (action) {
     return annotationParams
   }
 
-  if (action['annotations'] && action['annotations']['require-whisk-auth'] !== undefined) {
+  if (action.annotations && action.annotations['require-whisk-auth'] !== undefined) {
     if (annotationParams['web-export'] === true) {
-      annotationParams['require-whisk-auth'] = action['annotations']['require-whisk-auth']
+      annotationParams['require-whisk-auth'] = action.annotations['require-whisk-auth']
     }
   }
 
-  if (action['annotations'] && action['annotations']['raw-http'] !== undefined) {
+  if (action.annotations && action.annotations['raw-http'] !== undefined) {
     if (annotationParams['web-export'] === true) {
-      annotationParams['raw-http'] = action['annotations']['raw-http']
+      annotationParams['raw-http'] = action.annotations['raw-http']
     }
   }
 
-  if (action['annotations'] && action['annotations']['final'] !== undefined) {
+  if (action.annotations && action.annotations.final !== undefined) {
     if (annotationParams['web-export'] === true) {
-      annotationParams['final'] = action['annotations']['final']
+      annotationParams.final = action.annotations.final
     }
   }
 
@@ -340,7 +371,7 @@ function returnAnnotations (action) {
  * @param allowedActions List of action names allowed to be used in routes.
  * @param allowedSequences List of sequence names allowed to be used in routes.
  * @param pathOnly Skip action, method and response type in route definitions.
- * @return {{
+ * @returns {{
  * action: String,
  * operation: String,
  * responsetype: String
@@ -417,6 +448,11 @@ function createApiRoutes (pkg, pkgName, apiName, allowedActions, allowedSequence
   return routes
 }
 
+/**
+ * @param thisSequence
+ * @param options
+ * @param key
+ */
 function createSequenceObject (thisSequence, options, key) {
   let actionArray = []
   if (thisSequence) {
@@ -434,12 +470,15 @@ function createSequenceObject (thisSequence, options, key) {
     throw new Error('Actions for the sequence not provided.')
   }
   const objSequence = {}
-  objSequence['kind'] = 'sequence'
-  objSequence['components'] = actionArray
-  options['exec'] = objSequence
+  objSequence.kind = 'sequence'
+  objSequence.components = actionArray
+  options.exec = objSequence
   return options
 }
 
+/**
+ * @param flag
+ */
 function checkWebFlags (flag) {
   const tempObj = {}
   switch (flag) {
@@ -459,14 +498,18 @@ function checkWebFlags (flag) {
   return tempObj
 }
 
+/**
+ * @param thisAction
+ * @param objAction
+ */
 function createActionObject (thisAction, objAction) {
-  if (thisAction['function'].endsWith('.zip')) {
-    if (!thisAction['runtime'] && !thisAction['docker']) {
+  if (thisAction.function.endsWith('.zip')) {
+    if (!thisAction.runtime && !thisAction.docker) {
       throw (new Error(`Invalid or missing property "runtime" in the manifest for this action: ${objAction.name}`))
     }
-    objAction.action = fs.readFileSync(thisAction['function'])
+    objAction.action = fs.readFileSync(thisAction.function)
   } else {
-    objAction.action = fs.readFileSync(thisAction['function'], { encoding: 'utf8' })
+    objAction.action = fs.readFileSync(thisAction.function, { encoding: 'utf8' })
   }
 
   if (thisAction.main || thisAction.docker || thisAction.runtime) {
@@ -484,16 +527,16 @@ function createActionObject (thisAction, objAction) {
 
   if (thisAction.limits) {
     const limits = {
-      memory: thisAction.limits['memorySize'] || 256,
-      logs: thisAction.limits['logSize'] || 10,
-      timeout: thisAction.limits['timeout'] || 60000
+      memory: thisAction.limits.memorySize || 256,
+      logs: thisAction.limits.logSize || 10,
+      timeout: thisAction.limits.timeout || 60000
     }
     if (thisAction.limits.concurrency) {
       limits.concurrency = thisAction.limits.concurrency
     }
-    objAction['limits'] = limits
+    objAction.limits = limits
   }
-  objAction['annotations'] = returnAnnotations(thisAction)
+  objAction.annotations = returnAnnotations(thisAction)
   return objAction
 }
 
@@ -505,31 +548,33 @@ function createActionObject (thisAction, objAction) {
  * As an example, the following manifest:
  * ```
  * packages:
- *   helloworld:
- *     actions:
- *       hello:
- *         function: path/to/hello.js
- *         web: 'yes'
- *         require-adobe-auth: true
+ * helloworld:
+ * actions:
+ * hello:
+ * function: path/to/hello.js
+ * web: 'yes'
+ * require-adobe-auth: true
  * ```
  * will be deployed as:
  * ```
  * packages:
- *   helloworld:
- *     actions:
- *       __secured_hello:
- *         # secured by being non web !
- *         function: path/to/hello.js
- *     sequences:
- *       hello:
- *        actions: '/adobeio/shared-validators-v1/headless,helloworld/__secured_hello'
- *        web: 'yes'
+ * helloworld:
+ * actions:
+ * __secured_hello:
+ * # secured by being non web !
+ * function: path/to/hello.js
+ * sequences:
+ * hello:
+ * actions: '/adobeio/shared-validators-v1/headless,helloworld/__secured_hello'
+ * web: 'yes'
  * ```
  *
  * The annotation will soon be natively supported in Adobe I/O Runtime, at which point
  * this function and references to it can be safely deleted.
  *
  * @access private
+ * @param packages
+ * @param deploymentPackages
  */
 function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
   // do not modify those
@@ -543,13 +588,13 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
 
   // traverse all actions in all packages
   Object.keys(newPackages).forEach((key) => {
-    if (newPackages[key]['actions']) {
-      Object.keys(newPackages[key]['actions']).forEach((actionName) => {
-        const thisAction = newPackages[key]['actions'][actionName]
+    if (newPackages[key].actions) {
+      Object.keys(newPackages[key].actions).forEach((actionName) => {
+        const thisAction = newPackages[key].actions[actionName]
 
         const isWebExport = checkWebFlags(thisAction['web-export'])['web-export']
-        const isWeb = checkWebFlags(thisAction['web'])['web-export']
-        const isRaw = checkWebFlags(thisAction['web'])['raw-http'] || checkWebFlags(thisAction['web-export'])['raw-http']
+        const isWeb = checkWebFlags(thisAction.web)['web-export']
+        const isRaw = checkWebFlags(thisAction.web)['raw-http'] || checkWebFlags(thisAction['web-export'])['raw-http']
 
         // check if the annotation is defined AND the action is a web action
         if ((isWeb || isWebExport) && thisAction.annotations && thisAction.annotations[ADOBE_AUTH_ANNOTATION]) {
@@ -558,45 +603,45 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
           // 1. rename the action
           const renamedAction = REWRITE_ACTION_PREFIX + actionName
           /* istanbul ignore if */
-          if (newPackages[key]['actions'][renamedAction] !== undefined) {
+          if (newPackages[key].actions[renamedAction] !== undefined) {
             // unlikely
             throw new Error(`Failed to rename the action '${key}/${actionName}' to '${key}/${renamedAction}': an action with the same name exists already.`)
           }
 
           // set the action to the new key
-          newPackages[key]['actions'][renamedAction] = thisAction
+          newPackages[key].actions[renamedAction] = thisAction
           // delete the old key
-          delete newPackages[key]['actions'][actionName]
+          delete newPackages[key].actions[actionName]
 
           // make sure any content in the deployment package is linked to the new action name
-          if (newDeploymentPackages[key] && newDeploymentPackages[key]['actions'] && newDeploymentPackages[key]['actions'][actionName]) {
-            newDeploymentPackages[key]['actions'][renamedAction] = newDeploymentPackages[key]['actions'][actionName]
-            delete newDeploymentPackages[key]['actions'][actionName]
+          if (newDeploymentPackages[key] && newDeploymentPackages[key].actions && newDeploymentPackages[key].actions[actionName]) {
+            newDeploymentPackages[key].actions[renamedAction] = newDeploymentPackages[key].actions[actionName]
+            delete newDeploymentPackages[key].actions[actionName]
           }
 
           // 2. delete the adobe-auth annotation and secure the renamed action
           // the renamed action is made secure by removing its web property
           if (isWeb) {
-            newPackages[key]['actions'][renamedAction]['web'] = false
+            newPackages[key].actions[renamedAction].web = false
           }
           if (isWebExport) {
-            newPackages[key]['actions'][renamedAction]['web-export'] = false
+            newPackages[key].actions[renamedAction]['web-export'] = false
           }
-          delete newPackages[key]['actions'][renamedAction]['annotations'][ADOBE_AUTH_ANNOTATION]
+          delete newPackages[key].actions[renamedAction].annotations[ADOBE_AUTH_ANNOTATION]
 
           logger.debug(`renamed action '${key}/${actionName}' to '${key}/${renamedAction}'`)
 
           // 3. create the sequence
-          if (newPackages[key]['sequences'] === undefined) {
-            newPackages[key]['sequences'] = {}
+          if (newPackages[key].sequences === undefined) {
+            newPackages[key].sequences = {}
           }
           /* istanbul ignore if */
-          if (newPackages[key]['sequences'][actionName] !== undefined) {
+          if (newPackages[key].sequences[actionName] !== undefined) {
             // unlikely
             throw new Error(`The name '${key}/${actionName}' is defined both for an action and a sequence, it should be unique`)
           }
           // set the sequence content
-          newPackages[key]['sequences'][actionName] = {
+          newPackages[key].sequences[actionName] = {
             actions: `${ADOBE_AUTH_ACTION},${key}/${renamedAction}`,
             web: (isRaw && 'raw') || 'yes'
           }
@@ -612,13 +657,20 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
   }
 }
 
+/**
+ * @param packages
+ * @param deploymentPackages
+ * @param deploymentTriggers
+ * @param params
+ * @param namesOnly
+ * @param owOptions
+ */
 function processPackage (packages,
   deploymentPackages,
   deploymentTriggers,
   params,
   namesOnly = false,
   owOptions = {}) {
-
   if (owOptions.apihost === 'https://adobeioruntime.net') {
     // rewrite packages in case there are any `require-adobe-auth` annotations
     // this is a temporary feature and will be replaced by a native support in Adobe I/O Runtime
@@ -641,14 +693,14 @@ function processPackage (packages,
     // From wskdeploy repo : currently, the 'version' and 'license' values are not stored in Apache OpenWhisk, but there are plans to support it in the future
     // pkg.version = packages[key]['version']
     // pkg.license = packages[key]['license']
-    if (packages[key]['dependencies']) {
-      Object.keys(packages[key]['dependencies']).forEach((depName) => {
-        const thisDep = packages[key]['dependencies'][depName]
+    if (packages[key].dependencies) {
+      Object.keys(packages[key].dependencies).forEach((depName) => {
+        const thisDep = packages[key].dependencies[depName]
         const objDep = { name: depName }
         if (!namesOnly) {
           let objDepPackage = {}
           try { // Parse location
-            const thisLocation = thisDep['location'].split('/')
+            const thisLocation = thisDep.location.split('/')
             objDepPackage = {
               binding: {
                 namespace: thisLocation[1],
@@ -660,37 +712,37 @@ function processPackage (packages,
           }
           // Parse inputs
           let deploymentInputs = {}
-          const packageInputs = thisDep['inputs'] || {}
-          if (deploymentPackages[key] && deploymentPackages[key]['dependencies'] && deploymentPackages[key]['dependencies'][depName]) {
-            deploymentInputs = deploymentPackages[key]['dependencies'][depName]['inputs'] || {}
+          const packageInputs = thisDep.inputs || {}
+          if (deploymentPackages[key] && deploymentPackages[key].dependencies && deploymentPackages[key].dependencies[depName]) {
+            deploymentInputs = deploymentPackages[key].dependencies[depName].inputs || {}
           }
           const allInputs = returnUnion(packageInputs, deploymentInputs)
           // if parameter is provided as key : 'data type' , process it to set default values before deployment
           if (Object.entries(allInputs).length !== 0) {
             const processedInput = createKeyValueInput(processInputs(allInputs, params))
-            objDepPackage['parameters'] = processedInput
+            objDepPackage.parameters = processedInput
           }
           objDep.package = objDepPackage
         }
         pkgAndDeps.push(objDep)
       })
     }
-    if (packages[key]['actions']) {
-      Object.keys(packages[key]['actions']).forEach((actionName) => {
-        const thisAction = packages[key]['actions'][actionName]
+    if (packages[key].actions) {
+      Object.keys(packages[key].actions).forEach((actionName) => {
+        const thisAction = packages[key].actions[actionName]
         let objAction = { name: `${key}/${actionName}` }
         if (!namesOnly) {
           objAction = createActionObject(thisAction, objAction)
           let deploymentInputs = {}
-          const packageInputs = thisAction['inputs'] || {}
-          if (deploymentPackages[key] && deploymentPackages[key]['actions'] && deploymentPackages[key]['actions'][actionName]) {
-            deploymentInputs = deploymentPackages[key]['actions'][actionName]['inputs'] || {}
+          const packageInputs = thisAction.inputs || {}
+          if (deploymentPackages[key] && deploymentPackages[key].actions && deploymentPackages[key].actions[actionName]) {
+            deploymentInputs = deploymentPackages[key].actions[actionName].inputs || {}
           }
           const allInputs = returnUnion(packageInputs, deploymentInputs)
           // if parameter is provided as key : 'data type' , process it to set default values before deployment
           if (Object.entries(allInputs).length !== 0) {
             const processedInput = processInputs(allInputs, params)
-            objAction['params'] = processedInput
+            objAction.params = processedInput
           }
           ruleAction.push(actionName)
         }
@@ -698,27 +750,27 @@ function processPackage (packages,
       })
     }
 
-    if (packages[key]['sequences']) {
+    if (packages[key].sequences) {
       // Sequences can have only one field : actions
       // Usage: aio runtime:action:create <action-name> --sequence existingAction1, existingAction2
-      Object.keys(packages[key]['sequences']).forEach((sequenceName) => {
+      Object.keys(packages[key].sequences).forEach((sequenceName) => {
         let objSequence = { name: `${key}/${sequenceName}` }
         if (!namesOnly) {
           objSequence.action = ''
-          const thisSequence = packages[key]['sequences'][sequenceName]
-          objSequence = createSequenceObject(thisSequence['actions'], objSequence, key)
-          objSequence['annotations'] = returnAnnotations(thisSequence)
+          const thisSequence = packages[key].sequences[sequenceName]
+          objSequence = createSequenceObject(thisSequence.actions, objSequence, key)
+          objSequence.annotations = returnAnnotations(thisSequence)
           arrSequence.push(sequenceName)
         }
         actions.push(objSequence)
       })
     }
-    if (packages[key]['triggers']) {
-      Object.keys(packages[key]['triggers']).forEach((triggerName) => {
+    if (packages[key].triggers) {
+      Object.keys(packages[key].triggers).forEach((triggerName) => {
         const objTrigger = { name: triggerName }
         if (!namesOnly) {
           objTrigger.trigger = {}
-          const packageInputs = packages[key]['triggers'][triggerName]['inputs'] || {}
+          const packageInputs = packages[key].triggers[triggerName].inputs || {}
           let deploymentInputs = {}
           if (triggerName in deploymentTriggers) {
             deploymentInputs = deploymentTriggers[triggerName]
@@ -728,11 +780,11 @@ function processPackage (packages,
           if (Object.entries(allInputs).length !== 0) {
             objTrigger.trigger.parameters = allInputs
           }
-          if (packages[key]['triggers'][triggerName]['annotations']) {
-            objTrigger.trigger.annotations = createKeyValueInput(packages[key]['triggers'][triggerName]['annotations'])
+          if (packages[key].triggers[triggerName].annotations) {
+            objTrigger.trigger.annotations = createKeyValueInput(packages[key].triggers[triggerName].annotations)
           }
-          if (packages[key]['triggers'][triggerName]['feed']) {
-            objTrigger.trigger.feed = packages[key]['triggers'][triggerName]['feed']
+          if (packages[key].triggers[triggerName].feed) {
+            objTrigger.trigger.feed = packages[key].triggers[triggerName].feed
           }
           ruleTrigger.push(triggerName)
         }
@@ -741,21 +793,21 @@ function processPackage (packages,
       })
     }
     // Rules cannot belong to any package
-    if (packages[key]['rules']) {
-      Object.keys(packages[key]['rules']).forEach((ruleName) => {
+    if (packages[key].rules) {
+      Object.keys(packages[key].rules).forEach((ruleName) => {
         const objRule = { name: ruleName }
         if (!namesOnly) {
-          if (packages[key]['rules'][ruleName]['trigger'] && packages[key]['rules'][ruleName]['action']) {
-            objRule['trigger'] = packages[key]['rules'][ruleName]['trigger']
-            objRule['action'] = packages[key]['rules'][ruleName]['action']
-            if (objRule['action'].split('/').length > 1) {
-              objRule['action'] = objRule['action'].split('/').pop()
+          if (packages[key].rules[ruleName].trigger && packages[key].rules[ruleName].action) {
+            objRule.trigger = packages[key].rules[ruleName].trigger
+            objRule.action = packages[key].rules[ruleName].action
+            if (objRule.action.split('/').length > 1) {
+              objRule.action = objRule.action.split('/').pop()
             }
           } else {
             throw new Error('Trigger and Action are both required for rule creation')
           }
-          if ((ruleAction.includes(objRule['action']) || arrSequence.includes(objRule['action'])) && ruleTrigger.includes(objRule['trigger'])) {
-            objRule['action'] = `${key}/${objRule['action']}`
+          if ((ruleAction.includes(objRule.action) || arrSequence.includes(objRule.action)) && ruleTrigger.includes(objRule.trigger)) {
+            objRule.action = `${key}/${objRule.action}`
           } else {
             throw new Error('Action/Trigger provided in the rule not found in manifest file')
           }
@@ -764,7 +816,7 @@ function processPackage (packages,
       })
     }
 
-    if (packages[key]['apis']) {
+    if (packages[key].apis) {
       Object.keys(packages[key].apis).forEach((apiName) => {
         const apiRoutes = createApiRoutes(packages[key], key, apiName, ruleAction, arrSequence, namesOnly)
         routes.push.apply(routes, apiRoutes) // faster than concat for < 100k elements
@@ -780,6 +832,9 @@ function processPackage (packages,
   }
 }
 
+/**
+ * @param flags
+ */
 function setPaths (flags) {
   let manifestPath
   if (!flags.manifest) {
@@ -848,12 +903,15 @@ function setPaths (flags) {
  *
  * The IMS org id must be stored beforehand in `@adobe/aio-lib-core-config` under the
  * `'project.org.ims_org_id'` key. TODO: pass in imsOrgId
+ *
+ * @param actions
+ * @param owOptions
+ * @param imsOrgId
  */
 async function setupAdobeAuth (actions, owOptions, imsOrgId) {
   // do not modify those
   const ADOBE_HEADLESS_AUTH_ACTION = '/adobeio/shared-validators-v1/headless'
   const AIO_STATE_KEY = '__aio'
-  const AIO_CONFIG_IMS_ORG_ID = 'project.org.ims_org_id'
   const AIO_STATE_PUT_ENDPOINT = 'https://adobeio.adobeioruntime.net/api/v1/web/state/put'
 
   const hasAnAdobeHeadlessAuthSequence = actions.some(a => a.exec && a.exec.kind === 'sequence' && a.exec.components.includes(ADOBE_HEADLESS_AUTH_ACTION))
@@ -863,7 +921,6 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
     if (!imsOrgId) {
       throw new Error('required .aio \'project.org.ims_org_id\' must be defined when using the Adobe headless auth validator')
     }
-    const fetch = require('node-fetch')
     const res = await fetch(AIO_STATE_PUT_ENDPOINT, {
       method: 'post',
       headers: {
@@ -884,6 +941,11 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
   }
 }
 
+/**
+ * @param entities
+ * @param ow
+ * @param logger
+ */
 async function deployPackage (entities, ow, logger) {
   const opts = await ow.actions.client.options
   const ns = opts.namespace
@@ -897,8 +959,8 @@ async function deployPackage (entities, ow, logger) {
     logger(`Info: package [${pkg.name}] has been successfully deployed.\n`)
   }
   for (const action of entities.actions) {
-    if (action['exec'] && action['exec']['kind'] === 'sequence') {
-      action['exec']['components'] = action['exec']['components'].map(sequence => {
+    if (action.exec && action.exec.kind === 'sequence') {
+      action.exec.components = action.exec.components.map(sequence => {
         /*
           Input => Output
           spackage/saction => /ns/spackage/saction
@@ -938,6 +1000,11 @@ async function deployPackage (entities, ow, logger) {
   logger('Success: Deployment completed successfully.')
 }
 
+/**
+ * @param entities
+ * @param ow
+ * @param logger
+ */
 async function undeployPackage (entities, ow, logger) {
   for (const action of entities.actions) {
     logger(`Info: Undeploying action [${action.name}]...`)
@@ -968,6 +1035,15 @@ async function undeployPackage (entities, ow, logger) {
   logger('Success: Undeployment completed successfully.')
 }
 
+/**
+ * @param projectName
+ * @param manifestPath
+ * @param manifestContent
+ * @param entities
+ * @param ow
+ * @param logger
+ * @param deleteEntities
+ */
 async function syncProject (projectName, manifestPath, manifestContent, entities, ow, logger, deleteEntities = true) {
   // find project hash from server based on entities in the manifest file
   const hashProjectSynced = await findProjectHashonServer(ow, projectName)
@@ -983,6 +1059,11 @@ async function syncProject (projectName, manifestPath, manifestContent, entities
   }
 }
 
+/**
+ * @param project
+ * @param isProjectHash
+ * @param ow
+ */
 async function getProjectEntities (project, isProjectHash, ow) {
   let paramtobeChecked
   if (isProjectHash) {
@@ -1026,6 +1107,12 @@ async function getProjectEntities (project, isProjectHash, ow) {
   return entities
 }
 
+/**
+ * @param entities
+ * @param manifestPath
+ * @param projectName
+ * @param projectHash
+ */
 async function addManagedProjectAnnotations (entities, manifestPath, projectName, projectHash) {
   // add whisk managed annotations
   for (const pkg of entities.pkgAndDeps) {
@@ -1038,7 +1125,7 @@ async function addManagedProjectAnnotations (entities, manifestPath, projectName
     }
   }
   for (const action of entities.actions) {
-    action['annotations']['whisk-managed'] = {
+    action.annotations['whisk-managed'] = {
       file: manifestPath,
       projectDeps: [],
       projectHash: projectHash,
@@ -1056,14 +1143,18 @@ async function addManagedProjectAnnotations (entities, manifestPath, projectName
         projectName: projectName
       }
     }
-    if (trigger['trigger'] && trigger['trigger']['annotations']) {
-      trigger['trigger']['annotations'].push(managedAnnotation)
+    if (trigger.trigger && trigger.trigger.annotations) {
+      trigger.trigger.annotations.push(managedAnnotation)
     } else {
-      trigger['trigger']['annotations'] = [managedAnnotation]
+      trigger.trigger.annotations = [managedAnnotation]
     }
   }
 }
 
+/**
+ * @param manifestContent
+ * @param manifestPath
+ */
 function getProjectHash (manifestContent, manifestPath) {
   const stats = fs.statSync(manifestPath)
   const fileSize = stats.size.toString()
@@ -1072,6 +1163,10 @@ function getProjectHash (manifestContent, manifestPath) {
   return projectHash
 }
 
+/**
+ * @param ow
+ * @param projectName
+ */
 async function findProjectHashonServer (ow, projectName) {
   let projectHash = ''
   const options = {}
@@ -1125,6 +1220,9 @@ async function findProjectHashonServer (ow, projectName) {
   return projectHash
 }
 
+/**
+ * @param kind
+ */
 function fileExtensionForKind (kind) {
   if (kind) {
     const [lang] = kind.split(':')
@@ -1144,6 +1242,9 @@ function fileExtensionForKind (kind) {
   return ''
 }
 
+/**
+ * @param filename
+ */
 function kindForFileExtension (filename) {
   if (filename) {
     const path = require('path')

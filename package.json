@@ -16,6 +16,7 @@
     "fs-extra": "^9.0.1",
     "js-yaml": "^3.14.0",
     "lodash.clonedeep": "^4.5.0",
+    "node-fetch": "^2.6.0",
     "openwhisk": "^3.21.2",
     "openwhisk-fqn": "0.0.2",
     "sha1": "^1.1.1"
@@ -54,7 +55,7 @@
     "generate-docs": "npm run typings && npm run jsdoc",
     "jsdoc": "jsdoc2md -t ./docs/readme_template.md src/**/*.js > README.md",
     "lint": "eslint src test e2e",
-    "test": "npm run unit-tests && npm run lint",
+    "test": "npm run lint && npm run unit-tests",
     "typings": "jsdoc -t node_modules/tsd-jsdoc/dist -r src/*.js -d .",
     "unit-tests": "jest --ci"
   },
