@@ -1,13 +1,13 @@
 {
   "name": "@adobe/aio-lib-runtime",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "license": "Apache-2.0",
   "main": "src/index.js",
   "bugs": {
-    "url": "https://github.com/@adobe/aio-lib-runtime/issues"
+    "url": "https://github.com/adobe/aio-lib-runtime/issues"
   },
-  "homepage": "https://github.com/@adobe/aio-lib-runtime",
-  "repository": "https://github.com/@adobe/aio-lib-runtime",
+  "homepage": "https://github.com/adobe/aio-lib-runtime",
+  "repository": "https://github.com/adobe/aio-lib-runtime",
   "bundleDependencies": false,
   "dependencies": {
     "@adobe/aio-lib-core-errors": "^3.0.0",
@@ -21,7 +21,7 @@
     "sha1": "^1.1.1"
   },
   "deprecated": false,
-  "description": "Adobe I/O Lib",
+  "description": "Adobe I/O Runtime Lib",
   "devDependencies": {
     "@adobe/eslint-config-aio-lib-config": "^1.2.0",
     "@types/node-fetch": "^2.5.4",
