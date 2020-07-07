@@ -171,13 +171,112 @@ describe('processPackage', () => {
   })
 })
 describe('setPaths', () => { /* TODO */ })
-describe('getProjectEntities', () => { /* TODO */ })
 describe('syncProject', () => { /* TODO */ })
+
+describe('getProjectEntities', () => {
+  const projectName = 'my-project'
+  const projectHash = 'my-project-hash'
+
+  test('empty entity lists', async () => {
+    let entities
+    ow.mockResolved('actions.list', [])
+    ow.mockResolved('triggers.list', [])
+    ow.mockResolved('rules.list', [])
+    ow.mockResolved('packages.list', [])
+
+    entities = await utils.getProjectEntities(projectHash, true, ow)
+    expect(entities.actions).toEqual([])
+    expect(entities.triggers).toEqual([])
+    expect(entities.rules).toEqual([])
+    expect(entities.pkgAndDeps).toEqual([])
+    expect(entities.apis).toEqual([])
+
+    entities = await utils.getProjectEntities(projectName, false, ow)
+    expect(entities.actions).toEqual([])
+    expect(entities.triggers).toEqual([])
+    expect(entities.rules).toEqual([])
+    expect(entities.pkgAndDeps).toEqual([])
+    expect(entities.apis).toEqual([])
+  })
+
+  test('non-empty entity lists (projectName)', async () => {
+    const action = {
+      namespace: 'my/foo',
+      name: 'bar',
+      annotations: [
+        {
+          key: 'whisk-managed',
+          value: {
+            projectHash,
+            projectName
+          }
+        }
+      ]
+    }
+
+    ow.mockResolved('actions.list', [action])
+    ow.mockResolved('triggers.list', [])
+    ow.mockResolved('rules.list', [])
+    ow.mockResolved('packages.list', [])
+
+    const expectedAction = JSON.parse(JSON.stringify(action)) // clone
+    expectedAction.name = 'foo/bar'
+
+    const entities = await utils.getProjectEntities(projectName, false, ow)
+    expect(entities.actions).toEqual([expectedAction])
+    expect(entities.triggers).toEqual([])
+    expect(entities.rules).toEqual([])
+    expect(entities.pkgAndDeps).toEqual([])
+    expect(entities.apis).toEqual([])
+  })
+
+  test('non-empty entity lists (projectHash)', async () => {
+    const action = {
+      namespace: 'my/foo',
+      name: 'bar',
+      annotations: [
+        {
+          key: 'whisk-managed',
+          value: {
+            projectHash,
+            projectName
+          }
+        }
+      ]
+    }
+
+    ow.mockResolved('actions.list', [action])
+    ow.mockResolved('triggers.list', [])
+    ow.mockResolved('rules.list', [])
+    ow.mockResolved('packages.list', [])
+
+    const expectedAction = JSON.parse(JSON.stringify(action)) // clone
+    expectedAction.name = 'foo/bar'
+
+    const entities = await utils.getProjectEntities(projectHash, true, ow)
+    expect(entities.actions).toEqual([expectedAction])
+    expect(entities.triggers).toEqual([])
+    expect(entities.rules).toEqual([])
+    expect(entities.pkgAndDeps).toEqual([])
+    expect(entities.apis).toEqual([])
+  })
+})
 
 describe('addManagedProjectAnnotations', () => {
   const projectName = 'my-project'
   const projectHash = 'my-project-hash'
   const manifestPath = '/my/manifest/path'
+
+  const expectedAnnotation = {
+    file: manifestPath,
+    projectDeps: [],
+    projectHash: projectHash,
+    projectName: projectName
+  }
+  const managedAnnotation = {
+    key: 'whisk-managed',
+    value: expectedAnnotation
+  }
 
   test('one package, action, and trigger (trigger has annotations)', () => {
     const pkg = {
@@ -188,24 +287,13 @@ describe('addManagedProjectAnnotations', () => {
     }
     const trigger = {
       trigger: {
-        annotations: []
+        annotations: [] // has annotations (coverage)
       }
     }
     const entities = {
       pkgAndDeps: [pkg], // one package
       actions: [action], // one action
       triggers: [trigger] // one trigger
-    }
-
-    const expectedAnnotation = {
-      file: manifestPath,
-      projectDeps: [],
-      projectHash: projectHash,
-      projectName: projectName
-    }
-    const managedAnnotation = {
-      key: 'whisk-managed',
-      value: expectedAnnotation
     }
 
     utils.addManagedProjectAnnotations(entities, manifestPath, projectName, projectHash)
@@ -222,24 +310,13 @@ describe('addManagedProjectAnnotations', () => {
       annotations: {}
     }
     const trigger = {
-      trigger: {
+      trigger: { // no annotations (coverage)
       }
     }
     const entities = {
       pkgAndDeps: [pkg], // one package
       actions: [action], // one action
       triggers: [trigger] // one trigger
-    }
-
-    const expectedAnnotation = {
-      file: manifestPath,
-      projectDeps: [],
-      projectHash: projectHash,
-      projectName: projectName
-    }
-    const managedAnnotation = {
-      key: 'whisk-managed',
-      value: expectedAnnotation
     }
 
     utils.addManagedProjectAnnotations(entities, manifestPath, projectName, projectHash)
