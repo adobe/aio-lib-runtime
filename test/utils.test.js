@@ -108,6 +108,7 @@ describe('parsePackageName', () => {
     expect(func).toThrow(new Error('Package name is not valid'))
   })
 })
+
 describe('createComponentsfromSequence', () => {
   test('sequence components', () => {
     const res = utils.createComponentsfromSequence(['a', 'p/b', '/ns/p/c', '/ns2/p/d', '/ns3/e'])
@@ -117,6 +118,7 @@ describe('createComponentsfromSequence', () => {
     })
   })
 })
+
 describe('processInputs', () => { /* TODO */ })
 describe('createKeyValueInput', () => { /* TODO */ })
 describe('setManifestPath', () => { /* TODO */ })
@@ -128,6 +130,8 @@ describe('checkWebFlags', () => { /* TODO */ })
 describe('createSequenceObject', () => { /* TODO */ })
 describe('createApiRoutes', () => { /* TODO */ })
 describe('returnAnnotations', () => { /* TODO */ })
+describe('setPaths', () => { /* TODO */ })
+
 describe('deployPackage', () => {
   test('basic manifest', async () => {
     const mockLogger = jest.fn()
@@ -147,6 +151,7 @@ describe('deployPackage', () => {
     expect(cmdRule).toHaveBeenCalled()
   })
 })
+
 describe('undeployPackage', () => {
   test('basic manifest', async () => {
     const mockLogger = jest.fn()
@@ -164,14 +169,56 @@ describe('undeployPackage', () => {
     expect(cmdRuleDel).toHaveBeenCalled()
   })
 })
+
 describe('processPackage', () => {
   test('basic manifest', async () => {
     const entities = utils.processPackage(JSON.parse(fs.readFileSync('/basic_manifest.json')), {}, {}, {})
     expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/basic_manifest_res.json')))
   })
 })
-describe('setPaths', () => { /* TODO */ })
-describe('syncProject', () => { /* TODO */ })
+
+describe('syncProject', () => {
+  const projectName = 'my-project'
+  const projectHash = 'project-hash'
+  const newProjectHash = 'new-project-hash'
+  const manifestPath = 'deploy/app.boo'
+  const manifestContent = 'manifest-content'
+  const logger = jest.fn()
+
+  test('syncProject', async () => {
+    ow.mockResolved('actions.list', [])
+    ow.mockResolved('triggers.list', [])
+    ow.mockResolved('rules.list', [])
+
+    const resultObject = {
+      annotations: [
+        {
+          key: 'whisk-managed',
+          value: {
+            projectName,
+            projectHash
+          }
+        }
+      ]
+    }
+    ow.mockResolved('packages.list', [resultObject]) // for findProjectHashonServer
+    fs.statSync = jest.fn(() => ({ size: () => 1 }))
+    global.fakeFileSystem.addJson({ [manifestPath]: newProjectHash }) // for getProjectHash
+
+    const entities = { // for addManagedProjectAnnotations and deployPackage
+      pkgAndDeps: [],
+      actions: [],
+      triggers: [],
+      apis: [],
+      rules: []
+    }
+
+    // deleteEntities = false
+    await expect(utils.syncProject(projectName, manifestPath, manifestContent, entities, ow, logger, false)).resolves.not.toThrow()
+    // deleteEntities = true
+    await expect(utils.syncProject(projectName, manifestPath, manifestContent, entities, ow, logger, true)).resolves.not.toThrow()
+  })
+})
 
 describe('getProjectEntities', () => {
   const projectName = 'my-project'
