@@ -29,6 +29,7 @@ beforeEach(() => {
   const json = {
     'file.json': global.fixtureFile('/trigger/parameters.json'),
     'hello.js': global.fixtureFile('/deploy/hello.js'),
+    'goodbye.js': global.fixtureFile('/deploy/goodbye.js'),
     'basic_manifest.json': global.fixtureFile('/deploy/basic_manifest.json'),
     'basic_manifest_res.json': global.fixtureFile('/deploy/basic_manifest_res.json')
   }

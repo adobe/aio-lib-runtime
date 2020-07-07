@@ -1,36 +1,62 @@
 {
     "hello": {
-      "dependencies": {
-        "mypackage": {
-          "location": "/adobeio/oauth"
-        }
-      },
-      "actions": { "helloAction": { "function": "/hello.js", "annotations": { "require-adobe-auth": true }, "inputs": { "param1": "value1" }, "web-export": true } },
-      "triggers": {
-        "hellotrigger": {
-            "feed": "/whisk.system/alarms/alarm",
-            "inputs": {
-                "cron": "* * * * *",
-                "trigger_payload": "{\"message\": \"hello world!\"}"
+        "dependencies": {
+            "mypackage": {
+                "location": "/adobeio/oauth"
             }
-        }
-    },
-    "rules": {
-        "reportEveryMinute": {
-            "action": "helloAction",
-            "trigger": "hellotrigger"
-        }
-    },
-    "apis": {
-        "hello-world": {
-            "hello": {
-                "world": {
-                    "helloAction": {
-                        "method": "GET"
+        },
+        "actions": {
+            "helloAction": {
+                "function": "/hello.js",
+                "annotations": {
+                    "require-adobe-auth": true
+                },
+                "inputs": {
+                    "param1": "value1"
+                },
+                "web-export": true
+            },
+            "goodbyeAction": {
+                "function": "/goodbye.js",
+                "annotations": {
+                    "require-adobe-auth": true
+                },
+                "inputs": {
+                    "param1": "value1"
+                },
+                "web-export": true
+            }
+        },
+        "triggers": {
+            "hellotrigger": {
+                "feed": "/whisk.system/alarms/alarm",
+                "inputs": {
+                    "cron": "* * * * *",
+                    "trigger_payload": "{\"message\": \"hello world!\"}"
+                }
+            }
+        },
+        "rules": {
+            "reportEveryMinute": {
+                "action": "helloAction",
+                "trigger": "hellotrigger"
+            }
+        },
+        "sequences": {
+            "my_sequence": {
+                "actions": "helloAction, goodbyeAction"
+            }
+        },
+        "apis": {
+            "hello-world": {
+                "hello": {
+                    "world": {
+                        "helloAction": {
+                            "method": "GET"
+                        }
                     }
                 }
             }
         }
-    }
     }
 }

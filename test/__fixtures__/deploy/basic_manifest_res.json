@@ -58,6 +58,31 @@
             "params": {
                 "param1": "value1"
             }
+        },
+        {
+            "name": "hello/goodbyeAction",
+            "action": "\n/** @private */\nfunction main (params) {\n  const msg = 'Goodbye ' + params.name + ', ' + params.message + '.'\n  return { msg }\n}\n\nmodule.exports.main = main\n",
+            "annotations": {
+                "web-export": true
+            },
+            "params": {
+                "param1": "value1"
+            }
+        },
+        {
+            "action": "",
+            "annotations": {
+                "raw-http": false,
+                "web-export": false
+            },
+            "exec": {
+                "components": [
+                  "hello/helloAction",
+                  "hello/goodbyeAction"
+                ],
+                "kind": "sequence"
+            },
+            "name": "hello/my_sequence"
         }
     ]
 }
