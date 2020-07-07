@@ -173,7 +173,81 @@ describe('processPackage', () => {
 describe('setPaths', () => { /* TODO */ })
 describe('getProjectEntities', () => { /* TODO */ })
 describe('syncProject', () => { /* TODO */ })
-describe('addManagedProjectAnnotations', () => { /* TODO */ })
+
+describe('addManagedProjectAnnotations', () => {
+  const projectName = 'my-project'
+  const projectHash = 'my-project-hash'
+  const manifestPath = '/my/manifest/path'
+
+  test('one package, action, and trigger (trigger has annotations)', () => {
+    const pkg = {
+      annotations: {}
+    }
+    const action = {
+      annotations: {}
+    }
+    const trigger = {
+      trigger: {
+        annotations: []
+      }
+    }
+    const entities = {
+      pkgAndDeps: [pkg], // one package
+      actions: [action], // one action
+      triggers: [trigger] // one trigger
+    }
+
+    const expectedAnnotation = {
+      file: manifestPath,
+      projectDeps: [],
+      projectHash: projectHash,
+      projectName: projectName
+    }
+    const managedAnnotation = {
+      key: 'whisk-managed',
+      value: expectedAnnotation
+    }
+
+    utils.addManagedProjectAnnotations(entities, manifestPath, projectName, projectHash)
+    expect(entities.pkgAndDeps[0].annotations['whisk-managed']).toEqual(expectedAnnotation)
+    expect(entities.actions[0].annotations['whisk-managed']).toEqual(expectedAnnotation)
+    expect(entities.triggers[0].trigger.annotations[0]).toEqual(managedAnnotation)
+  })
+
+  test('one package, action, and trigger (trigger has no annotations)', () => {
+    const pkg = {
+      annotations: {}
+    }
+    const action = {
+      annotations: {}
+    }
+    const trigger = {
+      trigger: {
+      }
+    }
+    const entities = {
+      pkgAndDeps: [pkg], // one package
+      actions: [action], // one action
+      triggers: [trigger] // one trigger
+    }
+
+    const expectedAnnotation = {
+      file: manifestPath,
+      projectDeps: [],
+      projectHash: projectHash,
+      projectName: projectName
+    }
+    const managedAnnotation = {
+      key: 'whisk-managed',
+      value: expectedAnnotation
+    }
+
+    utils.addManagedProjectAnnotations(entities, manifestPath, projectName, projectHash)
+    expect(entities.pkgAndDeps[0].annotations['whisk-managed']).toEqual(expectedAnnotation)
+    expect(entities.actions[0].annotations['whisk-managed']).toEqual(expectedAnnotation)
+    expect(entities.triggers[0].trigger.annotations[0]).toEqual(managedAnnotation)
+  })
+})
 
 describe('printLogs', () => {
   test('activation logs', () => {
@@ -279,6 +353,21 @@ describe('getProjectHash', () => {
 })
 
 describe('findProjectHashonServer', () => {
+  test('default projectHash (not found anywhere in packages, actions, triggers, rules)', async () => {
+    const testProjectName = 'ThisIsTheNameOfTheProject'
+    // const resultObject = [{ annotations: [{ key: 'whisk-managed', value: { projectName: testProjectName, projectHash: 'projectHash' } }] }]
+    const pkgList = ow.mockResolved('packages.list', '')
+    const actList = ow.mockResolved('actions.list', '')
+    const trgList = ow.mockResolved('triggers.list', '')
+    const rlzList = ow.mockResolved('rules.list', '')
+    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    expect(pkgList).toHaveBeenCalled()
+    expect(actList).toHaveBeenCalled()
+    expect(trgList).toHaveBeenCalled()
+    expect(rlzList).toHaveBeenCalled()
+    expect(result).toBe('')
+  })
+
   test('return projectHash from packages.list if it finds it', async () => {
     const testProjectName = 'ThisIsTheNameOfTheProject'
     const resultObject = [{ annotations: [{ key: 'whisk-managed', value: { projectName: testProjectName, projectHash: 'projectHash' } }] }]
