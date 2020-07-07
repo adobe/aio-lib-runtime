@@ -83,6 +83,21 @@
                 "kind": "sequence"
             },
             "name": "hello/my_sequence"
+        },
+        {
+            "action": "",
+            "annotations": {
+                "raw-http": false,
+                "web-export": false
+            },
+            "exec": {
+                "components": [
+                    "/adobeio/shared-validators-v1/headless",
+                    "hello/helloAction"
+                ],
+                "kind": "sequence"
+            },
+            "name": "hello/headless_sequence"
         }
     ]
 }

@@ -15,7 +15,7 @@ const sha1 = require('sha1')
 const cloneDeep = require('lodash.clonedeep')
 const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:index', { level: process.env.LOG_LEVEL })
 const yaml = require('js-yaml')
-const fetch = require('node-fetch')
+const fetch = require('cross-fetch')
 
 // for lines starting with date-time-string followed by stdout|stderr a ':' and a log-line, return only the logline
 const dtsRegex = /\d{4}-[01]{1}\d{1}-[0-3]{1}\d{1}T[0-2]{1}\d{1}:[0-6]{1}\d{1}:[0-6]{1}\d{1}.\d+Z( *(stdout|stderr):)?\s(.*)/
@@ -919,7 +919,7 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
     // if we use the headless (default auth action) we need to store the ims org id in the
     // cloud state lib. This is needed by the auth action to perform an org check.
     if (!imsOrgId) {
-      throw new Error('required .aio \'project.org.ims_org_id\' must be defined when using the Adobe headless auth validator')
+      throw new Error('imsOrgId must be defined when using the Adobe headless auth validator')
     }
     const res = await fetch(AIO_STATE_PUT_ENDPOINT, {
       method: 'post',
@@ -946,12 +946,12 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
  * @param ow
  * @param logger
  */
-async function deployPackage (entities, ow, logger) {
+async function deployPackage (entities, ow, logger, imsOrgId) {
   const opts = await ow.actions.client.options
   const ns = opts.namespace
 
   /* this is a temporary workaround to setup Adobe auth dependencies */
-  await setupAdobeAuth(entities.actions, opts)
+  await setupAdobeAuth(entities.actions, opts, imsOrgId)
 
   for (const pkg of entities.pkgAndDeps) {
     logger(`Info: Deploying package [${pkg.name}]...`)
@@ -1044,14 +1044,14 @@ async function undeployPackage (entities, ow, logger) {
  * @param logger
  * @param deleteEntities
  */
-async function syncProject (projectName, manifestPath, manifestContent, entities, ow, logger, deleteEntities = true) {
+async function syncProject (projectName, manifestPath, manifestContent, entities, ow, logger, imsOrgId, deleteEntities = true) {
   // find project hash from server based on entities in the manifest file
   const hashProjectSynced = await findProjectHashonServer(ow, projectName)
 
   // compute the project hash from the manifest file
   const projectHash = getProjectHash(manifestContent, manifestPath)
   await addManagedProjectAnnotations(entities, manifestPath, projectName, projectHash)
-  await deployPackage(entities, ow, logger)
+  await deployPackage(entities, ow, logger, imsOrgId)
   if (deleteEntities && (projectHash !== hashProjectSynced)) {
     // delete old files with same project name that do not exist in the manifest file anymore
     const junkEntities = await getProjectEntities(hashProjectSynced, true, ow)

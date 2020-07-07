@@ -45,6 +45,9 @@
         "sequences": {
             "my_sequence": {
                 "actions": "helloAction, goodbyeAction"
+            },
+            "headless_sequence": {
+                "actions": "/adobeio/shared-validators-v1/headless, helloAction"
             }
         },
         "apis": {

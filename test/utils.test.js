@@ -12,6 +12,8 @@ governing permissions and limitations under the License.
 const ow = require('openwhisk')()
 const fs = require('fs')
 
+jest.mock('cross-fetch')
+
 const utils = require('../src/utils')
 const activationLog = { logs: ['2020-06-25T05:50:23.641Z       stdout: logged from action code'] }
 const owPackage = 'packages.update'
@@ -135,21 +137,52 @@ describe('setPaths', () => { /* TODO */ })
 
 describe('deployPackage', () => {
   test('basic manifest', async () => {
+    const imsOrgId = 'MyIMSOrgId'
     const mockLogger = jest.fn()
     const cmdPkg = ow.mockResolved(owPackage, '')
     const cmdAction = ow.mockResolved(owAction, '')
     const cmdAPI = ow.mockResolved(owAPI, '')
     const cmdTrigger = ow.mockResolved(owTriggers, '')
     const cmdRule = ow.mockResolved(owRules, '')
-    ow.mockResolved('actions.client.options', '')
+    ow.mockResolvedProperty('actions.client.options', { apiKey: 'my-key', namespace: 'my-namespace' })
 
-    await utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger)
+    const rp = require('cross-fetch')
+    rp.mockImplementation(() => ({
+      ok: true,
+      json: jest.fn()
+    }))
+
+    await utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, imsOrgId)
     expect(cmdPkg).toHaveBeenCalledWith(expect.objectContaining({ name: 'hello' }))
     expect(cmdPkg).toHaveBeenCalledWith(expect.objectContaining({ name: 'mypackage', package: { binding: { name: 'oauth', namespace: 'adobeio' } } }))
     expect(cmdAction).toHaveBeenCalled()
     expect(cmdAPI).toHaveBeenCalled()
     expect(cmdTrigger).toHaveBeenCalled()
     expect(cmdRule).toHaveBeenCalled()
+  })
+
+  test('basic manifest (fetch error)', async () => {
+    const imsOrgId = 'MyIMSOrgId'
+    const mockLogger = jest.fn()
+    ow.mockResolvedProperty('actions.client.options', { apiKey: 'my-key', namespace: 'my-namespace' })
+
+    const rp = require('cross-fetch')
+    const res = {
+      ok: false,
+      status: 403,
+      json: jest.fn()
+    }
+    rp.mockImplementation(() => res)
+
+    await expect(utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, imsOrgId))
+      .rejects.toThrowError(`failed setting ims_org_id=${imsOrgId} into state lib, received status=${res.status}, please make sure your runtime credentials are correct`)
+  })
+
+  test('basic manifest (no IMS Org Id)', async () => {
+    const mockLogger = jest.fn()
+
+    await expect(utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, null))
+      .rejects.toThrowError(new Error('imsOrgId must be defined when using the Adobe headless auth validator'))
   })
 })
 
@@ -185,6 +218,7 @@ describe('syncProject', () => {
   const manifestPath = 'deploy/app.boo'
   const manifestContent = 'manifest-content'
   const logger = jest.fn()
+  const imsOrgId = 'MyIMSOrg'
 
   test('syncProject', async () => {
     ow.mockResolved('actions.list', [])
@@ -215,9 +249,9 @@ describe('syncProject', () => {
     }
 
     // deleteEntities = false
-    await expect(utils.syncProject(projectName, manifestPath, manifestContent, entities, ow, logger, false)).resolves.not.toThrow()
+    await expect(utils.syncProject(projectName, manifestPath, manifestContent, entities, ow, logger, imsOrgId, false)).resolves.not.toThrow()
     // deleteEntities = true
-    await expect(utils.syncProject(projectName, manifestPath, manifestContent, entities, ow, logger, true)).resolves.not.toThrow()
+    await expect(utils.syncProject(projectName, manifestPath, manifestContent, entities, ow, logger, imsOrgId, true)).resolves.not.toThrow()
   })
 })
 
