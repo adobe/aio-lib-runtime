@@ -11,6 +11,7 @@ governing permissions and limitations under the License.
 
 const ow = require('openwhisk')()
 const fs = require('fs')
+const cloneDeep = require('lodash.clonedeep')
 
 jest.mock('cross-fetch')
 
@@ -314,15 +315,17 @@ describe('returnAnnotations', () => {
   })
 })
 
-describe('createApiRoutes', () => { /* TODO */ })
+describe('createApiRoutes', () => {
+
+})
 
 describe('returnUnion', () => { /* TODO */ })
-
-describe('createActionObject', () => { /* TODO */ })
 describe('checkWebFlags', () => { /* TODO */ })
 describe('createSequenceObject', () => { /* TODO */ })
 
 describe('setPaths', () => { /* TODO */ })
+
+describe('createActionObject', () => { /* TODO */ })
 
 describe('deployPackage', () => {
   test('basic manifest', async () => {
@@ -348,9 +351,20 @@ describe('deployPackage', () => {
     expect(cmdAPI).toHaveBeenCalled()
     expect(cmdTrigger).toHaveBeenCalled()
     expect(cmdRule).toHaveBeenCalled()
+
+    // this assertion is specific to the tmp implementation of the require-adobe-annotation
+    const mockFetch = require('cross-fetch')
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://adobeio.adobeioruntime.net/api/v1/web/state/put',
+      {
+        body: '{"namespace":"my-namespace","key":"__aio","value":{"project":{"org":{"ims_org_id":"MyIMSOrgId"}}},"ttl":-1}',
+        headers: { Authorization: 'Basic bXkta2V5', 'Content-Type': 'application/json' },
+        method: 'post'
+      })
   })
 
   test('basic manifest (fetch error)', async () => {
+    // this test is specific to the tmp implementation of the require-adobe-annotation
     const imsOrgId = 'MyIMSOrgId'
     const mockLogger = jest.fn()
     ow.mockResolvedProperty('actions.client.options', { apiKey: 'my-key', namespace: 'my-namespace' })
@@ -368,6 +382,7 @@ describe('deployPackage', () => {
   })
 
   test('basic manifest (no IMS Org Id)', async () => {
+    // this test is specific to the tmp implementation of the require-adobe-annotation
     const mockLogger = jest.fn()
 
     await expect(utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, null))
@@ -397,6 +412,151 @@ describe('processPackage', () => {
   test('basic manifest', async () => {
     const entities = utils.processPackage(JSON.parse(fs.readFileSync('/basic_manifest.json')), {}, {}, {})
     expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/basic_manifest_res.json')))
+  })
+  // the adobe auth annotation is a temporarily implemented on the client side
+  // simply remove this test when the feature will be moved server side, to I/O Runtime
+  test('manifest with adobe auth annotation', () => {
+    const HEADLESS_VALIDATOR = '/adobeio/shared-validators-v1/headless'
+    const spy = jest.spyOn(fs, 'readFileSync')
+    const fakeCode = 'fake action code'
+    spy.mockImplementation(() => fakeCode)
+    const basicPackage = {
+      pkg1: {
+        actions: {
+          theaction: {
+            function: 'fake.js',
+            web: 'yes',
+            annotations: {
+              'require-adobe-auth': true
+            }
+          }
+        }
+      }
+    }
+
+    // does not rewrite if apihost is not 'https://adobeioruntime.net'
+    let res = utils.processPackage(basicPackage, {}, {}, {}, false, {})
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/theaction', annotations: { 'web-export': true }, action: fakeCode }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+
+    // does not rewrite if action is not web
+    let packagesCopy = cloneDeep(basicPackage)
+    delete packagesCopy.pkg1.actions.theaction.web
+    res = utils.processPackage(packagesCopy, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+
+    // does not rewrite if there are no actions
+    packagesCopy = cloneDeep(basicPackage)
+    delete packagesCopy.pkg1.actions
+    res = utils.processPackage(packagesCopy, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res).toEqual({
+      actions: [],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+
+    // does not rewrite if the annotation is not set
+    packagesCopy = cloneDeep(basicPackage)
+    delete packagesCopy.pkg1.actions.theaction.annotations['require-adobe-auth']
+    res = utils.processPackage(packagesCopy, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/theaction', annotations: { 'web-export': true }, action: fakeCode }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+
+    // fails if an action with the rewrite name exists
+    packagesCopy = cloneDeep(basicPackage)
+    packagesCopy.pkg1.actions.__secured_theaction = {}
+    expect(() => utils.processPackage(packagesCopy, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' }))
+      .toThrow('Failed to rename the action \'pkg1/theaction\' to \'pkg1/__secured_theaction\': an action with the same name exists already.')
+
+    // fails if a sequence with the same action name exists
+    packagesCopy = cloneDeep(basicPackage)
+    packagesCopy.pkg1.sequences = { theaction: {} }
+    expect(() => utils.processPackage(packagesCopy, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' }))
+      .toThrow('The name \'pkg1/theaction\' is defined both for an action and a sequence, it should be unique')
+
+    // basic case 1 action using the annotation
+    res = utils.processPackage(basicPackage, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+
+    // action uses web-export
+    packagesCopy = cloneDeep(basicPackage)
+    packagesCopy.pkg1.actions.theaction['web-export'] = true
+    delete packagesCopy.pkg1.actions.theaction.web
+    res = utils.processPackage(packagesCopy, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+
+    // action is raw
+    packagesCopy = cloneDeep(basicPackage)
+    packagesCopy.pkg1.actions.theaction.web = 'raw'
+    res = utils.processPackage(packagesCopy, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true, 'raw-http': true }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+
+    // 1 action using the annotation + rewrite deployment package
+    const deploymentPackages = { pkg1: { actions: { theaction: { inputs: { a: 1 } } } } }
+    res = utils.processPackage(basicPackage, deploymentPackages, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode, params: { a: 1 } },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+
+    spy.mockRestore()
   })
 })
 
