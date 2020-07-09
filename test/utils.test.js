@@ -364,7 +364,13 @@ describe('createApiRoutes', () => {
 
 describe('returnUnion', () => { /* TODO */ })
 describe('checkWebFlags', () => { /* TODO */ })
-describe('createSequenceObject', () => { /* TODO */ })
+
+describe('createSequenceObject', () => {
+  test('no args', async () => {
+    expect(() => utils.createSequenceObject())
+      .toThrowError()
+  })
+})
 
 describe('setPaths', () => {
   test('no args', async () => {
@@ -386,7 +392,55 @@ describe('setPaths', () => {
   })
 })
 
-describe('createActionObject', () => { /* TODO */ })
+describe('createActionObject', () => {
+  test('action zip - no runtime prop', () => {
+    expect(() => utils.createActionObject({ function: 'some.zip' }))
+      .toThrowError('Invalid or missing property')
+    expect(() => utils.createActionObject({ function: 'some.zip' }, { name: 'namedAction' }))
+      .toThrowError('Invalid or missing property')
+    expect(() => utils.createActionObject({ function: 'some.zip', runtime: 'something' }))
+      .toThrowError('no such file or directory')
+  })
+
+  test('action js - runtime prop w/ docker', () => {
+    const spy = jest.spyOn(fs, 'readFileSync')
+    spy.mockImplementationOnce(() => 'fake source code')
+    const actionObj = { name: 'fake', main: 'main' }
+    expect(() => utils.createActionObject({
+      function: 'fake.js',
+      runtime: 'something',
+      docker: 'docker',
+      main: 'fakeSrcMain',
+      limits: { concurrency: 12 }
+    }, actionObj))
+      .not.toThrowError()
+  })
+
+  test('action js - runtime prop no docker', () => {
+    const spy = jest.spyOn(fs, 'readFileSync')
+    spy.mockImplementationOnce(() => 'fake source code')
+    const actionObj = { name: 'fake', main: 'main' }
+    const result = utils.createActionObject({
+      function: 'fake.js',
+      runtime: 'something',
+      main: 'fakeSrcMain'
+    }, actionObj)
+
+    expect(result).toEqual(expect.objectContaining({
+      action: 'fake source code',
+      annotations: {
+        'raw-http': false,
+        'web-export': false
+      },
+      exec: {
+        kind: 'something',
+        main: 'fakeSrcMain'
+      },
+      main: 'main',
+      name: 'fake'
+    }))
+  })
+})
 
 describe('deployPackage', () => {
   test('basic manifest', async () => {
