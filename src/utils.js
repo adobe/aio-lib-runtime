@@ -241,9 +241,7 @@ function processInputs (input, params) {
     } else {
       if (typeof input[key] === 'object') {
         for (const val in input[key]) {
-          if (val === 'value') {
-            input[key] = input[key][val]
-          } else if (val === 'default') {
+          if (val === 'value' || val === 'default') {
             input[key] = input[key][val]
           }
         }
@@ -256,7 +254,7 @@ function processInputs (input, params) {
         } else if (typeof input[key] === 'string' && input[key].startsWith('$')) {
           let val = input[key].substr(1)
           if (val.startsWith('{')) {
-            val = val.slice(1, -1)
+            val = val.slice(1, -1).trim()
           }
           input[key] = process.env[val] || ''
         }
@@ -324,20 +322,23 @@ function returnDeploymentTriggerInputs (deploymentPackages) {
  * @param action
  */
 function returnAnnotations (action) {
-  let annotationParams = {}
+  const annotationParams = {}
+
+  // common annotations
 
   if (action.annotations && action.annotations.conductor !== undefined) {
     annotationParams.conductor = action.annotations.conductor
   }
 
+  // web related annotations
+
   if (action.web !== undefined) {
-    annotationParams = checkWebFlags(action.web)
+    Object.assign(annotationParams, checkWebFlags(action.web))
   } else if (action['web-export'] !== undefined) {
-    annotationParams = checkWebFlags(action['web-export'])
+    Object.assign(annotationParams, checkWebFlags(action['web-export']))
   } else {
     annotationParams['web-export'] = false
     annotationParams['raw-http'] = false
-    return annotationParams
   }
 
   if (action.annotations && action.annotations['require-whisk-auth'] !== undefined) {
@@ -945,6 +946,7 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
  * @param entities
  * @param ow
  * @param logger
+ * @param imsOrgId
  */
 async function deployPackage (entities, ow, logger, imsOrgId) {
   const opts = await ow.actions.client.options
@@ -1042,6 +1044,7 @@ async function undeployPackage (entities, ow, logger) {
  * @param entities
  * @param ow
  * @param logger
+ * @param imsOrgId
  * @param deleteEntities
  */
 async function syncProject (projectName, manifestPath, manifestContent, entities, ow, logger, imsOrgId, deleteEntities = true) {

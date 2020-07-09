@@ -24,6 +24,7 @@
   "description": "Adobe I/O Runtime Lib",
   "devDependencies": {
     "@adobe/eslint-config-aio-lib-config": "^1.2.0",
+    "@types/jest": "^26.0.4",
     "@types/node-fetch": "^2.5.4",
     "babel-runtime": "^6.26.0",
     "codecov": "^3.5.0",
