@@ -365,7 +365,27 @@ describe('createApiRoutes', () => {
 describe('returnUnion', () => { /* TODO */ })
 describe('checkWebFlags', () => { /* TODO */ })
 describe('createSequenceObject', () => { /* TODO */ })
-describe('setPaths', () => { /* TODO */ })
+
+describe('setPaths', () => {
+  test('no args', async () => {
+    expect(() => utils.setPaths())
+      .toThrowError('Manifest file not found')
+  })
+  test('bad args with manifest', async () => {
+    expect(() => utils.setPaths({ manifest: 'manifest.yml' }))
+      .toThrowError('no such file or directory')
+  })
+  test('bad args with manifest and deployment', async () => {
+    expect(() => utils.setPaths({ manifest: 'manifest.yml', deployment: 'chik' }))
+      .toThrowError('no such file or directory')
+  })
+  test('with manifest', async () => {
+    global.fakeFileSystem.addJson({ 'manifest.yml': 'some yaml here' })
+    expect(() => utils.setPaths())
+      .toThrowError('Manifest file not foundwtf')
+  })
+})
+
 describe('createActionObject', () => { /* TODO */ })
 
 describe('deployPackage', () => {

@@ -832,9 +832,19 @@ function processPackage (packages,
     actions
   }
 }
+/**
+ * @typedef {object} DeploymentFileComponents
+ * @property {Array} packages Packages in the manifest
+ * @property {Array} deploymentTriggers Triggers in the manifest
+ * @property {Array} deploymentPackages Packages in the manifest
+ * @property {string} manifestPath Path to manifest
+ * @property {object} manifestContent Parsed manifest object
+ * @property {string} projectName Name of the project
+ */
 
 /**
- * @param flags
+ * @param {object} flags (manifest + deployment)
+ * @returns {DeploymentFileComponents} fileComponents
  */
 function setPaths (flags) {
   let manifestPath
