@@ -846,7 +846,7 @@ function processPackage (packages,
  * @param {object} flags (manifest + deployment)
  * @returns {DeploymentFileComponents} fileComponents
  */
-function setPaths (flags) {
+function setPaths (flags = {}) {
   let manifestPath
   if (!flags.manifest) {
     manifestPath = setManifestPath()

@@ -382,7 +382,7 @@ describe('setPaths', () => {
   test('with manifest', async () => {
     global.fakeFileSystem.addJson({ 'manifest.yml': 'some yaml here' })
     expect(() => utils.setPaths())
-      .toThrowError('Manifest file not foundwtf')
+      .toThrowError('Manifest file not found')
   })
 })
 
