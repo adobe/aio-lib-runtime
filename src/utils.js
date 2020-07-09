@@ -506,7 +506,7 @@ function checkWebFlags (flag) {
 function createActionObject (thisAction, objAction) {
   if (thisAction.function.endsWith('.zip')) {
     if (!thisAction.runtime && !thisAction.docker) {
-      throw (new Error(`Invalid or missing property "runtime" in the manifest for this action: ${objAction.name}`))
+      throw (new Error(`Invalid or missing property "runtime" in the manifest for this action: ${objAction && objAction.name}`))
     }
     objAction.action = fs.readFileSync(thisAction.function)
   } else {
