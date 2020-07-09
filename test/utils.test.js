@@ -316,15 +316,56 @@ describe('returnAnnotations', () => {
 })
 
 describe('createApiRoutes', () => {
-
+  test('pkg={ apis: {} }, pkgName=pkg, apiName=api, allowedActions=[], allowedSequences=[], pathOnly=false', () => {
+    expect(() => utils.createApiRoutes({ apis: {} }, 'pkg', 'api', [], [], false))
+      .toThrow('Arguments to create API not provided')
+  })
+  test('pkg={ apis: { api1: { base1: { resource1: action1 } } } }, pkgName=pkg1, apiName=api1, allowedActions=[], allowedSequences=[], pathOnly=false', () => {
+    expect(() => utils.createApiRoutes({ apis: { api1: { base1: { resource1: 'action1' } } } }, 'pkg1', 'api1', [], [], false))
+      .toThrow('Action provided in the api not present in the package')
+  })
+  test('pkg={ actions: {}, sequences: {}, apis: { api1: { base1: { resource1: { action1: { method: POST, response: json } } } } }, pkgName=pkg1, apiName=api1, allowedActions=[ action1 ], allowedSequences=[ ], pathOnly=false', () => {
+    expect(() => utils.createApiRoutes({ actions: {}, sequences: {}, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'json' } } } } } }, 'pkg1', 'api1', ['action1'], [], false))
+      .toThrow('Action provided in the api not present in the package')
+  })
+  test('pkg={ actions: {}, sequences: {}, apis: { api1: { base1: { resource1: { action1: { method: POST, response: json } } } } }, pkgName=pkg1, apiName=api1, allowedActions=[], allowedSequences=[ action1 ], pathOnly=false', () => {
+    expect(() => utils.createApiRoutes({ actions: {}, sequences: {}, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'json' } } } } } }, 'pkg1', 'api1', [], ['action1'], false))
+      .toThrow('Action provided in the api not present in the package')
+  })
+  test('pkg={ actions: { action1: {} }, sequences: {}, apis: { api1: { base1: { resource1: { action1: { method: POST, response: json } } } } }, pkgName=pkg1, apiName=api1, allowedActions=[action1], allowedSequences=[], pathOnly=false', () => {
+    expect(() => utils.createApiRoutes({ actions: { action1: {} }, sequences: {}, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'json' } } } } } }, 'pkg1', 'api1', ['action1'], [], false))
+      .toThrow('Action or sequence provided in api is not a web action')
+  })
+  test('pkg={ actions: { action1: { web: true } }, sequences: {}, apis: { api1: { base1: { resource1: { action1: { method: POST, response: json } } } } }, pkgName=pkg1, apiName=api1, allowedActions=[action1], allowedSequences=[], pathOnly=false', () => {
+    const res = utils.createApiRoutes({ actions: { action1: { web: true } }, sequences: {}, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'json' } } } } } }, 'pkg1', 'api1', ['action1'], [], false)
+    expect(res).toEqual([{ action: 'pkg1/action1', basepath: '/base1', name: 'api1', operation: 'POST', relpath: '/resource1', responsetype: 'json' }])
+  })
+  test('pkg={ actions: { action1: { web-export: true } }, sequences: {}, apis: { api1: { base1: { resource1: { action1: { method: POST, response: json } } } } }, pkgName=pkg1, apiName=api1, allowedActions=[action1], allowedSequences=[], pathOnly=false', () => {
+    const res = utils.createApiRoutes({ actions: { action1: { 'web-export': true } }, sequences: {}, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'json' } } } } } }, 'pkg1', 'api1', ['action1'], [], false)
+    expect(res).toEqual([{ action: 'pkg1/action1', basepath: '/base1', name: 'api1', operation: 'POST', relpath: '/resource1', responsetype: 'json' }])
+  })
+  test('pkg={ actions: {}, sequences: { action1: { web: true } }, apis: { api1: { base1: { resource1: { action1: { method: POST, response: json } } } } }, pkgName=pkg1, apiName=api1, allowedActions=[action1], allowedSequences=[], pathOnly=false', () => {
+    const res = utils.createApiRoutes({ actions: {}, sequences: { action1: { web: true } }, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'json' } } } } } }, 'pkg1', 'api1', [], ['action1'], false)
+    expect(res).toEqual([{ action: 'pkg1/action1', basepath: '/base1', name: 'api1', operation: 'POST', relpath: '/resource1', responsetype: 'json' }])
+  })
+  test('pkg={ actions: {}, sequences: { action1: { web-export: true } }, apis: { api1: { base1: { resource1: { action1: { method: POST, response: json } } } } }, pkgName=pkg1, apiName=api1, allowedActions=[action1], allowedSequences=[], pathOnly=false', () => {
+    const res = utils.createApiRoutes({ actions: {}, sequences: { action1: { 'web-export': true } }, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'json' } } } } } }, 'pkg1', 'api1', [], ['action1'], false)
+    expect(res).toEqual([{ action: 'pkg1/action1', basepath: '/base1', name: 'api1', operation: 'POST', relpath: '/resource1', responsetype: 'json' }])
+  })
+  test('pkg={ actions: {}, sequences: { action1: { web-export: true } }, apis: { api1: { base1: { resource1: { action1: { method: POST, response: html } } } } }, pkgName=pkg1, apiName=api1, allowedActions=[action1], allowedSequences=[], pathOnly=false', () => {
+    const res = utils.createApiRoutes({ actions: {}, sequences: { action1: { 'web-export': true } }, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'html' } } } } } }, 'pkg1', 'api1', [], ['action1'], false)
+    expect(res).toEqual([{ action: 'pkg1/action1', basepath: '/base1', name: 'api1', operation: 'POST', relpath: '/resource1', responsetype: 'html' }])
+  })
+  test('pkg={ actions: {}, sequences: { action1: { web-export: true } }, apis: { api1: { base1: { resource1: { action1: { method: POST, response: html } } } } }, pkgName=pkg1, apiName=api1, allowedActions=[action1], allowedSequences=[], pathOnly=true', () => {
+    const res = utils.createApiRoutes({ actions: {}, sequences: { action1: { 'web-export': true } }, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'html' } } } } } }, 'pkg1', 'api1', [], ['action1'], true)
+    expect(res).toEqual([{ basepath: '/base1', name: 'api1', relpath: '/resource1' }])
+  })
 })
 
 describe('returnUnion', () => { /* TODO */ })
 describe('checkWebFlags', () => { /* TODO */ })
 describe('createSequenceObject', () => { /* TODO */ })
-
 describe('setPaths', () => { /* TODO */ })
-
 describe('createActionObject', () => { /* TODO */ })
 
 describe('deployPackage', () => {
