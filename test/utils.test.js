@@ -248,11 +248,11 @@ describe('setManifestPath', () => {
 describe('returnDeploymentTriggerInputs', () => {
   test('deploymentPackages = {}', () => {
     const res = utils.returnDeploymentTriggerInputs({ })
-    expect(res).toEqual(res)
+    expect(res).toEqual({})
   })
   test('deploymentPackages = { pkg1: { actions: {} } }', () => {
     const res = utils.returnDeploymentTriggerInputs({ pkg1: { actions: {} } })
-    expect(res).toEqual(res)
+    expect(res).toEqual({})
   })
   test('deploymentPackages = { pkg1: { triggers: { a: { action: hello } } }, pkg2: { actions: {} } }', () => {
     const res = utils.returnDeploymentTriggerInputs({ pkg1: { triggers: { a: { action: 'hello' } } }, pkg2: { actions: {} } })
