@@ -690,7 +690,12 @@ function processPackage (packages,
   const arrSequence = []
 
   Object.keys(packages).forEach((key) => {
-    pkgAndDeps.push({ name: key })
+    // back-patch from adobe/aio-cli-plugin-runtime/commit/d455ed57b6d5c20a202b495e6a5dab477473854c
+    const objPackage = { name: key }
+    if (packages[key]['public']) {
+      objPackage['package'] = { publish: packages[key]['public'] }
+    }
+    pkgAndDeps.push(objPackage)
     // From wskdeploy repo : currently, the 'version' and 'license' values are not stored in Apache OpenWhisk, but there are plans to support it in the future
     // pkg.version = packages[key]['version']
     // pkg.license = packages[key]['license']
