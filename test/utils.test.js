@@ -165,16 +165,163 @@ describe('processInputs', () => {
     delete process.env.definedEnvVar
   })
 })
-describe('createKeyValueInput', () => { /* TODO */ })
-describe('setManifestPath', () => { /* TODO */ })
+
+describe('createKeyValueInput', () => {
+  test('input = { a: 1, b: str, c: { d: 4 }, e: [1, 2, 3] }', () => {
+    const res = utils.createKeyValueInput({ a: 1, b: 'str', c: { d: 4 }, e: [1, 2, 3] })
+    expect(res).toEqual([
+      { key: 'a', value: 1 },
+      { key: 'b', value: 'str' },
+      { key: 'c', value: { d: 4 } },
+      { key: 'e', value: [1, 2, 3] }
+    ])
+  })
+})
+
+describe('setDeploymentPath', () => {
+  let spy
+  beforeEach(() => {
+    spy = jest.spyOn(fs, 'existsSync')
+  })
+
+  afterEach(() => {
+    spy.mockRestore()
+  })
+  test('no file exists', () => {
+    const res = utils.setDeploymentPath()
+    expect(res).toEqual(undefined)
+  })
+
+  test('./deployment.yaml exists', () => {
+    spy.mockImplementation(f => f === './deployment.yaml')
+    const res = utils.setDeploymentPath()
+    expect(res).toEqual('deployment.yaml')
+  })
+
+  test('./deployment.yml exists', () => {
+    spy.mockImplementation(f => f === './deployment.yml')
+    const res = utils.setDeploymentPath()
+    expect(res).toEqual('deployment.yml')
+  })
+
+  test('./deployment.yaml and ./deployment.yml exists', () => {
+    spy.mockImplementation(f => f === './deployment.yaml' || f === './deployment.yml')
+    const res = utils.setDeploymentPath()
+    expect(res).toEqual('deployment.yaml')
+  })
+})
+
+describe('setManifestPath', () => {
+  let spy
+  beforeEach(() => {
+    spy = jest.spyOn(fs, 'existsSync')
+  })
+
+  afterEach(() => {
+    spy.mockRestore()
+  })
+
+  test('no file exists', () => {
+    expect(() => utils.setManifestPath()).toThrow('Manifest file not found')
+  })
+
+  test('./manifest.yaml exists', () => {
+    spy.mockImplementation(f => f === './manifest.yaml')
+    const res = utils.setManifestPath()
+    expect(res).toEqual('manifest.yaml')
+  })
+
+  test('./manifest.yml exists', () => {
+    spy.mockImplementation(f => f === './manifest.yml')
+    const res = utils.setManifestPath()
+    expect(res).toEqual('manifest.yml')
+  })
+
+  test('./manifest.yaml and ./manifest.yml exists', () => {
+    spy.mockImplementation(f => f === './manifest.yaml' || f === './manifest.yml')
+    const res = utils.setManifestPath()
+    expect(res).toEqual('manifest.yaml')
+  })
+})
+
+describe('returnDeploymentTriggerInputs', () => {
+  test('deploymentPackages = {}', () => {
+    const res = utils.returnDeploymentTriggerInputs({ })
+    expect(res).toEqual(res)
+  })
+  test('deploymentPackages = { pkg1: { actions: {} } }', () => {
+    const res = utils.returnDeploymentTriggerInputs({ pkg1: { actions: {} } })
+    expect(res).toEqual(res)
+  })
+  test('deploymentPackages = { pkg1: { triggers: { a: { action: hello } } }, pkg2: { actions: {} } }', () => {
+    const res = utils.returnDeploymentTriggerInputs({ pkg1: { triggers: { a: { action: 'hello' } } }, pkg2: { actions: {} } })
+    expect(res).toEqual({ a: {} })
+  })
+  test('deploymentPackages = { pkg1: { triggers: { a: { action: hello } } }, pkg2: { triggers: { another: { inputs: { a: 1, b: str, c: [1,2,3] } } } } }', () => {
+    const res = utils.returnDeploymentTriggerInputs({ pkg1: { triggers: { a: { action: 'hello' } } }, pkg2: { triggers: { another: { inputs: { a: 1, b: 'str', c: [1, 2, 3] } } } } })
+    expect(res).toEqual({ a: {}, another: { a: 1, b: 'str', c: [1, 2, 3] } })
+  })
+})
+
+describe('returnAnnotations', () => {
+  test('action = {}', () => {
+    const res = utils.returnAnnotations({})
+    expect(res).toEqual({ 'raw-http': false, 'web-export': false })
+  })
+  test('action = { inputs: { a: 123 } }', () => {
+    const res = utils.returnAnnotations({ inputs: { a: 123 } })
+    expect(res).toEqual({ 'raw-http': false, 'web-export': false })
+  })
+  test('action = { annotations: { conductor: true } }', () => {
+    const res = utils.returnAnnotations({ annotations: { conductor: true } })
+    expect(res).toEqual({ 'raw-http': false, 'web-export': false, conductor: true })
+  })
+  test('action = { web: true, annotations: { conductor: true } }', () => {
+    const res = utils.returnAnnotations({ web: true, annotations: { conductor: true } })
+    expect(res).toEqual({ 'web-export': true, conductor: true })
+  })
+  test('action = { web: raw, annotations: { conductor: true } }', () => {
+    const res = utils.returnAnnotations({ web: 'raw', annotations: { conductor: true } })
+    expect(res).toEqual({ 'raw-http': true, 'web-export': true, conductor: true })
+  })
+  test('action = { web: yes, annotations: { raw-htttp: true } }', () => {
+    const res = utils.returnAnnotations({ web: 'yes', annotations: { 'raw-http': true } })
+    expect(res).toEqual({ 'raw-http': true, 'web-export': true })
+  })
+  test('action = { web-export: true }', () => {
+    const res = utils.returnAnnotations({ 'web-export': true })
+    expect(res).toEqual({ 'web-export': true })
+  })
+  test('action = { web: yes, annotations: { final: true } }', () => {
+    const res = utils.returnAnnotations({ web: 'yes', annotations: { final: true } })
+    expect(res).toEqual({ final: true, 'web-export': true })
+  })
+  test('action = { web: false, annotations: { final: true } }', () => {
+    const res = utils.returnAnnotations({ web: false, annotations: { final: true } })
+    expect(res).toEqual({ 'web-export': false, 'raw-http': false })
+  })
+  test('action = { web: false, annotations: { raw-http: true } }', () => {
+    const res = utils.returnAnnotations({ web: false, annotations: { 'raw-http': true } })
+    expect(res).toEqual({ 'web-export': false, 'raw-http': false })
+  })
+  test('action = { web: false, annotations: { require-whisk-auth: true } }', () => {
+    const res = utils.returnAnnotations({ web: false, annotations: { 'require-whisk-auth': true } })
+    expect(res).toEqual({ 'web-export': false, 'raw-http': false })
+  })
+  test('action = { web: true, annotations: { require-whisk-auth: true } }', () => {
+    const res = utils.returnAnnotations({ web: true, annotations: { 'require-whisk-auth': true } })
+    expect(res).toEqual({ 'web-export': true, 'require-whisk-auth': true })
+  })
+})
+
+describe('createApiRoutes', () => { /* TODO */ })
+
 describe('returnUnion', () => { /* TODO */ })
-describe('returnDeploymentTriggerInputs', () => { /* TODO */ })
-describe('setDeploymentPath', () => { /* TODO */ })
+
 describe('createActionObject', () => { /* TODO */ })
 describe('checkWebFlags', () => { /* TODO */ })
 describe('createSequenceObject', () => { /* TODO */ })
-describe('createApiRoutes', () => { /* TODO */ })
-describe('returnAnnotations', () => { /* TODO */ })
+
 describe('setPaths', () => { /* TODO */ })
 
 describe('deployPackage', () => {

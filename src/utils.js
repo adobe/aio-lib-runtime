@@ -322,20 +322,23 @@ function returnDeploymentTriggerInputs (deploymentPackages) {
  * @param action
  */
 function returnAnnotations (action) {
-  let annotationParams = {}
+  const annotationParams = {}
+
+  // common annotations
 
   if (action.annotations && action.annotations.conductor !== undefined) {
     annotationParams.conductor = action.annotations.conductor
   }
 
+  // web related annotations
+
   if (action.web !== undefined) {
-    annotationParams = checkWebFlags(action.web)
+    Object.assign(annotationParams, checkWebFlags(action.web))
   } else if (action['web-export'] !== undefined) {
-    annotationParams = checkWebFlags(action['web-export'])
+    Object.assign(annotationParams, checkWebFlags(action['web-export']))
   } else {
     annotationParams['web-export'] = false
     annotationParams['raw-http'] = false
-    return annotationParams
   }
 
   if (action.annotations && action.annotations['require-whisk-auth'] !== undefined) {
@@ -943,6 +946,7 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
  * @param entities
  * @param ow
  * @param logger
+ * @param imsOrgId
  */
 async function deployPackage (entities, ow, logger, imsOrgId) {
   const opts = await ow.actions.client.options
@@ -1040,6 +1044,7 @@ async function undeployPackage (entities, ow, logger) {
  * @param entities
  * @param ow
  * @param logger
+ * @param imsOrgId
  * @param deleteEntities
  */
 async function syncProject (projectName, manifestPath, manifestContent, entities, ow, logger, imsOrgId, deleteEntities = true) {
