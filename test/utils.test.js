@@ -122,7 +122,49 @@ describe('createComponentsfromSequence', () => {
   })
 })
 
-describe('processInputs', () => { /* TODO */ })
+describe('processInputs', () => {
+  test('input = {}, params = {}', () => {
+    const res = utils.processInputs({}, {})
+    expect(res).toEqual({})
+  })
+  test('input = { a: 123 }, params = {}', () => {
+    const res = utils.processInputs({ a: 123 }, {})
+    expect(res).toEqual({ a: 123 })
+  })
+  test('input = { a: 123, b: 456 }, params = { a: 0, c: 789 }', () => {
+    const res = utils.processInputs({ a: 123, b: 456 }, { a: 0 })
+    expect(res).toEqual({ a: 0, b: 456 })
+  })
+  test('input = { I: { am: an object } }, params = { I: { am: another object } }', () => {
+    const res = utils.processInputs({ I: { am: 'an object' } }, { I: { am: 'another object' } })
+    expect(res).toEqual({ I: { am: 'another object' } })
+  })
+  test('input = { I : { value: am } }, params = { }', () => {
+    const res = utils.processInputs({ I: { value: 'am' } }, { })
+    expect(res).toEqual({ I: 'am' })
+  })
+  test('input = { I : { default: am } }, params = { }', () => {
+    const res = utils.processInputs({ I: { default: 'am' } }, { })
+    expect(res).toEqual({ I: 'am' })
+  })
+  test('input = { I : { value: am } }, params = { I : { value: nitpicking } }', () => {
+    // note: is this relevant?
+    const res = utils.processInputs({ I: { value: 'am' } }, { I: { value: 'nitpicking' } })
+    expect(res).toEqual({ I: { value: 'nitpicking' } })
+  })
+  test('input = { a : string, one : number, an: integer }, params = { }', () => {
+    const res = utils.processInputs({ a: 'string', one: 'number', an: 'integer' }, { })
+    expect(res).toEqual({ a: '', one: 0, an: 0 })
+  })
+  // eslint-disable-next-line no-template-curly-in-string
+  test('input = { an: $undefEnvVar, a: $definedEnvVar, another: $definedEnvVar, the: ${definedEnvVar}, one: ${ definedEnvVar  } }, params = { a: 123 }', () => {
+    process.env.definedEnvVar = 'giraffe'
+    // eslint-disable-next-line no-template-curly-in-string
+    const res = utils.processInputs({ an: '$undefEnvVar', a: '$definedEnvVar', another: '$definedEnvVar', the: '${definedEnvVar}', one: '${ definedEnvVar  }' }, { a: 123 })
+    expect(res).toEqual({ a: 123, another: 'giraffe', an: '', the: 'giraffe', one: 'giraffe' })
+    delete process.env.definedEnvVar
+  })
+})
 describe('createKeyValueInput', () => { /* TODO */ })
 describe('setManifestPath', () => { /* TODO */ })
 describe('returnUnion', () => { /* TODO */ })

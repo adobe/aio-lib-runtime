@@ -241,9 +241,7 @@ function processInputs (input, params) {
     } else {
       if (typeof input[key] === 'object') {
         for (const val in input[key]) {
-          if (val === 'value') {
-            input[key] = input[key][val]
-          } else if (val === 'default') {
+          if (val === 'value' || val === 'default') {
             input[key] = input[key][val]
           }
         }
@@ -256,7 +254,7 @@ function processInputs (input, params) {
         } else if (typeof input[key] === 'string' && input[key].startsWith('$')) {
           let val = input[key].substr(1)
           if (val.startsWith('{')) {
-            val = val.slice(1, -1)
+            val = val.slice(1, -1).trim()
           }
           input[key] = process.env[val] || ''
         }
