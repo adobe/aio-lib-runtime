@@ -389,46 +389,57 @@ describe('setPaths', () => {
   test('with manifest', async () => {
     global.fakeFileSystem.addJson({ 'manifest.yml': 'packages: testpackage' })
     const res = utils.setPaths({ manifest: '/manifest.yml' })
-    expect(res).toEqual(expect.objectContaining({ packages: 'testpackage'}))
+    expect(res).toEqual(expect.objectContaining({ packages: 'testpackage' }))
   })
   test('with manifest (including project)', async () => {
-    global.fakeFileSystem.addJson({ 'manifest.yml': `
+    global.fakeFileSystem.addJson({
+      'manifest.yml': `
     project:
       name: testproject
-      packages: testpackage`})
+      packages: testpackage`
+    })
     const res = utils.setPaths({ manifest: '/manifest.yml' })
-    expect(res).toEqual(expect.objectContaining({ projectName: 'testproject', packages: 'testpackage'}))
+    expect(res).toEqual(expect.objectContaining({ projectName: 'testproject', packages: 'testpackage' }))
   })
   test('with manifest (including project with no name)', async () => {
-    global.fakeFileSystem.addJson({ 'manifest.yml': `
+    global.fakeFileSystem.addJson({
+      'manifest.yml': `
     project:
-      packages: testpackage`})
+      packages: testpackage`
+    })
     const res = utils.setPaths({ manifest: '/manifest.yml' })
-    expect(res).toEqual(expect.objectContaining({ projectName: '', packages: 'testpackage'}))
+    expect(res).toEqual(expect.objectContaining({ projectName: '', packages: 'testpackage' }))
   })
   test('with manifest and deployment', async () => {
-    global.fakeFileSystem.addJson({ 'manifest.yml': `
+    global.fakeFileSystem.addJson({
+      'manifest.yml': `
     project:
       name: testproject
-      packages: testpackage`, 'deployment.yml': `
+      packages: testpackage`,
+      'deployment.yml': `
     project:
       name: testproject
-      packages: testpackage` })
+      packages: testpackage`
+    })
     const res = utils.setPaths({ manifest: '/manifest.yml', deployment: '/deployment.yml' })
-    expect(res).toEqual(expect.objectContaining({ "deploymentPackages": "testpackage", 
-                "deploymentTriggers": {}, 
-                "manifestContent": {"project": {"name": "testproject", "packages": "testpackage"}}, 
-                "manifestPath": "/manifest.yml", 
-                "packages": "testpackage", 
-                "projectName": "testproject"}))
+    expect(res).toEqual(expect.objectContaining({
+      deploymentPackages: 'testpackage',
+      deploymentTriggers: {},
+      manifestContent: { project: { name: 'testproject', packages: 'testpackage' } },
+      manifestPath: '/manifest.yml',
+      packages: 'testpackage',
+      projectName: 'testproject'
+    }))
   })
   test('with manifest and deployment using different project names', async () => {
-    global.fakeFileSystem.addJson({ 'manifest.yml': `
+    global.fakeFileSystem.addJson({
+      'manifest.yml': `
     project:
-      name: testproject`, 
-    'deployment.yml': `
+      name: testproject`,
+      'deployment.yml': `
     project:
-      packages: testpackage` })
+      packages: testpackage`
+    })
     expect(() => utils.setPaths({ manifest: '/manifest.yml', deployment: '/deployment.yml' }))
       .toThrowError('The project name in the deployment file does not match the project name in the manifest file')
   })
@@ -577,51 +588,51 @@ describe('processPackage', () => {
   })
 
   test('shared package', async () => {
-    const res = utils.processPackage({ pkg1: { public: true}}, {}, {}, {}, false, {})
-    expect(res).toEqual(expect.objectContaining({pkgAndDeps: [{ name: 'pkg1', package: { publish: true} }]}))
+    const res = utils.processPackage({ pkg1: { public: true } }, {}, {}, {}, false, {})
+    expect(res).toEqual(expect.objectContaining({ pkgAndDeps: [{ name: 'pkg1', package: { publish: true } }] }))
   })
 
   test('dependency with no location property', async () => {
-    expect(() => utils.processPackage({ pkg1: { dependencies: { mypackage: {}}}}, {}, {}, {}, false, {}))
-    .toThrow('Invalid or missing property "location" in the manifest for this action: mypackage')
+    expect(() => utils.processPackage({ pkg1: { dependencies: { mypackage: {} } } }, {}, {}, {}, false, {}))
+      .toThrow('Invalid or missing property "location" in the manifest for this action: mypackage')
   })
 
   test('dependency with inputs', async () => {
-    const res = utils.processPackage({ pkg1: { dependencies: { mypackage: { location: '/adobe/auth', inputs: { key1: 'value1' }}}}}, {}, {}, {}, false, {})
+    const res = utils.processPackage({ pkg1: { dependencies: { mypackage: { location: '/adobe/auth', inputs: { key1: 'value1' } } } } }, {}, {}, {}, false, {})
     expect(res).toEqual(expect.objectContaining({
       pkgAndDeps: [
-        {name: "pkg1"},
-        { 
-        name: 'mypackage',
-        package: {
-          binding: {
-            namespace: 'adobe',
-            name: 'auth'
-          },
-          parameters: [{
-            key: 'key1',
-            value: 'value1'
-          }]
-        }
-      }]
+        { name: 'pkg1' },
+        {
+          name: 'mypackage',
+          package: {
+            binding: {
+              namespace: 'adobe',
+              name: 'auth'
+            },
+            parameters: [{
+              key: 'key1',
+              value: 'value1'
+            }]
+          }
+        }]
     }))
   })
 
   test('dependencies with deployment inputs', async () => {
-    const deploymentPackages = { pkg1: { dependencies: { mydependencypkg: { inputs: { key1: 'value1' }}}}}
-    const packages = { pkg1: { dependencies: { mydependencypkg: { location: '/adobe/auth' }}}}
+    const deploymentPackages = { pkg1: { dependencies: { mydependencypkg: { inputs: { key1: 'value1' } } } } }
+    const packages = { pkg1: { dependencies: { mydependencypkg: { location: '/adobe/auth' } } } }
     const res = utils.processPackage(packages, deploymentPackages, {}, {})
     expect(res.pkgAndDeps).toEqual(expect.arrayContaining([{
-      "name": "mydependencypkg", 
-      "package": {
-        "binding": {
-          "name": "auth", 
-          "namespace": "adobe"
-        }, 
-        "parameters": [
+      name: 'mydependencypkg',
+      package: {
+        binding: {
+          name: 'auth',
+          namespace: 'adobe'
+        },
+        parameters: [
           {
-            "key": "key1", 
-            "value": "value1"
+            key: 'key1',
+            value: 'value1'
           }
         ]
       }
@@ -630,28 +641,28 @@ describe('processPackage', () => {
 
   test('triggers with deploymentTriggerInputs', async () => {
     const deploymenTriggerInputs = { a: {}, another: { a: 1, b: 'str', c: [1, 2, 3] } }
-    const res = utils.processPackage({ pkg1: { triggers: { another: {}}}}, {}, deploymenTriggerInputs, {})
+    const res = utils.processPackage({ pkg1: { triggers: { another: {} } } }, {}, deploymenTriggerInputs, {})
     expect(res.triggers[0].name).toEqual('another')
-    expect(res.triggers[0].trigger.parameters).toEqual([{"key": "a", "value": 1}, {"key": "b", "value": "str"}, {"key": "c", "value": [1, 2, 3]}])
+    expect(res.triggers[0].trigger.parameters).toEqual([{ key: 'a', value: 1 }, { key: 'b', value: 'str' }, { key: 'c', value: [1, 2, 3] }])
   })
 
   test('triggers with no inputs (codecov)', async () => {
-    const res = utils.processPackage({ pkg1: { triggers: { mytrigger: {}}}}, {}, {}, {})
-    expect(res.triggers).toEqual([{"name": "mytrigger", "trigger": {}}])
+    const res = utils.processPackage({ pkg1: { triggers: { mytrigger: {} } } }, {}, {}, {})
+    expect(res.triggers).toEqual([{ name: 'mytrigger', trigger: {} }])
   })
 
   test('rule with no action', async () => {
-    expect(() => utils.processPackage({ pkg1: { rules: { myrule: {}}}}, {}, {}, {}, false, {}))
+    expect(() => utils.processPackage({ pkg1: { rules: { myrule: {} } } }, {}, {}, {}, false, {}))
       .toThrow('Trigger and Action are both required for rule creation')
   })
 
   test('rule with full path of action', async () => {
-    expect(() => utils.processPackage({ pkg1: { rules: { myrule: { action: '/ns/p/action', trigger: 'mytrigger' }}}}, {}, {}, {}, false, {}))
+    expect(() => utils.processPackage({ pkg1: { rules: { myrule: { action: '/ns/p/action', trigger: 'mytrigger' } } } }, {}, {}, {}, false, {}))
       .toThrow('Action/Trigger provided in the rule not found in manifest file')
   })
 
   test('rule with non-existent action', async () => {
-    expect(() => utils.processPackage({ pkg1: { rules: { myrule: { action: 'non-existent', trigger: 'non-existent' }}}}, {}, {}, {}, false, {}))
+    expect(() => utils.processPackage({ pkg1: { rules: { myrule: { action: 'non-existent', trigger: 'non-existent' } } } }, {}, {}, {}, false, {}))
       .toThrow('Action/Trigger provided in the rule not found in manifest file')
   })
   // the adobe auth annotation is a temporarily implemented on the client side
@@ -1135,10 +1146,10 @@ describe('findProjectHashonServer', () => {
   test('default projectHash (no whisk-managed annotation in existing packages, actions, triggers, rules)', async () => {
     const testProjectName = 'ThisIsTheNameOfTheProject'
     // const resultObject = [{ annotations: [{ key: 'whisk-managed', value: { projectName: testProjectName, projectHash: 'projectHash' } }] }]
-    const pkgList = ow.mockResolved('packages.list', [{ annotations: [{ key: 'not-whisk-managed', value: {}}] }])
-    const actList = ow.mockResolved('actions.list', [{ annotations: [{ key: 'not-whisk-managed', value: {}}] }])
-    const trgList = ow.mockResolved('triggers.list', [{ annotations: [{ key: 'not-whisk-managed', value: {}}] }])
-    const rlzList = ow.mockResolved('rules.list', [{ annotations: [{ key: 'not-whisk-managed', value: {}}] }])
+    const pkgList = ow.mockResolved('packages.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
+    const actList = ow.mockResolved('actions.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
+    const trgList = ow.mockResolved('triggers.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
+    const rlzList = ow.mockResolved('rules.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
     const result = await utils.findProjectHashonServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).toHaveBeenCalled()
