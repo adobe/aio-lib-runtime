@@ -386,9 +386,50 @@ describe('setPaths', () => {
       .toThrowError('no such file or directory')
   })
   test('with manifest', async () => {
-    global.fakeFileSystem.addJson({ 'manifest.yml': 'some yaml here' })
-    expect(() => utils.setPaths())
-      .toThrowError('Manifest file not found')
+    global.fakeFileSystem.addJson({ 'manifest.yml': 'packages: testpackage' })
+    const res = utils.setPaths({ manifest: '/manifest.yml' })
+    expect(res).toEqual(expect.objectContaining({ packages: 'testpackage'}))
+  })
+  test('with manifest (including project)', async () => {
+    global.fakeFileSystem.addJson({ 'manifest.yml': `
+    project:
+      name: testproject
+      packages: testpackage`})
+    const res = utils.setPaths({ manifest: '/manifest.yml' })
+    expect(res).toEqual(expect.objectContaining({ projectName: 'testproject', packages: 'testpackage'}))
+  })
+  test('with manifest (including project with no name)', async () => {
+    global.fakeFileSystem.addJson({ 'manifest.yml': `
+    project:
+      packages: testpackage`})
+    const res = utils.setPaths({ manifest: '/manifest.yml' })
+    expect(res).toEqual(expect.objectContaining({ projectName: '', packages: 'testpackage'}))
+  })
+  test('with manifest and deployment', async () => {
+    global.fakeFileSystem.addJson({ 'manifest.yml': `
+    project:
+      name: testproject
+      packages: testpackage`, 'deployment.yml': `
+    project:
+      name: testproject
+      packages: testpackage` })
+    const res = utils.setPaths({ manifest: '/manifest.yml', deployment: '/deployment.yml' })
+    expect(res).toEqual(expect.objectContaining({ "deploymentPackages": "testpackage", 
+                "deploymentTriggers": {}, 
+                "manifestContent": {"project": {"name": "testproject", "packages": "testpackage"}}, 
+                "manifestPath": "/manifest.yml", 
+                "packages": "testpackage", 
+                "projectName": "testproject"}))
+  })
+  test('with manifest and deployment using different project names', async () => {
+    global.fakeFileSystem.addJson({ 'manifest.yml': `
+    project:
+      name: testproject`, 
+    'deployment.yml': `
+    project:
+      packages: testpackage` })
+    expect(() => utils.setPaths({ manifest: '/manifest.yml', deployment: '/deployment.yml' }))
+      .toThrowError('The project name in the deployment file does not match the project name in the manifest file')
   })
 })
 
