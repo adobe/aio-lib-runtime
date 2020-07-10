@@ -57,7 +57,9 @@ const mockOpenWhisk = {
   },
   mockResolvedProperty: function (propertyName, propertyValue) {
     try {
-      propertyValue = JSON.parse(propertyValue)
+      // this could be a stringified object, so attempt to convert it first
+      const retValue = JSON.parse(propertyValue)
+      return this.mockProp(propertyName, retValue)
     } catch (e) { }
     return this.mockProp(propertyName, propertyValue)
   },
