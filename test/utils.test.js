@@ -469,6 +469,43 @@ describe('createActionObject', () => {
       .not.toThrowError()
   })
 
+  test('action js - runtime prop w/ docker, no main', () => {
+    const spy = jest.spyOn(fs, 'readFileSync')
+    spy.mockImplementationOnce(() => 'fake source code')
+    const actionObj = { name: 'fake', main: 'main' }
+    expect(() => utils.createActionObject({
+      function: 'fake.js',
+      runtime: 'something',
+      docker: 'docker',
+      limits: { concurrency: 12 }
+    }, actionObj))
+      .not.toThrowError()
+  })
+
+  test('action js - runtime prop w/ docker, no main, no limits', () => {
+    const spy = jest.spyOn(fs, 'readFileSync')
+    spy.mockImplementationOnce(() => 'fake source code')
+    const actionObj = { name: 'fake', main: 'main' }
+    expect(() => utils.createActionObject({
+      function: 'fake.js',
+      runtime: 'something',
+      docker: 'docker',
+      limits: {}
+    }, actionObj))
+      .not.toThrowError()
+  })
+
+  test('action js -  no runtime prop, no docker, yes main', () => {
+    const spy = jest.spyOn(fs, 'readFileSync')
+    spy.mockImplementationOnce(() => 'fake source code')
+    const actionObj = { name: 'fake', main: 'main' }
+    expect(() => utils.createActionObject({
+      function: 'fake.js',
+      main: 'main'
+    }, actionObj))
+      .not.toThrowError()
+  })
+
   test('action js - runtime prop no docker', () => {
     const spy = jest.spyOn(fs, 'readFileSync')
     spy.mockImplementationOnce(() => 'fake source code')
@@ -577,6 +614,21 @@ describe('undeployPackage', () => {
 })
 
 describe('processPackage', () => {
+  const HEADLESS_VALIDATOR = '/adobeio/shared-validators-v1/headless'
+  const basicPackage = {
+    pkg1: {
+      actions: {
+        theaction: {
+          function: 'fake.js',
+          web: 'yes',
+          annotations: {
+            'require-adobe-auth': true
+          }
+        }
+      }
+    }
+  }
+
   test('basic manifest', async () => {
     const entities = utils.processPackage(JSON.parse(fs.readFileSync('/basic_manifest.json')), {}, {}, {})
     expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/basic_manifest_res.json')))
@@ -639,6 +691,36 @@ describe('processPackage', () => {
     }]))
   })
 
+  test('dependencies with deployment (empty) inputs', async () => {
+    const deploymentPackages = { pkg1: { dependencies: { mydependencypkg: { inputs: null } } } }
+    const packages = { pkg1: { dependencies: { mydependencypkg: { location: '/adobe/auth' } } } }
+    const res = utils.processPackage(packages, deploymentPackages, {}, {})
+    expect(res.pkgAndDeps).toEqual(expect.arrayContaining([{
+      name: 'mydependencypkg',
+      package: {
+        binding: {
+          name: 'auth',
+          namespace: 'adobe'
+        }
+      }
+    }]))
+  })
+
+  test('dependencies with action (empty) inputs', async () => {
+    const deploymentPackages = { pkg1: { actions: { mydependencypkg: { inputs: null } } } }
+    const packages = { pkg1: { dependencies: { mydependencypkg: { location: '/adobe/auth' } } } }
+    const res = utils.processPackage(packages, deploymentPackages, {}, {})
+    expect(res.pkgAndDeps).toEqual(expect.arrayContaining([{
+      name: 'mydependencypkg',
+      package: {
+        binding: {
+          name: 'auth',
+          namespace: 'adobe'
+        }
+      }
+    }]))
+  })
+
   test('triggers with deploymentTriggerInputs', async () => {
     const deploymenTriggerInputs = { a: {}, another: { a: 1, b: 'str', c: [1, 2, 3] } }
     const res = utils.processPackage({ pkg1: { triggers: { another: {} } } }, {}, deploymenTriggerInputs, {})
@@ -668,23 +750,9 @@ describe('processPackage', () => {
   // the adobe auth annotation is a temporarily implemented on the client side
   // simply remove this test when the feature will be moved server side, to I/O Runtime
   test('manifest with adobe auth annotation', () => {
-    const HEADLESS_VALIDATOR = '/adobeio/shared-validators-v1/headless'
     const spy = jest.spyOn(fs, 'readFileSync')
     const fakeCode = 'fake action code'
     spy.mockImplementation(() => fakeCode)
-    const basicPackage = {
-      pkg1: {
-        actions: {
-          theaction: {
-            function: 'fake.js',
-            web: 'yes',
-            annotations: {
-              'require-adobe-auth': true
-            }
-          }
-        }
-      }
-    }
 
     // does not rewrite if apihost is not 'https://adobeioruntime.net'
     let res = utils.processPackage(basicPackage, {}, {}, {}, false, {})
@@ -794,12 +862,18 @@ describe('processPackage', () => {
       triggers: []
     })
 
-    // 1 action using the annotation + rewrite deployment package
-    const deploymentPackages = { pkg1: { actions: { theaction: { inputs: { a: 1 } } } } }
-    res = utils.processPackage(basicPackage, deploymentPackages, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    spy.mockRestore()
+  })
+
+  test('1 action using the annotation + rewrite deployment package', () => {
+    const spy = jest.spyOn(fs, 'readFileSync')
+    const fakeCode = 'fake action code'
+    spy.mockImplementation(() => fakeCode)
+    const deploymentPackages = { pkg1: { actions: { theaction: { inputs: { a: 34 } } } } }
+    const res = utils.processPackage(basicPackage, deploymentPackages, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
     expect(res).toEqual({
       actions: [
-        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode, params: { a: 1 } },
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode, params: { a: 34 } },
         { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
       ],
       apis: [],
@@ -807,7 +881,25 @@ describe('processPackage', () => {
       rules: [],
       triggers: []
     })
+    spy.mockRestore()
+  })
 
+  test('action using the annotation + rewrite deployment package => action has empty imputs', () => {
+    const spy = jest.spyOn(fs, 'readFileSync')
+    const fakeCode = 'fake action code'
+    spy.mockImplementation(() => fakeCode)
+    const deploymentPackages = { pkg1: { actions: { theaction: { inputs: null } } } }
+    const res = utils.processPackage(basicPackage, deploymentPackages, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
     spy.mockRestore()
   })
 })
@@ -853,6 +945,8 @@ describe('syncProject', () => {
     await expect(utils.syncProject(projectName, manifestPath, manifestContent, entities, ow, logger, imsOrgId, false)).resolves.not.toThrow()
     // deleteEntities = true
     await expect(utils.syncProject(projectName, manifestPath, manifestContent, entities, ow, logger, imsOrgId, true)).resolves.not.toThrow()
+    // deleteEntities = null
+    await expect(utils.syncProject(projectName, manifestPath, manifestContent, entities, ow, logger, imsOrgId)).resolves.not.toThrow()
   })
 })
 
@@ -907,6 +1001,85 @@ describe('getProjectEntities', () => {
 
     const entities = await utils.getProjectEntities(projectName, false, ow)
     expect(entities.actions).toEqual([expectedAction])
+    expect(entities.triggers).toEqual([])
+    expect(entities.rules).toEqual([])
+    expect(entities.pkgAndDeps).toEqual([])
+    expect(entities.apis).toEqual([])
+  })
+
+  test('non-split with namespace', async () => {
+    const action = {
+      namespace: '_',
+      name: 'bar',
+      annotations: [
+        {
+          key: 'whisk-managed',
+          value: {
+            projectHash,
+            projectName
+          }
+        }
+      ]
+    }
+
+    ow.mockResolved('actions.list', [action])
+    ow.mockResolved('triggers.list', [])
+    ow.mockResolved('rules.list', [])
+    ow.mockResolved('packages.list', [])
+
+    const expectedAction = JSON.parse(JSON.stringify(action)) // clone
+    expectedAction.name = 'bar'
+
+    const entities = await utils.getProjectEntities(projectName, false, ow)
+    expect(entities.actions).toEqual([expectedAction])
+    expect(entities.triggers).toEqual([])
+    expect(entities.rules).toEqual([])
+    expect(entities.pkgAndDeps).toEqual([])
+    expect(entities.apis).toEqual([])
+  })
+
+  test('non-split with namespace, whiskManaged:null', async () => {
+    const action = {
+      namespace: '_',
+      name: 'bar',
+      annotations: [
+        {
+          key: 'whisk-UNmanaged',
+          value: 'some-value'
+        }
+      ]
+    }
+
+    ow.mockResolved('actions.list', [action])
+    ow.mockResolved('triggers.list', [])
+    ow.mockResolved('rules.list', [])
+    ow.mockResolved('packages.list', [])
+
+    const expectedAction = JSON.parse(JSON.stringify(action)) // clone
+    expectedAction.name = 'bar'
+
+    const entities = await utils.getProjectEntities(projectName, false, ow)
+    expect(entities.actions).toEqual([])
+    expect(entities.triggers).toEqual([])
+    expect(entities.rules).toEqual([])
+    expect(entities.pkgAndDeps).toEqual([])
+    expect(entities.apis).toEqual([])
+  })
+
+  test('non-split with namespace, no annotations', async () => {
+    const action = {
+      namespace: '_',
+      name: 'bar',
+      annotations: []
+    }
+
+    ow.mockResolved('actions.list', [action])
+    ow.mockResolved('triggers.list', [])
+    ow.mockResolved('rules.list', [])
+    ow.mockResolved('packages.list', [])
+
+    const entities = await utils.getProjectEntities(projectName, false, ow)
+    expect(entities.actions).toEqual([])
     expect(entities.triggers).toEqual([])
     expect(entities.rules).toEqual([])
     expect(entities.pkgAndDeps).toEqual([])
@@ -985,6 +1158,30 @@ describe('addManagedProjectAnnotations', () => {
     expect(entities.triggers[0].trigger.annotations[0]).toEqual(managedAnnotation)
   })
 
+  test('one package, action, and trigger ( package has empty annotations )', () => {
+    const pkg = {
+      annotations: null
+    }
+    const action = {
+      annotations: {}
+    }
+    const trigger = {
+      trigger: {
+        annotations: [] // has annotations (coverage)
+      }
+    }
+    const entities = {
+      pkgAndDeps: [pkg], // one package
+      actions: [action], // one action
+      triggers: [trigger] // one trigger
+    }
+
+    utils.addManagedProjectAnnotations(entities, manifestPath, projectName, projectHash)
+    expect(entities.pkgAndDeps[0].annotations['whisk-managed']).toEqual(expectedAnnotation)
+    expect(entities.actions[0].annotations['whisk-managed']).toEqual(expectedAnnotation)
+    expect(entities.triggers[0].trigger.annotations[0]).toEqual(managedAnnotation)
+  })
+
   test('one package, action, and trigger (trigger has no annotations)', () => {
     const pkg = {
       annotations: {}
@@ -1014,6 +1211,11 @@ describe('printLogs', () => {
     const mockLogger = jest.fn()
     utils.printLogs(activationLog, false, mockLogger)
     expect(mockLogger).toHaveBeenCalledWith('2020-06-25T05:50:23.641Z       stdout: logged from action code')
+  })
+  test('activation logs - with no logs', () => {
+    const mockLogger = jest.fn()
+    utils.printLogs(0, false, mockLogger)
+    expect(mockLogger).not.toHaveBeenCalled()
   })
   test('activation logs with --strip', () => {
     const mockLogger = jest.fn()

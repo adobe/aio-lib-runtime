@@ -196,10 +196,9 @@ function createComponentsfromSequence (sequenceAction) {
   const objSequence = {}
   objSequence.kind = 'sequence'
   // The components array requires fully qualified names [/namespace/package_name/action_name] of all the actions passed as sequence
-  sequenceAction = sequenceAction.map(component => {
+  objSequence.components = sequenceAction.map(component => {
     return fqn(component)
   })
-  objSequence.components = sequenceAction
   return objSequence
 }
 
@@ -233,16 +232,18 @@ function processInputs (input, params) {
     number: 0
   }
 
+  const output = Object.assign({}, input)
+
   // check if the value of a key is an object (Advanced parameters)
   for (const key in input) {
     // eslint: see https://eslint.org/docs/rules/no-prototype-builtins
     if (Object.prototype.hasOwnProperty.call(params, key)) {
-      input[key] = params[key]
+      output[key] = params[key]
     } else {
       if (typeof input[key] === 'object') {
         for (const val in input[key]) {
           if (val === 'value' || val === 'default') {
-            input[key] = input[key][val]
+            output[key] = input[key][val]
           }
         }
       } else {
@@ -250,19 +251,19 @@ function processInputs (input, params) {
         // For example: height:'integer' or height:'number' is changed to height:0 (Typed parameters)
         // eslint: see https://eslint.org/docs/rules/no-prototype-builtins
         if (Object.prototype.hasOwnProperty.call(dictDataTypes, input[key])) {
-          input[key] = dictDataTypes[input[key]]
+          output[key] = dictDataTypes[input[key]]
         } else if (typeof input[key] === 'string' && input[key].startsWith('$')) {
           let val = input[key].substr(1)
           if (val.startsWith('{')) {
             val = val.slice(1, -1).trim()
           }
-          input[key] = process.env[val] || ''
+          output[key] = process.env[val] || ''
         }
       }
     }
   }
 
-  return input
+  return output
 }
 
 /**
@@ -1096,7 +1097,7 @@ async function getProjectEntities (project, isProjectHash, ow) {
     for (const entity of entityListResult) {
       if (entity.annotations.length > 0) {
         const whiskManaged = entity.annotations.find(a => a.key === 'whisk-managed')
-        if (whiskManaged !== undefined && whiskManaged.value[paramtobeChecked] === project) {
+        if (whiskManaged && whiskManaged.value && whiskManaged.value[paramtobeChecked] === project) {
           if (id === 'actions') {
             // get action package name
             const nsAndPkg = entity.namespace.split('/')
