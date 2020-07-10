@@ -1,0 +1,10 @@
+{ "pkgAndDeps": [ { "name": "hello" }, { "name": "mypackage" } ],
+        "apis":
+         [ { "name": "hello-world", "basepath": "/hello", "relpath": "/world" } ],
+        "triggers": [ { "name": "hellotrigger" } ],
+        "rules": [ { "name": "reportEveryMinute" } ],
+        "actions":
+         [ { "name": "hello/helloAction" },
+           { "name": "hello/goodbyeAction" },
+           { "name": "hello/my_sequence" },
+           { "name": "hello/headless_sequence" } ] }

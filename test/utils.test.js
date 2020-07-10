@@ -34,7 +34,8 @@ beforeEach(() => {
     'hello.js': global.fixtureFile('/deploy/hello.js'),
     'goodbye.js': global.fixtureFile('/deploy/goodbye.js'),
     'basic_manifest.json': global.fixtureFile('/deploy/basic_manifest.json'),
-    'basic_manifest_res.json': global.fixtureFile('/deploy/basic_manifest_res.json')
+    'basic_manifest_res.json': global.fixtureFile('/deploy/basic_manifest_res.json'),
+    'basic_manifest_res_namesonly.json': global.fixtureFile('/deploy/basic_manifest_res_namesonly.json')
   }
   global.fakeFileSystem.addJson(json)
 })
@@ -570,6 +571,11 @@ describe('processPackage', () => {
     expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/basic_manifest_res.json')))
   })
 
+  test('basic manifest with namesOnly flag', async () => {
+    const entities = utils.processPackage(JSON.parse(fs.readFileSync('/basic_manifest.json')), {}, {}, {}, true, {})
+    expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/basic_manifest_res_namesonly.json')))
+  })
+
   test('shared package', async () => {
     const res = utils.processPackage({ pkg1: { public: true}}, {}, {}, {}, false, {})
     expect(res).toEqual(expect.objectContaining({pkgAndDeps: [{ name: 'pkg1', package: { publish: true} }]}))
@@ -601,6 +607,53 @@ describe('processPackage', () => {
     }))
   })
 
+  test('dependencies with deployment inputs', async () => {
+    const deploymentPackages = { pkg1: { dependencies: { mydependencypkg: { inputs: { key1: 'value1' }}}}}
+    const packages = { pkg1: { dependencies: { mydependencypkg: { location: '/adobe/auth' }}}}
+    const res = utils.processPackage(packages, deploymentPackages, {}, {})
+    expect(res.pkgAndDeps).toEqual(expect.arrayContaining([{
+      "name": "mydependencypkg", 
+      "package": {
+        "binding": {
+          "name": "auth", 
+          "namespace": "adobe"
+        }, 
+        "parameters": [
+          {
+            "key": "key1", 
+            "value": "value1"
+          }
+        ]
+      }
+    }]))
+  })
+
+  test('triggers with deploymentTriggerInputs', async () => {
+    const deploymenTriggerInputs = { a: {}, another: { a: 1, b: 'str', c: [1, 2, 3] } }
+    const res = utils.processPackage({ pkg1: { triggers: { another: {}}}}, {}, deploymenTriggerInputs, {})
+    expect(res.triggers[0].name).toEqual('another')
+    expect(res.triggers[0].trigger.parameters).toEqual([{"key": "a", "value": 1}, {"key": "b", "value": "str"}, {"key": "c", "value": [1, 2, 3]}])
+  })
+
+  test('triggers with no inputs (codecov)', async () => {
+    const res = utils.processPackage({ pkg1: { triggers: { mytrigger: {}}}}, {}, {}, {})
+    expect(res.triggers).toEqual([{"name": "mytrigger", "trigger": {}}])
+  })
+
+  test('rule with no action', async () => {
+    expect(() => utils.processPackage({ pkg1: { rules: { myrule: {}}}}, {}, {}, {}, false, {}))
+      .toThrow('Trigger and Action are both required for rule creation')
+  })
+
+  test('rule with full path of action', async () => {
+    expect(() => utils.processPackage({ pkg1: { rules: { myrule: { action: '/ns/p/action', trigger: 'mytrigger' }}}}, {}, {}, {}, false, {}))
+      .toThrow('Action/Trigger provided in the rule not found in manifest file')
+  })
+
+  test('rule with non-existent action', async () => {
+    expect(() => utils.processPackage({ pkg1: { rules: { myrule: { action: 'non-existent', trigger: 'non-existent' }}}}, {}, {}, {}, false, {}))
+      .toThrow('Action/Trigger provided in the rule not found in manifest file')
+  })
   // the adobe auth annotation is a temporarily implemented on the client side
   // simply remove this test when the feature will be moved server side, to I/O Runtime
   test('manifest with adobe auth annotation', () => {
@@ -1049,13 +1102,43 @@ describe('getProjectHash', () => {
 })
 
 describe('findProjectHashonServer', () => {
-  test('default projectHash (not found anywhere in packages, actions, triggers, rules)', async () => {
+  test('default projectHash (no packages, actions, triggers, rules found)', async () => {
     const testProjectName = 'ThisIsTheNameOfTheProject'
     // const resultObject = [{ annotations: [{ key: 'whisk-managed', value: { projectName: testProjectName, projectHash: 'projectHash' } }] }]
     const pkgList = ow.mockResolved('packages.list', '')
     const actList = ow.mockResolved('actions.list', '')
     const trgList = ow.mockResolved('triggers.list', '')
     const rlzList = ow.mockResolved('rules.list', '')
+    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    expect(pkgList).toHaveBeenCalled()
+    expect(actList).toHaveBeenCalled()
+    expect(trgList).toHaveBeenCalled()
+    expect(rlzList).toHaveBeenCalled()
+    expect(result).toBe('')
+  })
+
+  test('default projectHash (empty annotations in existing packages, actions, triggers, rules)', async () => {
+    const testProjectName = 'ThisIsTheNameOfTheProject'
+    // const resultObject = [{ annotations: [{ key: 'whisk-managed', value: { projectName: testProjectName, projectHash: 'projectHash' } }] }]
+    const pkgList = ow.mockResolved('packages.list', [{ annotations: [] }])
+    const actList = ow.mockResolved('actions.list', [{ annotations: [] }])
+    const trgList = ow.mockResolved('triggers.list', [{ annotations: [] }])
+    const rlzList = ow.mockResolved('rules.list', [{ annotations: [] }])
+    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    expect(pkgList).toHaveBeenCalled()
+    expect(actList).toHaveBeenCalled()
+    expect(trgList).toHaveBeenCalled()
+    expect(rlzList).toHaveBeenCalled()
+    expect(result).toBe('')
+  })
+
+  test('default projectHash (no whisk-managed annotation in existing packages, actions, triggers, rules)', async () => {
+    const testProjectName = 'ThisIsTheNameOfTheProject'
+    // const resultObject = [{ annotations: [{ key: 'whisk-managed', value: { projectName: testProjectName, projectHash: 'projectHash' } }] }]
+    const pkgList = ow.mockResolved('packages.list', [{ annotations: [{ key: 'not-whisk-managed', value: {}}] }])
+    const actList = ow.mockResolved('actions.list', [{ annotations: [{ key: 'not-whisk-managed', value: {}}] }])
+    const trgList = ow.mockResolved('triggers.list', [{ annotations: [{ key: 'not-whisk-managed', value: {}}] }])
+    const rlzList = ow.mockResolved('rules.list', [{ annotations: [{ key: 'not-whisk-managed', value: {}}] }])
     const result = await utils.findProjectHashonServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).toHaveBeenCalled()
