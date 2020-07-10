@@ -569,6 +569,38 @@ describe('processPackage', () => {
     const entities = utils.processPackage(JSON.parse(fs.readFileSync('/basic_manifest.json')), {}, {}, {})
     expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/basic_manifest_res.json')))
   })
+
+  test('shared package', async () => {
+    const res = utils.processPackage({ pkg1: { public: true}}, {}, {}, {}, false, {})
+    expect(res).toEqual(expect.objectContaining({pkgAndDeps: [{ name: 'pkg1', package: { publish: true} }]}))
+  })
+
+  test('dependency with no location property', async () => {
+    expect(() => utils.processPackage({ pkg1: { dependencies: { mypackage: {}}}}, {}, {}, {}, false, {}))
+    .toThrow('Invalid or missing property "location" in the manifest for this action: mypackage')
+  })
+
+  test('dependency with inputs', async () => {
+    const res = utils.processPackage({ pkg1: { dependencies: { mypackage: { location: '/adobe/auth', inputs: { key1: 'value1' }}}}}, {}, {}, {}, false, {})
+    expect(res).toEqual(expect.objectContaining({
+      pkgAndDeps: [
+        {name: "pkg1"},
+        { 
+        name: 'mypackage',
+        package: {
+          binding: {
+            namespace: 'adobe',
+            name: 'auth'
+          },
+          parameters: [{
+            key: 'key1',
+            value: 'value1'
+          }]
+        }
+      }]
+    }))
+  })
+
   // the adobe auth annotation is a temporarily implemented on the client side
   // simply remove this test when the feature will be moved server side, to I/O Runtime
   test('manifest with adobe auth annotation', () => {

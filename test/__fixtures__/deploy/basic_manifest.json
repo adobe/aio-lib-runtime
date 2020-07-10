@@ -33,6 +33,9 @@
                 "inputs": {
                     "cron": "* * * * *",
                     "trigger_payload": "{\"message\": \"hello world!\"}"
+                },
+                "annotations": {
+                    "ann1": "annvalue"
                 }
             }
         },

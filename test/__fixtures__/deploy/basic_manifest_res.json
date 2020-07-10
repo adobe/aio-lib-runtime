@@ -37,7 +37,11 @@
                         "value": "{\"message\": \"hello world!\"}"
                     }
                 ],
-                "feed": "/whisk.system/alarms/alarm"
+                "feed": "/whisk.system/alarms/alarm",
+                "annotations":[{
+                    "key": "ann1",
+                    "value": "annvalue"
+                }]
             }
         }
     ],
