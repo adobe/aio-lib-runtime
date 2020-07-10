@@ -4,5 +4,8 @@
     "jsdoc": {
       "ignorePrivate": true
     }
+  },
+  "rules": {
+    "no-param-reassign": [ "warn", { "props": true }]
   }
 }
