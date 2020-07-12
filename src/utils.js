@@ -33,9 +33,9 @@ const stripLog = (elem) => {
 /**
  * Prints activation logs messages.
  *
- * @param activation the activation
- * @param strip if true, strips the timestamp which prefixes every log line
- * @param logger an instance of a logger to emit messages to
+ * @param {object} activation the activation
+ * @param {boolean} strip if true, strips the timestamp which prefixes every log line
+ * @param {object} logger an instance of a logger to emit messages to
  */
 function printLogs (activation, strip, logger) {
   if (activation.logs) {
@@ -50,7 +50,7 @@ function printLogs (activation, strip, logger) {
 }
 
 /**
- * @description returns key value pairs in an object from the key value array supplied. Used to create parameters object
+ * @description returns key value pairs in an object from the key value array supplied. Used to create parameters object.
  * @returns {object} An object of key value pairs in this format : {Your key1 : 'Your Value 1' , Your key2: 'Your value 2'}
  * @param {Array} inputsArray Array in the form of [{'key':'key1', 'value': 'value1'}]
  */
@@ -74,9 +74,8 @@ function createKeyValueObjectFromArray (inputsArray = []) {
 
 /**
  * @description returns key value array from the object supplied.
- * @param object
- * @param object: JSON object
- * @returns An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
+ * @param {object} object JSON object
+ * @returns {Array} An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
  */
 function createKeyValueArrayFromObject (object) {
   return Object.keys(object).map(key => ({ key, value: object[key] }))
@@ -84,8 +83,8 @@ function createKeyValueArrayFromObject (object) {
 
 /**
  * @description returns key value array from the parameters supplied. Used to create --param and --annotation key value pairs
- * @param flag : flags.param or flags.annotation
- * @returns An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
+ * @param {Array} flag value from flags.param or flags.annotation
+ * @returns {Array} An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
  */
 function createKeyValueArrayFromFlag (flag) {
   if (flag.length % 2 === 0) {
@@ -111,8 +110,8 @@ function createKeyValueArrayFromFlag (flag) {
 
 /**
  * @description returns key value array from the json file supplied. Used to create --param-file and annotation-file key value pairs
- * @param file : flags['param-file'] or flags['annotation-file]
- * @returns An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
+ * @param {string} file from flags['param-file'] or flags['annotation-file]
+ * @returns {Array} An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
  */
 function createKeyValueArrayFromFile (file) {
   const jsonData = fs.readFileSync(file)
@@ -131,8 +130,8 @@ function createKeyValueArrayFromFile (file) {
 
 /**
  * @description returns key value pairs in an object from the parameters supplied. Used to create --param and --annotation key value pairs
- * @param flag : flags.param or flags.annotation
- * @returns An object of key value pairs in this format : {Your key1 : 'Your Value 1' , Your key2: 'Your value 2'}
+ * @param {Array} flag from flags.param or flags.annotation
+ * @returns {object} An object of key value pairs in this format : {Your key1 : 'Your Value 1' , Your key2: 'Your value 2'}
  */
 function createKeyValueObjectFromFlag (flag) {
   if (flag.length % 2 === 0) {
@@ -154,9 +153,9 @@ function createKeyValueObjectFromFlag (flag) {
 }
 
 /**
- * @description parses a string and returns the namespace and entity name for a package.
- * @returns An object { namespace: string, name: string }
- * @param name
+ * @description parses a package name string and returns the namespace and entity name for a package
+ * @param {string} name package name
+ * @returns {object} An object { namespace: string, name: string }
  */
 function parsePackageName (name) {
   const delimiter = '/'
@@ -180,8 +179,8 @@ function parsePackageName (name) {
 
 /**
  * @description returns key value pairs from the parameters supplied. Used to create --param-file and --annotation-file key value pairs
- * @param file : flags['param-file'] or flags['annotation-file']
- * @returns An object of key value pairs in this format : {Your key1 : 'Your Value 1' , Your key2: 'Your value 2'}
+ * @param {string} file from flags['param-file'] or flags['annotation-file']
+ * @returns {object} An object of key value pairs in this format : {Your key1 : 'Your Value 1' , Your key2: 'Your value 2'}
  */
 function createKeyValueObjectFromFile (file) {
   const jsonData = fs.readFileSync(file)
@@ -189,7 +188,9 @@ function createKeyValueObjectFromFile (file) {
 }
 
 /**
- * @param sequenceAction
+ * @description Creates an object representation of a sequence.
+ * @param {Array} sequenceAction the sequence action array
+ * @returns {object} the object representation of the sequence
  */
 function createComponentsfromSequence (sequenceAction) {
   const fqn = require('openwhisk-fqn')
@@ -203,15 +204,19 @@ function createComponentsfromSequence (sequenceAction) {
 }
 
 /**
- * @param firstObject
- * @param secondObject
+ * @description Creates a union of two objects
+ * @param {object} firstObject the object to merge into
+ * @param {object} secondObject the object to merge from
+ * @returns {object} the union of both objects
  */
 function returnUnion (firstObject, secondObject) {
   return Object.assign(firstObject, secondObject)
 }
 
 /**
- * @param path
+ * @description Parse a path pattern
+ * @param {string} path the path to parse
+ * @returns {Array} array of matches
  */
 function parsePathPattern (path) {
   const pattern = /^\/(.+)\/(.+)$/i
@@ -221,8 +226,10 @@ function parsePathPattern (path) {
 }
 
 /**
- * @param input
- * @param params
+ * @description Process inputs
+ * @param {object} input the input object to process
+ * @param {object} params the parameters for the input to process
+ * @returns {object} the processed inputs
  */
 function processInputs (input, params) {
   // check if the value of a key is an object (Advanced parameters)
@@ -267,7 +274,9 @@ function processInputs (input, params) {
 }
 
 /**
- * @param input
+ * @description Create a key-value object from the input
+ * @param {object} input the input to process
+ * @returns {object} the processed input as a key-value object
  */
 function createKeyValueInput (input) {
   input = Object.keys(input).map(function (k) {
@@ -277,7 +286,8 @@ function createKeyValueInput (input) {
 }
 
 /**
- *
+ * @description Get the deployment yaml file path
+ * @returns {string} the deployment yaml path
  */
 function setDeploymentPath () {
   let deploymentPath
@@ -290,7 +300,8 @@ function setDeploymentPath () {
 }
 
 /**
- *
+ * @description Get the manifest yaml file path
+ * @returns {string} the manifest yaml path
  */
 function setManifestPath () {
   let manifestPath
@@ -305,7 +316,9 @@ function setManifestPath () {
 }
 
 /**
- * @param deploymentPackages
+ * @description Get the deployment trigger inputs.
+ * @param {object} deploymentPackages the deployment packages
+ * @returns {object} the deployment trigger inputs
  */
 function returnDeploymentTriggerInputs (deploymentPackages) {
   const deploymentTriggers = {}
@@ -320,7 +333,9 @@ function returnDeploymentTriggerInputs (deploymentPackages) {
 }
 
 /**
- * @param action
+ * @description Get the annotations for an action
+ * @param {object} action the action object
+ * @returns {object} the action object annotations
  */
 function returnAnnotations (action) {
   const annotationParams = {}
@@ -367,20 +382,20 @@ function returnAnnotations (action) {
  * Creates an array of route definitions from the given manifest-based package.
  * See https://github.com/apache/openwhisk-wskdeploy/blob/master/parsers/manifest_parser.go#L1187
  *
- * @param pkg The package definition from the manifest.
- * @param pkgName The name of the package.
- * @param apiName The name of the HTTP API definition from the manifest.
- * @param allowedActions List of action names allowed to be used in routes.
- * @param allowedSequences List of sequence names allowed to be used in routes.
- * @param pathOnly Skip action, method and response type in route definitions.
+ * @param {object} pkg The package definition from the manifest.
+ * @param {string} pkgName The name of the package.
+ * @param {string} apiName The name of the HTTP API definition from the manifest.
+ * @param {Array} allowedActions List of action names allowed to be used in routes.
+ * @param {Array} allowedSequences List of sequence names allowed to be used in routes.
+ * @param {boolean} pathOnly Skip action, method and response type in route definitions.
  * @returns {{
- * action: String,
- * operation: String,
- * responsetype: String
- * basepath: String,
- * relpath: String,
- * name: String
- * }[]}
+ * action: string,
+ * operation: string,
+ * responsetype: string
+ * basepath: string,
+ * relpath: string,
+ * name: string
+ * }[]} an object with api routes
  */
 function createApiRoutes (pkg, pkgName, apiName, allowedActions, allowedSequences, pathOnly) {
   const actions = pkg.actions
@@ -451,9 +466,11 @@ function createApiRoutes (pkg, pkgName, apiName, allowedActions, allowedSequence
 }
 
 /**
- * @param thisSequence
- * @param options
- * @param key
+ * @description Create a sequence object
+ * @param {object} thisSequence a sequence object
+ * @param {object} options the sequence options
+ * @param {string} key the action key
+ * @returns {object} a sequence object
  */
 function createSequenceObject (thisSequence, options, key) {
   let actionArray = []
@@ -479,7 +496,9 @@ function createSequenceObject (thisSequence, options, key) {
 }
 
 /**
- * @param flag
+ * @description Check the web flags
+ * @param {string|boolean} flag the flag to check
+ * @returns {object} object with the appropriate web flags for an action
  */
 function checkWebFlags (flag) {
   const tempObj = {}
@@ -501,8 +520,11 @@ function checkWebFlags (flag) {
 }
 
 /**
- * @param thisAction
- * @param objAction
+ * Create an action object from an action
+ *
+ * @param {object} thisAction the action
+ * @param {object} objAction the result action object
+ * @returns {object} the action object
  */
 function createActionObject (thisAction, objAction) {
   if (thisAction.function.endsWith('.zip')) {
@@ -575,8 +597,9 @@ function createActionObject (thisAction, objAction) {
  * this function and references to it can be safely deleted.
  *
  * @access private
- * @param packages
- * @param deploymentPackages
+ * @param {object} packages the manifest packages
+ * @param {object} deploymentPackages  the deployment packages
+ * @returns {object} an object with the new manifest and deployment packages
  */
 function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
   // do not modify those
@@ -660,12 +683,15 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
 }
 
 /**
- * @param packages
- * @param deploymentPackages
- * @param deploymentTriggers
- * @param params
- * @param namesOnly
- * @param owOptions
+ * Process a package.
+ *
+ * @param {object} packages the manifest packages
+ * @param {object} deploymentPackages the deployment packages
+ * @param {object} deploymentTriggers the deployment triggers
+ * @param {object} params the package params
+ * @param {boolean} [namesOnly=false] if false, set the namespaces as well
+ * @param {object} [owOptions={}] additional OpenWhisk options
+ * @returns {object} object with all the new package contents
  */
 function processPackage (packages,
   deploymentPackages,
@@ -849,6 +875,8 @@ function processPackage (packages,
  */
 
 /**
+ * Get the deployment file components.
+ *
  * @param {object} flags (manifest + deployment)
  * @returns {DeploymentFileComponents} fileComponents
  */
@@ -921,9 +949,9 @@ function setPaths (flags = {}) {
  * The IMS org id must be stored beforehand in `@adobe/aio-lib-core-config` under the
  * `'project.org.ims_org_id'` key. TODO: pass in imsOrgId
  *
- * @param actions
- * @param owOptions
- * @param imsOrgId
+ * @param {object} actions the actions
+ * @param {object} owOptions OpenWhisk actions
+ * @param {string} imsOrgId the IMS Org Id
  */
 async function setupAdobeAuth (actions, owOptions, imsOrgId) {
   // do not modify those
@@ -959,10 +987,12 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
 }
 
 /**
- * @param entities
- * @param ow
- * @param logger
- * @param imsOrgId
+ * Deploy a package
+ *
+ * @param {object} entities the entities
+ * @param {object} ow the OpenWhisk object
+ * @param {object} logger the logger
+ * @param {string} imsOrgId the IMS Org ID
  */
 async function deployPackage (entities, ow, logger, imsOrgId) {
   const opts = await ow.actions.client.options
@@ -1019,9 +1049,11 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
 }
 
 /**
- * @param entities
- * @param ow
- * @param logger
+ * Undeploy a package
+ *
+ * @param {object} entities the entities
+ * @param {object} ow the OpenWhisk object
+ * @param {object} logger the logger
  */
 async function undeployPackage (entities, ow, logger) {
   for (const action of entities.actions) {
@@ -1054,14 +1086,16 @@ async function undeployPackage (entities, ow, logger) {
 }
 
 /**
- * @param projectName
- * @param manifestPath
- * @param manifestContent
- * @param entities
- * @param ow
- * @param logger
- * @param imsOrgId
- * @param deleteEntities
+ * Sync a project.
+ *
+ * @param {string} projectName the project name
+ * @param {string} manifestPath the manifest path
+ * @param {string} manifestContent the manifest content
+ * @param {object} entities the entities
+ * @param {object} ow the OpenWhisk object
+ * @param {object} logger the logger
+ * @param {string} imsOrgId the IMS Org ID
+ * @param {boolean} deleteEntities set to true to delete entities
  */
 async function syncProject (projectName, manifestPath, manifestContent, entities, ow, logger, imsOrgId, deleteEntities = true) {
   // find project hash from server based on entities in the manifest file
@@ -1079,9 +1113,11 @@ async function syncProject (projectName, manifestPath, manifestContent, entities
 }
 
 /**
- * @param project
- * @param isProjectHash
- * @param ow
+ * Get project entities
+ *
+ * @param {string} project the project
+ * @param {boolean} isProjectHash set to true if the project is a hash, and not just the name
+ * @param {object} ow the OpenWhisk object
  */
 async function getProjectEntities (project, isProjectHash, ow) {
   let paramtobeChecked
@@ -1127,10 +1163,12 @@ async function getProjectEntities (project, isProjectHash, ow) {
 }
 
 /**
- * @param entities
- * @param manifestPath
- * @param projectName
- * @param projectHash
+ * Add managed project annotations
+ *
+ * @param {object} entities the entities
+ * @param {string} manifestPath the manifest path
+ * @param {string} projectName the project name
+ * @param {string} projectHash the project hash
  */
 async function addManagedProjectAnnotations (entities, manifestPath, projectName, projectHash) {
   // add whisk managed annotations
@@ -1171,8 +1209,11 @@ async function addManagedProjectAnnotations (entities, manifestPath, projectName
 }
 
 /**
- * @param manifestContent
- * @param manifestPath
+ * Get the project hash
+ *
+ * @param {string} manifestContent the manifest content
+ * @param {string} manifestPath the manifest path
+ * @returns {string} the project hash
  */
 function getProjectHash (manifestContent, manifestPath) {
   const stats = fs.statSync(manifestPath)
@@ -1183,8 +1224,11 @@ function getProjectHash (manifestContent, manifestPath) {
 }
 
 /**
- * @param ow
- * @param projectName
+ * Find project hash on the server
+ *
+ * @param {object} ow the OpenWhisk object
+ * @param {string} projectName the project name
+ * @returns {string} the project hash, or '' if not found
  */
 async function findProjectHashonServer (ow, projectName) {
   let projectHash = ''
@@ -1240,7 +1284,10 @@ async function findProjectHashonServer (ow, projectName) {
 }
 
 /**
- * @param kind
+ * Get the file extension for a kind
+ *
+ * @param {string} kind the kind
+ * @returns {string} the file extension, or '' if not found
  */
 function fileExtensionForKind (kind) {
   if (kind) {
@@ -1262,7 +1309,10 @@ function fileExtensionForKind (kind) {
 }
 
 /**
- * @param filename
+ * Get the kind for a file extension
+ *
+ * @param {string} filename the filename
+ * @returns {string}  the kind, or undefined if not found
  */
 function kindForFileExtension (filename) {
   if (filename) {
