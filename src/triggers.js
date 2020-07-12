@@ -10,7 +10,6 @@ governing permissions and limitations under the License.
 */
 
 const { createKeyValueObjectFromArray } = require('./utils')
-const cloneDeep = require('lodash.clonedeep')
 const FEED_ANNOTATION_KEY = 'feed'
 
 class Triggers {
@@ -19,24 +18,23 @@ class Triggers {
   }
 
   async create (options) {
-    const newOptions = cloneDeep(options)
-    if (newOptions && newOptions.trigger && newOptions.trigger.feed) {
-      newOptions.trigger.annotations = newOptions.trigger.annotations || []
-      newOptions.trigger.annotations.push({ key: FEED_ANNOTATION_KEY, value: newOptions.trigger.feed })
+    if (options && options.trigger && options.trigger.feed) {
+      options.trigger.annotations = options.trigger.annotations || []
+      options.trigger.annotations.push({ key: FEED_ANNOTATION_KEY, value: options.trigger.feed })
     }
-    const ret = await this.owclient.triggers.create(newOptions)
-    if (newOptions && newOptions.trigger && newOptions.trigger.feed) {
+    const ret = await this.owclient.triggers.create(options)
+    if (options && options.trigger && options.trigger.feed) {
       try {
         // Feed update does not work if the feed is not already present and create fails if it's already there.
         // So we are deleting it and ignoring the error if any.
         try {
-          await this.owclient.feeds.delete({ name: newOptions.trigger.feed, trigger: newOptions.name })
+          await this.owclient.feeds.delete({ name: options.trigger.feed, trigger: options.name })
         } catch (err) {
           // Ignore
         }
-        await this.owclient.feeds.create({ name: newOptions.trigger.feed, trigger: newOptions.name, params: createKeyValueObjectFromArray(newOptions.trigger.parameters) })
+        await this.owclient.feeds.create({ name: options.trigger.feed, trigger: options.name, params: createKeyValueObjectFromArray(options.trigger.parameters) })
       } catch (err) {
-        await this.owclient.triggers.delete(newOptions)
+        await this.owclient.triggers.delete(options)
         throw err
       }
     }
