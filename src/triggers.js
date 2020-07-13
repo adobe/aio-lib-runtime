@@ -13,11 +13,23 @@ const { createKeyValueObjectFromArray } = require('./utils')
 const FEED_ANNOTATION_KEY = 'feed'
 const cloneDeep = require('lodash.clonedeep')
 
+/**
+ * A class to manage triggers
+ *
+ * @class Triggers
+ */
 class Triggers {
   constructor (client) {
     this.owclient = client
   }
 
+  /**
+   * Creates a trigger and associated feeds
+   *
+   * @param {object} options input options to create the trigger from manifest
+   * @returns {Promise<object>} the result of the create operation
+   * @memberof Triggers
+   */
   async create (options) {
     // avoid side effects
     const copyOptions = cloneDeep(options)
@@ -44,6 +56,13 @@ class Triggers {
     return ret
   }
 
+  /**
+   * Deletes a trigger and associated feeds
+   *
+   * @param {object} options options with the `name` of the trigger
+   * @returns {Promise<object>} the result of the delete operation
+   * @memberof Triggers
+   */
   async delete (options) {
     const retTrigger = await this.owclient.triggers.get(options)
     if (retTrigger.annotations) {

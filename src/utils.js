@@ -17,6 +17,207 @@ const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:in
 const yaml = require('js-yaml')
 const fetch = require('cross-fetch')
 
+/**
+ *
+ * The entry point to the information read from the manifest, this can be extracted using
+ * [setPaths](#setpaths).
+ *
+ * @typedef {Array<ManifestPackage>} ManifestPackages
+ */
+
+/**
+ *
+ * The manifest package definition
+ *
+ * @typedef {object} ManifestPackage
+ * @property {string} version the manifest package version
+ * @property {string} [license] the manifest package license, e.g. Apache-2.0
+ * @property {Array<ManifestAction>} [actions] Actions in the manifest package
+ * @property {Array<ManifestSequence>} [sequences] Sequences in the manifest package
+ * @property {Array<ManifestTrigger>} [triggers] Triggers in the manifest package
+ * @property {Array<ManifestRule>} [rules] Rules in the manifest package
+ * @property {Array<ManifestDependency>} [dependencies] Dependencies in the manifest package
+ * @property {Array<ManifestApi>} [apis] Apis in the manifest package
+ *
+ */
+
+/**
+ *
+ * The manifest action definition
+ *
+ * @typedef {object} ManifestAction
+ * @property {string} [version] the manifest action version
+ * @property {string} function the path to the action code
+ * @property {string} runtime the runtime environment or kind in which the action
+ *                    executes, e.g. 'nodejs:10'
+ * @property {string} [main] the entry point to the function
+ * @property {object} [inputs] the list of action default parameters
+ * @property {ManifestActionLimits} [limits] limits for the action
+ * @property {string} [web] indicate if an action should be exported as web, can take the
+ *                    value of: true | false | yes | no | raw
+ * @property {string} [web-export] same as web
+ * @property {boolean} [raw-http] indicate if an action should be exported as web, this
+ *                     option is only valid if `web` or `web-export` is set to true
+ * @property {string} [docker] the docker container to run the action into
+ * @property {ManifestActionAnnotations} [annotations] the manifest action annotations
+ *
+ */
+
+/**
+ *
+ * The manifest sequence definition
+ * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md
+ *
+ * @typedef {object} ManifestSequence
+ *
+ */
+
+/**
+ *
+ * The manifest trigger definition
+ * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_triggers.md
+ *
+ * @typedef {object} ManifestTrigger
+ *
+ */
+
+/**
+ *
+ * The manifest rule definition
+ * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_rules.md
+ *
+ * @typedef {object} ManifestRule
+ *
+ */
+
+/**
+ *
+ * The manifest api definition
+ * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_apis.md
+ *
+ * @typedef {object} ManifestApi
+ *
+ */
+
+/**
+ *
+ * The manifest dependency definition
+ * TODO
+ *
+ * @typedef {object} ManifestDependency
+ *
+ */
+
+/**
+ *
+ * The manifest action limits definition
+ * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#valid-limit-keys.md
+ *
+ * @typedef {object} ManifestActionLimits
+ *
+ */
+
+/**
+ *
+ * The manifest action annotations definition
+ * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#action-annotations
+ *
+ * @typedef {object} ManifestActionAnnotations
+ *
+ */
+
+/**
+ *
+ * The OpenWhisk entities definitions, which are compatible with the `openwhisk` node
+ * client module. Can be obtained using (processpackage)[#processpackage] (with `onlyNames=true` for un-deployment)
+ *
+ * @typedef {object} OpenWhiskEntities
+ * @property {Array<OpenWhiskEntitiesApi>} apis the array of api entities
+ * @property {Array<OpewWhiskEntitiesAction>} actions the array of action entities
+ * @property {Array<OpenWhiskEntitiesTrigger>} triggers the array of trigger entities
+ * @property {Array<OpewWhiskEntitiesRule>} rules the array of rule entities
+ * @property {Array<OpewWhiskEntitiesPackage>} pkgAndDeps the array of package entities
+ */
+
+/**
+ *
+ * The api entity definition
+ *
+ * @typedef {object} OpenWhiskEntitiesApi
+ * @property {string} name the api name
+ * @property {string} basepath the api basepath
+ * @property {string} relpath the api relpath
+ * @property {string} action the action name behind the api
+ * @property {string} responsettype the response type, e.g. 'json'
+ * @property {string} operation the http method, e.g 'get'
+ *
+ */
+
+/**
+ *
+ * The action entity definition
+ * TODO
+ *
+ * @typedef {object} OpenWhiskEntitiesAction
+ *
+ */
+
+/**
+ *
+ * The rule entity definition
+ * TODO
+ *
+ * @typedef {object} OpenWhiskEntitiesRule
+ *
+ */
+
+/**
+ *
+ * The trigger entity definition
+ * TODO
+ *
+ * @typedef {object} OpenWhiskEntitiesTrigger
+ *
+ */
+
+/**
+ *
+ * The package entity definition
+ * TODO
+ *
+ * @typedef {object} OpenWhiskEntitiesPackage
+ *
+ */
+
+/**
+ *
+ * The entry point to the information read from the deployment file, this can be extracted using
+ * [setPaths](#setpaths).
+ * TODO
+ *
+ * @typedef {Array<object>} DeploymentPackages
+ *
+ */
+
+/**
+ *
+ * The deployment trigger definition
+ * TODO
+ *
+ * @typedef {object} DeploymentTrigger
+ *
+ */
+
+/**
+ * @typedef {object} DeploymentFileComponents
+ * @property {ManifestPackages} packages Packages in the manifest
+ * @property {Array<DeploymentTrigger>} deploymentTriggers Triggers in the deployment manifest
+ * @property {DeploymentPackages} deploymentPackages Packages in the deployment manifest
+ * @property {string} manifestPath Path to manifest
+ * @property {object} manifestContent Parsed manifest object
+ * @property {string} projectName Name of the project
+ */
+
 // for lines starting with date-time-string followed by stdout|stderr a ':' and a log-line, return only the logline
 const dtsRegex = /\d{4}-[01]{1}\d{1}-[0-3]{1}\d{1}T[0-2]{1}\d{1}:[0-6]{1}\d{1}:[0-6]{1}\d{1}.\d+Z( *(stdout|stderr):)?\s(.*)/
 
@@ -317,7 +518,7 @@ function getManifestPath () {
 
 /**
  * @description Get the deployment trigger inputs.
- * @param {object} deploymentPackages the deployment packages
+ * @param {DeploymentPackages} deploymentPackages the deployment packages
  * @returns {object} the deployment trigger inputs
  */
 function returnDeploymentTriggerInputs (deploymentPackages) {
@@ -334,8 +535,8 @@ function returnDeploymentTriggerInputs (deploymentPackages) {
 
 /**
  * @description Get the annotations for an action
- * @param {object} action the action object
- * @returns {object} the action object annotations
+ * @param {ManifestAction} action the action manifest object
+ * @returns {object} the action annotation entities
  */
 function returnAnnotations (action) {
   const annotationParams = {}
@@ -382,20 +583,13 @@ function returnAnnotations (action) {
  * Creates an array of route definitions from the given manifest-based package.
  * See https://github.com/apache/openwhisk-wskdeploy/blob/master/parsers/manifest_parser.go#L1187
  *
- * @param {object} pkg The package definition from the manifest.
+ * @param {ManifestPackage} pkg The package definition from the manifest.
  * @param {string} pkgName The name of the package.
  * @param {string} apiName The name of the HTTP API definition from the manifest.
  * @param {Array} allowedActions List of action names allowed to be used in routes.
  * @param {Array} allowedSequences List of sequence names allowed to be used in routes.
  * @param {boolean} pathOnly Skip action, method and response type in route definitions.
- * @returns {{
- * action: string,
- * operation: string,
- * responsetype: string
- * basepath: string,
- * relpath: string,
- * name: string
- * }[]} an object with api routes
+ * @returns {Array<OpenWhiskEntitiesApi>} the array of route entities
  */
 function createApiRoutes (pkg, pkgName, apiName, allowedActions, allowedSequences, pathOnly) {
   const actions = pkg.actions
@@ -468,9 +662,9 @@ function createApiRoutes (pkg, pkgName, apiName, allowedActions, allowedSequence
 /**
  * @description Create a sequence object that is compatible with the OpenWhisk API from a parsed manifest object
  * @param {string} fullName the full sequence name prefixed with the package, e.g. `pkg/sequence`
- * @param {object} manifestSequence a sequence object as defined in a valid manifest file
+ * @param {ManifestSequence} manifestSequence a sequence object as defined in a valid manifest file
  * @param {string} packageName the package name of the sequence, which will be set to for actions in the sequence
- * @returns {object} a sequence object
+ * @returns {OpenWhiskEntitiesAction} a sequence object describing the action entity
  */
 function createSequenceObject (fullName, manifestSequence, packageName) {
   let actionArray = []
@@ -522,8 +716,8 @@ function checkWebFlags (flag) {
  * Create an action object compatible with the OpenWhisk API from an action object parsed from the manifest.
  *
  * @param {string} fullName the full action name prefixed with the package, e.g. `pkg/action`
- * @param {object} manifestAction the action object as parsed from the manifest
- * @returns {object} the action object
+ * @param {ManifestAction} manifestAction the action object as parsed from the manifest
+ * @returns {OpenWhiskEntitiesAction} the action entity object
  */
 function createActionObject (fullName, manifestAction) {
   const objAction = { name: fullName }
@@ -597,9 +791,10 @@ function createActionObject (fullName, manifestAction) {
  * this function and references to it can be safely deleted.
  *
  * @access private
- * @param {object} packages the manifest packages
- * @param {object} deploymentPackages  the deployment packages
- * @returns {object} an object with the new manifest and deployment packages
+ * @param {ManifestPackages} packages the manifest packages
+ * @param {DeploymentPackages} deploymentPackages  the deployment packages
+ * @returns {{ newPackages: ManifestPackages, newDeploymentPackages: DeploymentPackages}}
+ *          an object with the new manifest and deployment packages
  */
 function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
   // do not modify those
@@ -683,15 +878,16 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
 }
 
 /**
- * Process a package.
  *
- * @param {object} packages the manifest packages
- * @param {object} deploymentPackages the deployment packages
- * @param {object} deploymentTriggers the deployment triggers
+ * Process the manifest and deployment content and returns deployment entities.
+ *
+ * @param {ManifestPackages} packages the manifest packages
+ * @param {DeploymentPackages} deploymentPackages the deployment packages
+ * @param {DeploymentTrigger} deploymentTriggers the deployment triggers
  * @param {object} params the package params
  * @param {boolean} [namesOnly=false] if false, set the namespaces as well
  * @param {object} [owOptions={}] additional OpenWhisk options
- * @returns {object} object with all the new package contents
+ * @returns {OpenWhiskEntities} deployment entities
  */
 function processPackage (packages,
   deploymentPackages,
@@ -866,15 +1062,6 @@ function processPackage (packages,
     actions
   }
 }
-/**
- * @typedef {object} DeploymentFileComponents
- * @property {Array} packages Packages in the manifest
- * @property {Array} deploymentTriggers Triggers in the manifest
- * @property {Array} deploymentPackages Packages in the manifest
- * @property {string} manifestPath Path to manifest
- * @property {object} manifestContent Parsed manifest object
- * @property {string} projectName Name of the project
- */
 
 /**
  * Get the deployment file components.
@@ -951,8 +1138,8 @@ function setPaths (flags = {}) {
  * The IMS org id must be stored beforehand in `@adobe/aio-lib-core-config` under the
  * `'project.org.ims_org_id'` key. TODO: pass in imsOrgId
  *
- * @param {object} actions the actions
- * @param {object} owOptions OpenWhisk actions
+ * @param {Array<OpenWhiskEntitiesAction>} actions the array of action deployment entities
+ * @param {object} owOptions OpenWhisk options
  * @param {string} imsOrgId the IMS Org Id
  */
 async function setupAdobeAuth (actions, owOptions, imsOrgId) {
@@ -989,10 +1176,10 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
 }
 
 /**
- * Deploy a package
+ * Deploy all deployment entities: can deploy packages, actions, triggers, rules and apis.
  *
- * @param {object} entities the entities
- * @param {object} ow the OpenWhisk object
+ * @param {OpenWhiskEntitiesAction} entities the processed entities
+ * @param {object} ow the OpenWhisk client
  * @param {object} logger the logger
  * @param {string} imsOrgId the IMS Org ID
  */
@@ -1051,9 +1238,10 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
 }
 
 /**
- * Undeploy a package
+ * Undeploy entities: can undeploy packages, actions, triggers, rules and apis.
+ * Entities do not need to be complete, only the names are needed for un-deployment.
  *
- * @param {object} entities the entities
+ * @param {object} entities the processed entities, only names are enough for undeploy
  * @param {object} ow the OpenWhisk object
  * @param {object} logger the logger
  */
@@ -1088,12 +1276,18 @@ async function undeployPackage (entities, ow, logger) {
 }
 
 /**
- * Sync a project.
+ *
+ * Sync a project. This is a higher level function that can be used to sync a local
+ * manifest with deployed entities.
+ *
+ * `syncProject` doesn't only deploy entities it might also undeploy entities that are not
+ * defined in the manifest. This behavior can be disabled via the `deleteEntities` boolean
+ * parameter.
  *
  * @param {string} projectName the project name
  * @param {string} manifestPath the manifest path
- * @param {string} manifestContent the manifest content
- * @param {object} entities the entities
+ * @param {string} manifestContent the manifest content, needed to compute hash
+ * @param {OpenWhiskEntities} entities the entities, extracted via `processPackage`
  * @param {object} ow the OpenWhisk object
  * @param {object} logger the logger
  * @param {string} imsOrgId the IMS Org ID
@@ -1115,11 +1309,19 @@ async function syncProject (projectName, manifestPath, manifestContent, entities
 }
 
 /**
- * Get project entities
  *
- * @param {string} project the project
- * @param {boolean} isProjectHash set to true if the project is a hash, and not just the name
- * @param {object} ow the OpenWhisk object
+ * Get deployed entities for a managed project. This methods retrieves all the deployed
+ * entities for a given project name or project hash. This only works if the project was
+ * deployed using the `whisk-managed` annotation. This annotation can be set
+ * pre-deployement using `[addManagedProjectAnnotations](#addmanagedprojectannotations)`.
+ *
+ * Note that returned apis will always be empty as they don't support annotations and
+ * hence are not managed as part of a project.
+ *
+ * @param {string} project the project name or hash
+ * @param {boolean} isProjectHash set to true if the project is a hash, and not the name
+ * @param {object} ow the OpenWhisk client object
+ * @returns {Promise<OpenWhiskEntities>} the deployed project entities
  */
 async function getProjectEntities (project, isProjectHash, ow) {
   let paramtobeChecked
@@ -1165,9 +1367,11 @@ async function getProjectEntities (project, isProjectHash, ow) {
 }
 
 /**
- * Add managed project annotations
  *
- * @param {object} entities the entities
+ * Add the `whisk-managed` annotation to processed entities. This is needed for syncing
+ * managed projects.
+ *
+ * @param {OpenWhiskEntities} entities the processed entities
  * @param {string} manifestPath the manifest path
  * @param {string} projectName the project name
  * @param {string} projectHash the project hash
@@ -1211,7 +1415,8 @@ async function addManagedProjectAnnotations (entities, manifestPath, projectName
 }
 
 /**
- * Get the project hash
+ * Compute the project hash based on the manifest content and manifest path. This is used
+ * for syncing managed projects.
  *
  * @param {string} manifestContent the manifest content
  * @param {string} manifestPath the manifest path
@@ -1226,11 +1431,12 @@ function getProjectHash (manifestContent, manifestPath) {
 }
 
 /**
- * Find project hash on the server
  *
- * @param {object} ow the OpenWhisk object
+ * Retrieve the project hash from a deployed managed project.
+ *
+ * @param {object} ow the OpenWhisk client object
  * @param {string} projectName the project name
- * @returns {string} the project hash, or '' if not found
+ * @returns {Promise<string>} the project hash, or '' if not found
  */
 async function findProjectHashonServer (ow, projectName) {
   let projectHash = ''
