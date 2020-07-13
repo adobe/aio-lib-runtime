@@ -279,10 +279,10 @@ function processInputs (input, params) {
  * @returns {object} the processed input as a key-value object
  */
 function createKeyValueInput (input) {
-  input = Object.keys(input).map(function (k) {
+  const arrayInput = Object.keys(input).map(function (k) {
     return { key: k, value: input[k] }
   })
-  return input
+  return arrayInput
 }
 
 /**
@@ -466,33 +466,32 @@ function createApiRoutes (pkg, pkgName, apiName, allowedActions, allowedSequence
 }
 
 /**
- * @description Create a sequence object
- * @param {object} thisSequence a sequence object
- * @param {object} options the sequence options
- * @param {string} key the action key
+ * @description Create a sequence object that is compatible with the OpenWhisk API from a parsed manifest object
+ * @param {string} fullName the full sequence name prefixed with the package, e.g. `pkg/sequence`
+ * @param {object} manifestSequence a sequence object as defined in a valid manifest file
+ * @param {string} packageName the package name of the sequence, which will be set to for actions in the sequence
  * @returns {object} a sequence object
  */
-function createSequenceObject (thisSequence, options, key) {
+function createSequenceObject (fullName, manifestSequence, packageName) {
   let actionArray = []
-  if (thisSequence) {
-    actionArray = thisSequence.split(',')
+  if (manifestSequence.actions) {
+    actionArray = manifestSequence.actions.split(',')
     actionArray = actionArray.map((action) => {
       // remove space between two actions after split
       const actionItem = action.replace(/\s+/g, '')
       if (actionItem.split('/').length > 1) {
         return actionItem
       } else {
-        return `${key}/${actionItem}`
+        return `${packageName}/${actionItem}`
       }
     })
   } else {
     throw new Error('Actions for the sequence not provided.')
   }
-  const objSequence = {}
-  objSequence.kind = 'sequence'
-  objSequence.components = actionArray
-  options.exec = objSequence
-  return options
+  const execObj = {}
+  execObj.kind = 'sequence'
+  execObj.components = actionArray
+  return { action: '', name: fullName, exec: execObj }
 }
 
 /**
@@ -520,47 +519,48 @@ function checkWebFlags (flag) {
 }
 
 /**
- * Create an action object from an action
+ * Create an action object compatible with the OpenWhisk API from an action object parsed from the manifest.
  *
- * @param {object} thisAction the action
- * @param {object} objAction the result action object
+ * @param {string} fullName the full action name prefixed with the package, e.g. `pkg/action`
+ * @param {object} manifestAction the action object as parsed from the manifest
  * @returns {object} the action object
  */
-function createActionObject (thisAction, objAction) {
-  if (thisAction.function.endsWith('.zip')) {
-    if (!thisAction.runtime && !thisAction.docker) {
+function createActionObject (fullName, manifestAction) {
+  const objAction = { name: fullName }
+  if (manifestAction.function.endsWith('.zip')) {
+    if (!manifestAction.runtime && !manifestAction.docker) {
       throw (new Error(`Invalid or missing property "runtime" in the manifest for this action: ${objAction && objAction.name}`))
     }
-    objAction.action = fs.readFileSync(thisAction.function)
+    objAction.action = fs.readFileSync(manifestAction.function)
   } else {
-    objAction.action = fs.readFileSync(thisAction.function, { encoding: 'utf8' })
+    objAction.action = fs.readFileSync(manifestAction.function, { encoding: 'utf8' })
   }
 
-  if (thisAction.main || thisAction.docker || thisAction.runtime) {
+  if (manifestAction.main || manifestAction.docker || manifestAction.runtime) {
     objAction.exec = {}
-    if (thisAction.main) {
-      objAction.exec.main = thisAction.main
+    if (manifestAction.main) {
+      objAction.exec.main = manifestAction.main
     }
-    if (thisAction.docker) {
+    if (manifestAction.docker) {
       objAction.exec.kind = 'blackbox'
-      objAction.exec.image = thisAction.docker
-    } else if (thisAction.runtime) {
-      objAction.exec.kind = thisAction.runtime
+      objAction.exec.image = manifestAction.docker
+    } else if (manifestAction.runtime) {
+      objAction.exec.kind = manifestAction.runtime
     }
   }
 
-  if (thisAction.limits) {
+  if (manifestAction.limits) {
     const limits = {
-      memory: thisAction.limits.memorySize || 256,
-      logs: thisAction.limits.logSize || 10,
-      timeout: thisAction.limits.timeout || 60000
+      memory: manifestAction.limits.memorySize || 256,
+      logs: manifestAction.limits.logSize || 10,
+      timeout: manifestAction.limits.timeout || 60000
     }
-    if (thisAction.limits.concurrency) {
-      limits.concurrency = thisAction.limits.concurrency
+    if (manifestAction.limits.concurrency) {
+      limits.concurrency = manifestAction.limits.concurrency
     }
     objAction.limits = limits
   }
-  objAction.annotations = returnAnnotations(thisAction)
+  objAction.annotations = returnAnnotations(manifestAction)
   return objAction
 }
 
@@ -699,12 +699,15 @@ function processPackage (packages,
   params,
   namesOnly = false,
   owOptions = {}) {
+  // eslint - do not rewrite function arguments
+  let pkgs = packages
+  let deploymentPkgs = deploymentPackages
   if (owOptions.apihost === 'https://adobeioruntime.net') {
     // rewrite packages in case there are any `require-adobe-auth` annotations
     // this is a temporary feature and will be replaced by a native support in Adobe I/O Runtime
-    const { newPackages, newDeploymentPackages } = rewriteActionsWithAdobeAuthAnnotation(packages, deploymentPackages)
-    packages = newPackages
-    deploymentPackages = newDeploymentPackages
+    const { newPackages, newDeploymentPackages } = rewriteActionsWithAdobeAuthAnnotation(pkgs, deploymentPkgs)
+    pkgs = newPackages
+    deploymentPkgs = newDeploymentPackages
   }
 
   const pkgAndDeps = []
@@ -716,19 +719,19 @@ function processPackage (packages,
   const ruleTrigger = []
   const arrSequence = []
 
-  Object.keys(packages).forEach((key) => {
+  Object.keys(pkgs).forEach((key) => {
     // back-patch from adobe/aio-cli-plugin-runtime/commit/d455ed57b6d5c20a202b495e6a5dab477473854c
     const objPackage = { name: key }
-    if (packages[key].public) {
-      objPackage.package = { publish: packages[key].public }
+    if (pkgs[key].public) {
+      objPackage.package = { publish: pkgs[key].public }
     }
     pkgAndDeps.push(objPackage)
     // From wskdeploy repo : currently, the 'version' and 'license' values are not stored in Apache OpenWhisk, but there are plans to support it in the future
     // pkg.version = packages[key]['version']
     // pkg.license = packages[key]['license']
-    if (packages[key].dependencies) {
-      Object.keys(packages[key].dependencies).forEach((depName) => {
-        const thisDep = packages[key].dependencies[depName]
+    if (pkgs[key].dependencies) {
+      Object.keys(pkgs[key].dependencies).forEach((depName) => {
+        const thisDep = pkgs[key].dependencies[depName]
         const objDep = { name: depName }
         if (!namesOnly) {
           let objDepPackage = {}
@@ -746,8 +749,8 @@ function processPackage (packages,
           // Parse inputs
           let deploymentInputs = {}
           const packageInputs = thisDep.inputs || {}
-          if (deploymentPackages[key] && deploymentPackages[key].dependencies && deploymentPackages[key].dependencies[depName]) {
-            deploymentInputs = deploymentPackages[key].dependencies[depName].inputs || {}
+          if (deploymentPkgs[key] && deploymentPkgs[key].dependencies && deploymentPkgs[key].dependencies[depName]) {
+            deploymentInputs = deploymentPkgs[key].dependencies[depName].inputs || {}
           }
           const allInputs = returnUnion(packageInputs, deploymentInputs)
           // if parameter is provided as key : 'data type' , process it to set default values before deployment
@@ -760,16 +763,16 @@ function processPackage (packages,
         pkgAndDeps.push(objDep)
       })
     }
-    if (packages[key].actions) {
-      Object.keys(packages[key].actions).forEach((actionName) => {
-        const thisAction = packages[key].actions[actionName]
+    if (pkgs[key].actions) {
+      Object.keys(pkgs[key].actions).forEach((actionName) => {
+        const thisAction = pkgs[key].actions[actionName]
         let objAction = { name: `${key}/${actionName}` }
         if (!namesOnly) {
-          objAction = createActionObject(thisAction, objAction)
+          objAction = createActionObject(objAction.name, thisAction)
           let deploymentInputs = {}
           const packageInputs = thisAction.inputs || {}
-          if (deploymentPackages[key] && deploymentPackages[key].actions && deploymentPackages[key].actions[actionName]) {
-            deploymentInputs = deploymentPackages[key].actions[actionName].inputs || {}
+          if (deploymentPkgs[key] && deploymentPkgs[key].actions && deploymentPkgs[key].actions[actionName]) {
+            deploymentInputs = deploymentPkgs[key].actions[actionName].inputs || {}
           }
           const allInputs = returnUnion(packageInputs, deploymentInputs)
           // if parameter is provided as key : 'data type' , process it to set default values before deployment
@@ -783,27 +786,26 @@ function processPackage (packages,
       })
     }
 
-    if (packages[key].sequences) {
+    if (pkgs[key].sequences) {
       // Sequences can have only one field : actions
       // Usage: aio runtime:action:create <action-name> --sequence existingAction1, existingAction2
-      Object.keys(packages[key].sequences).forEach((sequenceName) => {
+      Object.keys(pkgs[key].sequences).forEach((sequenceName) => {
         let objSequence = { name: `${key}/${sequenceName}` }
         if (!namesOnly) {
-          objSequence.action = ''
-          const thisSequence = packages[key].sequences[sequenceName]
-          objSequence = createSequenceObject(thisSequence.actions, objSequence, key)
+          const thisSequence = pkgs[key].sequences[sequenceName]
+          objSequence = createSequenceObject(objSequence.name, thisSequence, key)
           objSequence.annotations = returnAnnotations(thisSequence)
           arrSequence.push(sequenceName)
         }
         actions.push(objSequence)
       })
     }
-    if (packages[key].triggers) {
-      Object.keys(packages[key].triggers).forEach((triggerName) => {
+    if (pkgs[key].triggers) {
+      Object.keys(pkgs[key].triggers).forEach((triggerName) => {
         const objTrigger = { name: triggerName }
         if (!namesOnly) {
           objTrigger.trigger = {}
-          const packageInputs = packages[key].triggers[triggerName].inputs || {}
+          const packageInputs = pkgs[key].triggers[triggerName].inputs || {}
           let deploymentInputs = {}
           if (triggerName in deploymentTriggers) {
             deploymentInputs = deploymentTriggers[triggerName]
@@ -813,11 +815,11 @@ function processPackage (packages,
           if (Object.entries(allInputs).length !== 0) {
             objTrigger.trigger.parameters = allInputs
           }
-          if (packages[key].triggers[triggerName].annotations) {
-            objTrigger.trigger.annotations = createKeyValueInput(packages[key].triggers[triggerName].annotations)
+          if (pkgs[key].triggers[triggerName].annotations) {
+            objTrigger.trigger.annotations = createKeyValueInput(pkgs[key].triggers[triggerName].annotations)
           }
-          if (packages[key].triggers[triggerName].feed) {
-            objTrigger.trigger.feed = packages[key].triggers[triggerName].feed
+          if (pkgs[key].triggers[triggerName].feed) {
+            objTrigger.trigger.feed = pkgs[key].triggers[triggerName].feed
           }
           ruleTrigger.push(triggerName)
         }
@@ -826,13 +828,13 @@ function processPackage (packages,
       })
     }
     // Rules cannot belong to any package
-    if (packages[key].rules) {
-      Object.keys(packages[key].rules).forEach((ruleName) => {
+    if (pkgs[key].rules) {
+      Object.keys(pkgs[key].rules).forEach((ruleName) => {
         const objRule = { name: ruleName }
         if (!namesOnly) {
-          if (packages[key].rules[ruleName].trigger && packages[key].rules[ruleName].action) {
-            objRule.trigger = packages[key].rules[ruleName].trigger
-            objRule.action = packages[key].rules[ruleName].action
+          if (pkgs[key].rules[ruleName].trigger && pkgs[key].rules[ruleName].action) {
+            objRule.trigger = pkgs[key].rules[ruleName].trigger
+            objRule.action = pkgs[key].rules[ruleName].action
             if (objRule.action.split('/').length > 1) {
               objRule.action = objRule.action.split('/').pop()
             }
@@ -849,9 +851,9 @@ function processPackage (packages,
       })
     }
 
-    if (packages[key].apis) {
-      Object.keys(packages[key].apis).forEach((apiName) => {
-        const apiRoutes = createApiRoutes(packages[key], key, apiName, ruleAction, arrSequence, namesOnly)
+    if (pkgs[key].apis) {
+      Object.keys(pkgs[key].apis).forEach((apiName) => {
+        const apiRoutes = createApiRoutes(pkgs[key], key, apiName, ruleAction, arrSequence, namesOnly)
         routes.push.apply(routes, apiRoutes) // faster than concat for < 100k elements
       })
     }
@@ -1016,11 +1018,11 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
           snamespace/spackage/saction => /snamespace/spackage/saction
           /snamespace/spackage/saction => /snamespace/spackage/saction
         */
-        sequence = sequence.startsWith('/') ? sequence.substr(1) : sequence
-        const actionItemCount = sequence.split('/').length
+        const normalizedSequence = sequence.startsWith('/') ? sequence.substr(1) : sequence
+        const actionItemCount = normalizedSequence.split('/').length
         return (actionItemCount > 2)
-          ? `/${sequence}`
-          : `/${ns}/${sequence}`
+          ? `/${normalizedSequence}`
+          : `/${ns}/${normalizedSequence}`
       })
     }
     logger(`Info: Deploying action [${action.name}]...`)

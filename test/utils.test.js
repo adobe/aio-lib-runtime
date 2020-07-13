@@ -369,7 +369,15 @@ describe('checkWebFlags', () => { /* TODO */ })
 describe('createSequenceObject', () => {
   test('no args', async () => {
     expect(() => utils.createSequenceObject())
-      .toThrowError()
+      .toThrow()
+  })
+  test('sequence=name, sequenceManifest has no actions set', async () => {
+    expect(() => utils.createSequenceObject('name', {}))
+      .toThrow('Actions for the sequence not provided.')
+  })
+  test('sequence=name, sequenceManifest with actions', async () => {
+    expect(utils.createSequenceObject('name', { actions: 'pkg1/c  ,otherns/pkg2/b, nopackage' }, 'fakepackage'))
+      .toEqual({ action: '', exec: { components: ['pkg1/c', 'otherns/pkg2/b', 'fakepackage/nopackage'], kind: 'sequence' }, name: 'name' })
   })
 })
 
@@ -446,75 +454,73 @@ describe('setPaths', () => {
 })
 
 describe('createActionObject', () => {
+  let readFileSyncSpy
+  beforeEach(() => {
+    readFileSyncSpy = jest.spyOn(fs, 'readFileSync')
+  })
+  afterEach(() => {
+    readFileSyncSpy.mockRestore()
+  })
+
   test('action zip - no runtime prop', () => {
-    expect(() => utils.createActionObject({ function: 'some.zip' }))
+    expect(() => utils.createActionObject('action', { function: 'some.zip' }))
       .toThrowError('Invalid or missing property')
-    expect(() => utils.createActionObject({ function: 'some.zip' }, { name: 'namedAction' }))
+    expect(() => utils.createActionObject('action', { function: 'some.zip' }))
       .toThrowError('Invalid or missing property')
-    expect(() => utils.createActionObject({ function: 'some.zip', runtime: 'something' }))
+    expect(() => utils.createActionObject('action', { function: 'some.zip', runtime: 'something' }))
       .toThrowError('no such file or directory')
   })
 
   test('action js - runtime prop w/ docker', () => {
-    const spy = jest.spyOn(fs, 'readFileSync')
-    spy.mockImplementationOnce(() => 'fake source code')
-    const actionObj = { name: 'fake', main: 'main' }
-    expect(() => utils.createActionObject({
+    readFileSyncSpy.mockImplementation(() => 'fake source code')
+    const res = utils.createActionObject('fake', {
       function: 'fake.js',
       runtime: 'something',
       docker: 'docker',
       main: 'fakeSrcMain',
       limits: { concurrency: 12 }
-    }, actionObj))
-      .not.toThrowError()
+    })
+    expect(res).toEqual({ action: 'fake source code', annotations: { 'raw-http': false, 'web-export': false }, exec: { image: 'docker', kind: 'blackbox', main: 'fakeSrcMain' }, limits: { concurrency: 12, logs: 10, memory: 256, timeout: 60000 }, name: 'fake' })
   })
 
   test('action js - runtime prop w/ docker, no main', () => {
-    const spy = jest.spyOn(fs, 'readFileSync')
-    spy.mockImplementationOnce(() => 'fake source code')
-    const actionObj = { name: 'fake', main: 'main' }
-    expect(() => utils.createActionObject({
+    readFileSyncSpy.mockImplementation(() => 'fake source code')
+    const res = utils.createActionObject('fake', {
       function: 'fake.js',
       runtime: 'something',
       docker: 'docker',
       limits: { concurrency: 12 }
-    }, actionObj))
-      .not.toThrowError()
+    })
+    expect(res).toEqual({ action: 'fake source code', annotations: { 'raw-http': false, 'web-export': false }, exec: { image: 'docker', kind: 'blackbox' }, limits: { concurrency: 12, logs: 10, memory: 256, timeout: 60000 }, name: 'fake' })
   })
 
   test('action js - runtime prop w/ docker, no main, no limits', () => {
-    const spy = jest.spyOn(fs, 'readFileSync')
-    spy.mockImplementationOnce(() => 'fake source code')
-    const actionObj = { name: 'fake', main: 'main' }
-    expect(() => utils.createActionObject({
+    readFileSyncSpy.mockImplementation(() => 'fake source code')
+    const res = utils.createActionObject('fake', {
       function: 'fake.js',
       runtime: 'something',
       docker: 'docker',
       limits: {}
-    }, actionObj))
-      .not.toThrowError()
+    })
+    expect(res).toEqual({ action: 'fake source code', annotations: { 'raw-http': false, 'web-export': false }, exec: { image: 'docker', kind: 'blackbox' }, limits: { logs: 10, memory: 256, timeout: 60000 }, name: 'fake' })
   })
 
   test('action js -  no runtime prop, no docker, yes main', () => {
-    const spy = jest.spyOn(fs, 'readFileSync')
-    spy.mockImplementationOnce(() => 'fake source code')
-    const actionObj = { name: 'fake', main: 'main' }
-    expect(() => utils.createActionObject({
+    readFileSyncSpy.mockImplementation(() => 'fake source code')
+    const res = utils.createActionObject('fake', {
       function: 'fake.js',
       main: 'main'
-    }, actionObj))
-      .not.toThrowError()
+    })
+    expect(res).toEqual({ action: 'fake source code', annotations: { 'raw-http': false, 'web-export': false }, exec: { main: 'main' }, name: 'fake' })
   })
 
   test('action js - runtime prop no docker', () => {
-    const spy = jest.spyOn(fs, 'readFileSync')
-    spy.mockImplementationOnce(() => 'fake source code')
-    const actionObj = { name: 'fake', main: 'main' }
-    const result = utils.createActionObject({
+    readFileSyncSpy.mockImplementation(() => 'fake source code')
+    const result = utils.createActionObject('fake', {
       function: 'fake.js',
       runtime: 'something',
       main: 'fakeSrcMain'
-    }, actionObj)
+    })
 
     expect(result).toEqual(expect.objectContaining({
       action: 'fake source code',
@@ -526,7 +532,6 @@ describe('createActionObject', () => {
         kind: 'something',
         main: 'fakeSrcMain'
       },
-      main: 'main',
       name: 'fake'
     }))
   })
