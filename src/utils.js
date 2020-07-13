@@ -1176,7 +1176,7 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
 }
 
 /**
- * Deploy all deployment entities: can deploy packages, actions, triggers, rules and apis.
+ * Deploy all processed entities: can deploy packages, actions, triggers, rules and apis.
  *
  * @param {OpenWhiskEntitiesAction} entities the processed entities
  * @param {object} ow the OpenWhisk client
@@ -1238,8 +1238,8 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
 }
 
 /**
- * Undeploy entities: can undeploy packages, actions, triggers, rules and apis.
- * Entities do not need to be complete, only the names are needed for un-deployment.
+ * Undeploy all processed entities: can undeploy packages, actions, triggers, rules and apis.
+ * Entity definitions do not need to be complete, only the names are needed for un-deployment.
  *
  * @param {object} entities the processed entities, only names are enough for undeploy
  * @param {object} ow the OpenWhisk object
