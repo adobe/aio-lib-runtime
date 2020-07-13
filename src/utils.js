@@ -289,7 +289,7 @@ function createKeyValueInput (input) {
  * @description Get the deployment yaml file path
  * @returns {string} the deployment yaml path
  */
-function setDeploymentPath () {
+function getDeploymentPath () {
   let deploymentPath
   if (fs.existsSync('./deployment.yaml')) {
     deploymentPath = 'deployment.yaml'
@@ -303,7 +303,7 @@ function setDeploymentPath () {
  * @description Get the manifest yaml file path
  * @returns {string} the manifest yaml path
  */
-function setManifestPath () {
+function getManifestPath () {
   let manifestPath
   if (fs.existsSync('./manifest.yaml')) {
     manifestPath = 'manifest.yaml'
@@ -883,7 +883,7 @@ function processPackage (packages,
 function setPaths (flags = {}) {
   let manifestPath
   if (!flags.manifest) {
-    manifestPath = setManifestPath()
+    manifestPath = getManifestPath()
   } else {
     manifestPath = flags.manifest
   }
@@ -892,7 +892,7 @@ function setPaths (flags = {}) {
   let deploymentPath
   let deploymentPackages = {}
   if (!flags.deployment) {
-    deploymentPath = setDeploymentPath()
+    deploymentPath = getDeploymentPath()
   } else {
     deploymentPath = flags.deployment
   }
@@ -1346,10 +1346,10 @@ module.exports = {
   createComponentsfromSequence,
   processInputs,
   createKeyValueInput,
-  setManifestPath,
+  getManifestPath,
   returnUnion,
   returnDeploymentTriggerInputs,
-  setDeploymentPath,
+  getDeploymentPath,
   createActionObject,
   checkWebFlags,
   createSequenceObject,

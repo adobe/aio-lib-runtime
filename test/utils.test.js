@@ -61,10 +61,10 @@ describe('utils has the right functions', () => {
     expect(typeof utils.processInputs).toEqual('function')
 
     expect(typeof utils.createKeyValueInput).toEqual('function')
-    expect(typeof utils.setManifestPath).toEqual('function')
+    expect(typeof utils.getManifestPath).toEqual('function')
     expect(typeof utils.returnUnion).toEqual('function')
     expect(typeof utils.returnDeploymentTriggerInputs).toEqual('function')
-    expect(typeof utils.setDeploymentPath).toEqual('function')
+    expect(typeof utils.getDeploymentPath).toEqual('function')
     expect(typeof utils.createActionObject).toEqual('function')
     expect(typeof utils.checkWebFlags).toEqual('function')
     expect(typeof utils.createSequenceObject).toEqual('function')
@@ -180,7 +180,7 @@ describe('createKeyValueInput', () => {
   })
 })
 
-describe('setDeploymentPath', () => {
+describe('getDeploymentPath', () => {
   let spy
   beforeEach(() => {
     spy = jest.spyOn(fs, 'existsSync')
@@ -190,30 +190,30 @@ describe('setDeploymentPath', () => {
     spy.mockRestore()
   })
   test('no file exists', () => {
-    const res = utils.setDeploymentPath()
+    const res = utils.getDeploymentPath()
     expect(res).toEqual(undefined)
   })
 
   test('./deployment.yaml exists', () => {
     spy.mockImplementation(f => f === './deployment.yaml')
-    const res = utils.setDeploymentPath()
+    const res = utils.getDeploymentPath()
     expect(res).toEqual('deployment.yaml')
   })
 
   test('./deployment.yml exists', () => {
     spy.mockImplementation(f => f === './deployment.yml')
-    const res = utils.setDeploymentPath()
+    const res = utils.getDeploymentPath()
     expect(res).toEqual('deployment.yml')
   })
 
   test('./deployment.yaml and ./deployment.yml exists', () => {
     spy.mockImplementation(f => f === './deployment.yaml' || f === './deployment.yml')
-    const res = utils.setDeploymentPath()
+    const res = utils.getDeploymentPath()
     expect(res).toEqual('deployment.yaml')
   })
 })
 
-describe('setManifestPath', () => {
+describe('getManifestPath', () => {
   let spy
   beforeEach(() => {
     spy = jest.spyOn(fs, 'existsSync')
@@ -224,24 +224,24 @@ describe('setManifestPath', () => {
   })
 
   test('no file exists', () => {
-    expect(() => utils.setManifestPath()).toThrow('Manifest file not found')
+    expect(() => utils.getManifestPath()).toThrow('Manifest file not found')
   })
 
   test('./manifest.yaml exists', () => {
     spy.mockImplementation(f => f === './manifest.yaml')
-    const res = utils.setManifestPath()
+    const res = utils.getManifestPath()
     expect(res).toEqual('manifest.yaml')
   })
 
   test('./manifest.yml exists', () => {
     spy.mockImplementation(f => f === './manifest.yml')
-    const res = utils.setManifestPath()
+    const res = utils.getManifestPath()
     expect(res).toEqual('manifest.yml')
   })
 
   test('./manifest.yaml and ./manifest.yml exists', () => {
     spy.mockImplementation(f => f === './manifest.yaml' || f === './manifest.yml')
-    const res = utils.setManifestPath()
+    const res = utils.getManifestPath()
     expect(res).toEqual('manifest.yaml')
   })
 })
