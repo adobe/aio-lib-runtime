@@ -132,7 +132,7 @@ const fetch = require('cross-fetch')
  * client module. Can be obtained using (processpackage)[#processpackage] (with `onlyNames=true` for un-deployment)
  *
  * @typedef {object} OpenWhiskEntities
- * @property {Array<OpenWhiskEntitiesApi>} apis the array of api entities
+ * @property {Array<OpenWhiskEntitiesRoute>} apis the array of route entities
  * @property {Array<OpewWhiskEntitiesAction>} actions the array of action entities
  * @property {Array<OpenWhiskEntitiesTrigger>} triggers the array of trigger entities
  * @property {Array<OpewWhiskEntitiesRule>} rules the array of rule entities
@@ -143,7 +143,7 @@ const fetch = require('cross-fetch')
  *
  * The api entity definition
  *
- * @typedef {object} OpenWhiskEntitiesApi
+ * @typedef {object} OpenWhiskEntitiesRoute
  * @property {string} name the api name
  * @property {string} basepath the api basepath
  * @property {string} relpath the api relpath
@@ -589,7 +589,7 @@ function returnAnnotations (action) {
  * @param {Array} allowedActions List of action names allowed to be used in routes.
  * @param {Array} allowedSequences List of sequence names allowed to be used in routes.
  * @param {boolean} pathOnly Skip action, method and response type in route definitions.
- * @returns {Array<OpenWhiskEntitiesApi>} the array of route entities
+ * @returns {Array<OpenWhiskEntitiesRoute>} the array of route entities
  */
 function createApiRoutes (pkg, pkgName, apiName, allowedActions, allowedSequences, pathOnly) {
   const actions = pkg.actions
