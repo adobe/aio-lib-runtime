@@ -133,10 +133,10 @@ const fetch = require('cross-fetch')
  *
  * @typedef {object} OpenWhiskEntities
  * @property {Array<OpenWhiskEntitiesRoute>} apis the array of route entities
- * @property {Array<OpewWhiskEntitiesAction>} actions the array of action entities
+ * @property {Array<OpenWhiskEntitiesAction>} actions the array of action entities
  * @property {Array<OpenWhiskEntitiesTrigger>} triggers the array of trigger entities
- * @property {Array<OpewWhiskEntitiesRule>} rules the array of rule entities
- * @property {Array<OpewWhiskEntitiesPackage>} pkgAndDeps the array of package entities
+ * @property {Array<OpenWhiskEntitiesRule>} rules the array of rule entities
+ * @property {Array<OpenWhiskEntitiesPackage>} pkgAndDeps the array of package entities
  */
 
 /**
