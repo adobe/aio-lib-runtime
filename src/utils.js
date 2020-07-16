@@ -56,7 +56,7 @@ const fetch = require('cross-fetch')
  * @property {string} [web] indicate if an action should be exported as web, can take the
  *                    value of: true | false | yes | no | raw
  * @property {string} [web-export] same as web
- * @property {boolean} [raw-http] indicate if an action should be exported as web, this
+ * @property {boolean} [raw-http] indicate if an action should be exported as raw web action, this
  *                     option is only valid if `web` or `web-export` is set to true
  * @property {string} [docker] the docker container to run the action into
  * @property {ManifestActionAnnotations} [annotations] the manifest action annotations
