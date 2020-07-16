@@ -49,7 +49,7 @@ const fetch = require('cross-fetch')
  * @property {string} [version] the manifest action version
  * @property {string} function the path to the action code
  * @property {string} runtime the runtime environment or kind in which the action
- *                    executes, e.g. 'nodejs:10'
+ *                    executes, e.g. 'nodejs:12'
  * @property {string} [main] the entry point to the function
  * @property {object} [inputs] the list of action default parameters
  * @property {ManifestActionLimits} [limits] limits for the action
