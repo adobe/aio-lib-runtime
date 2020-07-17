@@ -1418,5 +1418,3 @@ describe('findProjectHashonServer', () => {
     expect(result).toBe('projectHash')
   })
 })
-
-
