@@ -1163,7 +1163,7 @@ async function getProjectEntities (project, isProjectHash, ow) {
 }
 
 /**
- * Add managed project annotations
+ * Add managed project annotations ( modifies contents of entities )
  *
  * @param {object} entities the entities
  * @param {string} manifestPath the manifest path
@@ -1283,57 +1283,6 @@ async function findProjectHashonServer (ow, projectName) {
   return projectHash
 }
 
-/**
- * Get the file extension for a kind
- *
- * @param {string} kind the kind
- * @returns {string} the file extension, or '' if not found
- */
-function fileExtensionForKind (kind) {
-  if (kind) {
-    const [lang] = kind.split(':')
-    switch (lang.toLowerCase()) {
-      case 'ballerina': return '.bal'
-      case 'dotnet': return '.cs'
-      case 'go': return '.go'
-      case 'java': return '.java'
-      case 'nodejs': return '.js'
-      case 'php': return '.php'
-      case 'python': return '.py'
-      case 'ruby': return '.rb'
-      case 'rust': return '.rs'
-      case 'swift': return '.swift'
-    }
-  }
-  return ''
-}
-
-/**
- * Get the kind for a file extension
- *
- * @param {string} filename the filename
- * @returns {string}  the kind, or undefined if not found
- */
-function kindForFileExtension (filename) {
-  if (filename) {
-    const path = require('path')
-    const ext = path.extname(filename)
-    switch (ext.toLowerCase()) {
-      case '.bal': return 'ballerina:default'
-      case '.cs': return 'dotnet:default'
-      case '.go': return 'go:default'
-      case '.java': return 'java:default'
-      case '.js': return 'nodejs:default'
-      case '.php': return 'php:default'
-      case '.py': return 'python:default'
-      case '.rb': return 'ruby:default'
-      case '.rs': return 'rust:default'
-      case '.swift': return 'swift:default'
-    }
-  }
-  return undefined
-}
-
 module.exports = {
   createKeyValueObjectFromArray,
   createKeyValueArrayFromObject,
@@ -1345,16 +1294,16 @@ module.exports = {
   parsePackageName,
   createComponentsfromSequence,
   processInputs,
-  createKeyValueInput,
-  setManifestPath,
+  createKeyValueInput, /* internal */
+  setManifestPath, /* internal */
   returnUnion,
-  returnDeploymentTriggerInputs,
-  setDeploymentPath,
-  createActionObject,
-  checkWebFlags,
-  createSequenceObject,
-  createApiRoutes,
-  returnAnnotations,
+  returnDeploymentTriggerInputs, /* internal */
+  setDeploymentPath, /* internal */
+  createActionObject, /* internal */
+  checkWebFlags, /* internal */
+  createSequenceObject, /* internal */
+  createApiRoutes, /* internal */
+  returnAnnotations, /* internal */
   deployPackage,
   undeployPackage,
   processPackage,
@@ -1364,7 +1313,5 @@ module.exports = {
   findProjectHashonServer,
   getProjectHash,
   addManagedProjectAnnotations,
-  printLogs,
-  fileExtensionForKind,
-  kindForFileExtension
+  printLogs
 }
