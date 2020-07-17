@@ -80,8 +80,6 @@ describe('utils has the right functions', () => {
     expect(typeof utils.getProjectHash).toEqual('function')
     expect(typeof utils.addManagedProjectAnnotations).toEqual('function')
     expect(typeof utils.printLogs).toEqual('function')
-    expect(typeof utils.fileExtensionForKind).toEqual('function')
-    expect(typeof utils.kindForFileExtension).toEqual('function')
   })
 })
 
@@ -1423,50 +1421,5 @@ describe('findProjectHashonServer', () => {
     expect(trgList).toHaveBeenCalled()
     expect(rlzList).toHaveBeenCalled()
     expect(result).toBe('projectHash')
-  })
-})
-
-describe('fileExtensionForKind', () => {
-  test('map action kind to file extension', () => {
-    expect(utils.fileExtensionForKind('ballerina:abc')).toEqual('.bal')
-    expect(utils.fileExtensionForKind('dotnet:abc')).toEqual('.cs')
-    expect(utils.fileExtensionForKind('go:abc')).toEqual('.go')
-    expect(utils.fileExtensionForKind('java:abc')).toEqual('.java')
-    expect(utils.fileExtensionForKind('nodejs:abc')).toEqual('.js')
-    expect(utils.fileExtensionForKind('php:abc')).toEqual('.php')
-    expect(utils.fileExtensionForKind('python:abc')).toEqual('.py')
-    expect(utils.fileExtensionForKind('ruby:abc')).toEqual('.rb')
-    expect(utils.fileExtensionForKind('rust:abc')).toEqual('.rs')
-    expect(utils.fileExtensionForKind('swift:abc')).toEqual('.swift')
-
-    // all kinds are colon separated but test defensively anyway
-    expect(utils.fileExtensionForKind('swift')).toEqual('.swift')
-
-    // unknown kinds return ''
-    expect(utils.fileExtensionForKind('???:???')).toEqual('')
-    expect(utils.fileExtensionForKind('???')).toEqual('')
-    expect(utils.fileExtensionForKind('')).toEqual('')
-    expect(utils.fileExtensionForKind(undefined)).toEqual('')
-  })
-})
-
-describe('kindForFileExtension', () => {
-  test('map action kind to file extension', () => {
-    expect(utils.kindForFileExtension('f.bal')).toEqual('ballerina:default')
-    expect(utils.kindForFileExtension('f.cs')).toEqual('dotnet:default')
-    expect(utils.kindForFileExtension('f.go')).toEqual('go:default')
-    expect(utils.kindForFileExtension('f.java')).toEqual('java:default')
-    expect(utils.kindForFileExtension('f.js')).toEqual('nodejs:default')
-    expect(utils.kindForFileExtension('f.php')).toEqual('php:default')
-    expect(utils.kindForFileExtension('f.py')).toEqual('python:default')
-    expect(utils.kindForFileExtension('f.rb')).toEqual('ruby:default')
-    expect(utils.kindForFileExtension('f.rs')).toEqual('rust:default')
-    expect(utils.kindForFileExtension('f.swift')).toEqual('swift:default')
-
-    expect(utils.kindForFileExtension(undefined)).toEqual(undefined)
-    expect(utils.kindForFileExtension('')).toEqual(undefined)
-    expect(utils.kindForFileExtension('.')).toEqual(undefined)
-    expect(utils.kindForFileExtension('.js')).toEqual(undefined)
-    expect(utils.kindForFileExtension('???')).toEqual(undefined)
   })
 })
