@@ -17,6 +17,207 @@ const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:in
 const yaml = require('js-yaml')
 const fetch = require('cross-fetch')
 
+/**
+ *
+ * The entry point to the information read from the manifest, this can be extracted using
+ * [setPaths](#setpaths).
+ *
+ * @typedef {Array<ManifestPackage>} ManifestPackages
+ */
+
+/**
+ *
+ * The manifest package definition
+ *
+ * @typedef {object} ManifestPackage
+ * @property {string} version the manifest package version
+ * @property {string} [license] the manifest package license, e.g. Apache-2.0
+ * @property {Array<ManifestAction>} [actions] Actions in the manifest package
+ * @property {Array<ManifestSequence>} [sequences] Sequences in the manifest package
+ * @property {Array<ManifestTrigger>} [triggers] Triggers in the manifest package
+ * @property {Array<ManifestRule>} [rules] Rules in the manifest package
+ * @property {Array<ManifestDependency>} [dependencies] Dependencies in the manifest package
+ * @property {Array<ManifestApi>} [apis] Apis in the manifest package
+ *
+ */
+
+/**
+ *
+ * The manifest action definition
+ *
+ * @typedef {object} ManifestAction
+ * @property {string} [version] the manifest action version
+ * @property {string} function the path to the action code
+ * @property {string} runtime the runtime environment or kind in which the action
+ *                    executes, e.g. 'nodejs:12'
+ * @property {string} [main] the entry point to the function
+ * @property {object} [inputs] the list of action default parameters
+ * @property {ManifestActionLimits} [limits] limits for the action
+ * @property {string} [web] indicate if an action should be exported as web, can take the
+ *                    value of: true | false | yes | no | raw
+ * @property {string} [web-export] same as web
+ * @property {boolean} [raw-http] indicate if an action should be exported as raw web action, this
+ *                     option is only valid if `web` or `web-export` is set to true
+ * @property {string} [docker] the docker container to run the action into
+ * @property {ManifestActionAnnotations} [annotations] the manifest action annotations
+ *
+ */
+
+/**
+ *
+ * The manifest sequence definition
+ * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md
+ *
+ * @typedef {object} ManifestSequence
+ *
+ */
+
+/**
+ *
+ * The manifest trigger definition
+ * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_triggers.md
+ *
+ * @typedef {object} ManifestTrigger
+ *
+ */
+
+/**
+ *
+ * The manifest rule definition
+ * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_rules.md
+ *
+ * @typedef {object} ManifestRule
+ *
+ */
+
+/**
+ *
+ * The manifest api definition
+ * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_apis.md
+ *
+ * @typedef {object} ManifestApi
+ *
+ */
+
+/**
+ *
+ * The manifest dependency definition
+ * TODO
+ *
+ * @typedef {object} ManifestDependency
+ *
+ */
+
+/**
+ *
+ * The manifest action limits definition
+ * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#valid-limit-keys.md
+ *
+ * @typedef {object} ManifestActionLimits
+ *
+ */
+
+/**
+ *
+ * The manifest action annotations definition
+ * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#action-annotations
+ *
+ * @typedef {object} ManifestActionAnnotations
+ *
+ */
+
+/**
+ *
+ * The OpenWhisk entities definitions, which are compatible with the `openwhisk` node
+ * client module. Can be obtained using (processpackage)[#processpackage] (with `onlyNames=true` for un-deployment)
+ *
+ * @typedef {object} OpenWhiskEntities
+ * @property {Array<OpenWhiskEntitiesRoute>} apis the array of route entities
+ * @property {Array<OpenWhiskEntitiesAction>} actions the array of action entities
+ * @property {Array<OpenWhiskEntitiesTrigger>} triggers the array of trigger entities
+ * @property {Array<OpenWhiskEntitiesRule>} rules the array of rule entities
+ * @property {Array<OpenWhiskEntitiesPackage>} pkgAndDeps the array of package entities
+ */
+
+/**
+ *
+ * The api entity definition
+ *
+ * @typedef {object} OpenWhiskEntitiesRoute
+ * @property {string} name the api name
+ * @property {string} basepath the api basepath
+ * @property {string} relpath the api relpath
+ * @property {string} action the action name behind the api
+ * @property {string} responsettype the response type, e.g. 'json'
+ * @property {string} operation the http method, e.g 'get'
+ *
+ */
+
+/**
+ *
+ * The action entity definition
+ * TODO
+ *
+ * @typedef {object} OpenWhiskEntitiesAction
+ *
+ */
+
+/**
+ *
+ * The rule entity definition
+ * TODO
+ *
+ * @typedef {object} OpenWhiskEntitiesRule
+ *
+ */
+
+/**
+ *
+ * The trigger entity definition
+ * TODO
+ *
+ * @typedef {object} OpenWhiskEntitiesTrigger
+ *
+ */
+
+/**
+ *
+ * The package entity definition
+ * TODO
+ *
+ * @typedef {object} OpenWhiskEntitiesPackage
+ *
+ */
+
+/**
+ *
+ * The entry point to the information read from the deployment file, this can be extracted using
+ * [setPaths](#setpaths).
+ * TODO
+ *
+ * @typedef {Array<object>} DeploymentPackages
+ *
+ */
+
+/**
+ *
+ * The deployment trigger definition
+ * TODO
+ *
+ * @typedef {object} DeploymentTrigger
+ *
+ */
+
+/**
+ * @typedef {object} DeploymentFileComponents
+ * @property {ManifestPackages} packages Packages in the manifest
+ * @property {Array<DeploymentTrigger>} deploymentTriggers Triggers in the deployment manifest
+ * @property {DeploymentPackages} deploymentPackages Packages in the deployment manifest
+ * @property {string} manifestPath Path to manifest
+ * @property {object} manifestContent Parsed manifest object
+ * @property {string} projectName Name of the project
+ */
+
 // for lines starting with date-time-string followed by stdout|stderr a ':' and a log-line, return only the logline
 const dtsRegex = /\d{4}-[01]{1}\d{1}-[0-3]{1}\d{1}T[0-2]{1}\d{1}:[0-6]{1}\d{1}:[0-6]{1}\d{1}.\d+Z( *(stdout|stderr):)?\s(.*)/
 
@@ -279,17 +480,17 @@ function processInputs (input, params) {
  * @returns {object} the processed input as a key-value object
  */
 function createKeyValueInput (input) {
-  input = Object.keys(input).map(function (k) {
+  const arrayInput = Object.keys(input).map(function (k) {
     return { key: k, value: input[k] }
   })
-  return input
+  return arrayInput
 }
 
 /**
  * @description Get the deployment yaml file path
  * @returns {string} the deployment yaml path
  */
-function setDeploymentPath () {
+function getDeploymentPath () {
   let deploymentPath
   if (fs.existsSync('./deployment.yaml')) {
     deploymentPath = 'deployment.yaml'
@@ -303,7 +504,7 @@ function setDeploymentPath () {
  * @description Get the manifest yaml file path
  * @returns {string} the manifest yaml path
  */
-function setManifestPath () {
+function getManifestPath () {
   let manifestPath
   if (fs.existsSync('./manifest.yaml')) {
     manifestPath = 'manifest.yaml'
@@ -317,7 +518,7 @@ function setManifestPath () {
 
 /**
  * @description Get the deployment trigger inputs.
- * @param {object} deploymentPackages the deployment packages
+ * @param {DeploymentPackages} deploymentPackages the deployment packages
  * @returns {object} the deployment trigger inputs
  */
 function returnDeploymentTriggerInputs (deploymentPackages) {
@@ -334,8 +535,8 @@ function returnDeploymentTriggerInputs (deploymentPackages) {
 
 /**
  * @description Get the annotations for an action
- * @param {object} action the action object
- * @returns {object} the action object annotations
+ * @param {ManifestAction} action the action manifest object
+ * @returns {object} the action annotation entities
  */
 function returnAnnotations (action) {
   const annotationParams = {}
@@ -382,20 +583,13 @@ function returnAnnotations (action) {
  * Creates an array of route definitions from the given manifest-based package.
  * See https://github.com/apache/openwhisk-wskdeploy/blob/master/parsers/manifest_parser.go#L1187
  *
- * @param {object} pkg The package definition from the manifest.
+ * @param {ManifestPackage} pkg The package definition from the manifest.
  * @param {string} pkgName The name of the package.
  * @param {string} apiName The name of the HTTP API definition from the manifest.
  * @param {Array} allowedActions List of action names allowed to be used in routes.
  * @param {Array} allowedSequences List of sequence names allowed to be used in routes.
  * @param {boolean} pathOnly Skip action, method and response type in route definitions.
- * @returns {{
- * action: string,
- * operation: string,
- * responsetype: string
- * basepath: string,
- * relpath: string,
- * name: string
- * }[]} an object with api routes
+ * @returns {Array<OpenWhiskEntitiesRoute>} the array of route entities
  */
 function createApiRoutes (pkg, pkgName, apiName, allowedActions, allowedSequences, pathOnly) {
   const actions = pkg.actions
@@ -466,33 +660,32 @@ function createApiRoutes (pkg, pkgName, apiName, allowedActions, allowedSequence
 }
 
 /**
- * @description Create a sequence object
- * @param {object} thisSequence a sequence object
- * @param {object} options the sequence options
- * @param {string} key the action key
- * @returns {object} a sequence object
+ * @description Create a sequence object that is compatible with the OpenWhisk API from a parsed manifest object
+ * @param {string} fullName the full sequence name prefixed with the package, e.g. `pkg/sequence`
+ * @param {ManifestSequence} manifestSequence a sequence object as defined in a valid manifest file
+ * @param {string} packageName the package name of the sequence, which will be set to for actions in the sequence
+ * @returns {OpenWhiskEntitiesAction} a sequence object describing the action entity
  */
-function createSequenceObject (thisSequence, options, key) {
+function createSequenceObject (fullName, manifestSequence, packageName) {
   let actionArray = []
-  if (thisSequence) {
-    actionArray = thisSequence.split(',')
+  if (manifestSequence.actions) {
+    actionArray = manifestSequence.actions.split(',')
     actionArray = actionArray.map((action) => {
       // remove space between two actions after split
       const actionItem = action.replace(/\s+/g, '')
       if (actionItem.split('/').length > 1) {
         return actionItem
       } else {
-        return `${key}/${actionItem}`
+        return `${packageName}/${actionItem}`
       }
     })
   } else {
     throw new Error('Actions for the sequence not provided.')
   }
-  const objSequence = {}
-  objSequence.kind = 'sequence'
-  objSequence.components = actionArray
-  options.exec = objSequence
-  return options
+  const execObj = {}
+  execObj.kind = 'sequence'
+  execObj.components = actionArray
+  return { action: '', name: fullName, exec: execObj }
 }
 
 /**
@@ -520,47 +713,48 @@ function checkWebFlags (flag) {
 }
 
 /**
- * Create an action object from an action
+ * Create an action object compatible with the OpenWhisk API from an action object parsed from the manifest.
  *
- * @param {object} thisAction the action
- * @param {object} objAction the result action object
- * @returns {object} the action object
+ * @param {string} fullName the full action name prefixed with the package, e.g. `pkg/action`
+ * @param {ManifestAction} manifestAction the action object as parsed from the manifest
+ * @returns {OpenWhiskEntitiesAction} the action entity object
  */
-function createActionObject (thisAction, objAction) {
-  if (thisAction.function.endsWith('.zip')) {
-    if (!thisAction.runtime && !thisAction.docker) {
+function createActionObject (fullName, manifestAction) {
+  const objAction = { name: fullName }
+  if (manifestAction.function.endsWith('.zip')) {
+    if (!manifestAction.runtime && !manifestAction.docker) {
       throw (new Error(`Invalid or missing property "runtime" in the manifest for this action: ${objAction && objAction.name}`))
     }
-    objAction.action = fs.readFileSync(thisAction.function)
+    objAction.action = fs.readFileSync(manifestAction.function)
   } else {
-    objAction.action = fs.readFileSync(thisAction.function, { encoding: 'utf8' })
+    objAction.action = fs.readFileSync(manifestAction.function, { encoding: 'utf8' })
   }
 
-  if (thisAction.main || thisAction.docker || thisAction.runtime) {
+  if (manifestAction.main || manifestAction.docker || manifestAction.runtime) {
     objAction.exec = {}
-    if (thisAction.main) {
-      objAction.exec.main = thisAction.main
+    if (manifestAction.main) {
+      objAction.exec.main = manifestAction.main
     }
-    if (thisAction.docker) {
+    if (manifestAction.docker) {
       objAction.exec.kind = 'blackbox'
-      objAction.exec.image = thisAction.docker
-    } else if (thisAction.runtime) {
-      objAction.exec.kind = thisAction.runtime
+      objAction.exec.image = manifestAction.docker
+    } else if (manifestAction.runtime) {
+      objAction.exec.kind = manifestAction.runtime
     }
   }
 
-  if (thisAction.limits) {
+  if (manifestAction.limits) {
     const limits = {
-      memory: thisAction.limits.memorySize || 256,
-      logs: thisAction.limits.logSize || 10,
-      timeout: thisAction.limits.timeout || 60000
+      memory: manifestAction.limits.memorySize || 256,
+      logs: manifestAction.limits.logSize || 10,
+      timeout: manifestAction.limits.timeout || 60000
     }
-    if (thisAction.limits.concurrency) {
-      limits.concurrency = thisAction.limits.concurrency
+    if (manifestAction.limits.concurrency) {
+      limits.concurrency = manifestAction.limits.concurrency
     }
     objAction.limits = limits
   }
-  objAction.annotations = returnAnnotations(thisAction)
+  objAction.annotations = returnAnnotations(manifestAction)
   return objAction
 }
 
@@ -597,9 +791,10 @@ function createActionObject (thisAction, objAction) {
  * this function and references to it can be safely deleted.
  *
  * @access private
- * @param {object} packages the manifest packages
- * @param {object} deploymentPackages  the deployment packages
- * @returns {object} an object with the new manifest and deployment packages
+ * @param {ManifestPackages} packages the manifest packages
+ * @param {DeploymentPackages} deploymentPackages  the deployment packages
+ * @returns {{ newPackages: ManifestPackages, newDeploymentPackages: DeploymentPackages}}
+ *          an object with the new manifest and deployment packages
  */
 function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
   // do not modify those
@@ -683,15 +878,16 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
 }
 
 /**
- * Process a package.
  *
- * @param {object} packages the manifest packages
- * @param {object} deploymentPackages the deployment packages
- * @param {object} deploymentTriggers the deployment triggers
+ * Process the manifest and deployment content and returns deployment entities.
+ *
+ * @param {ManifestPackages} packages the manifest packages
+ * @param {DeploymentPackages} deploymentPackages the deployment packages
+ * @param {DeploymentTrigger} deploymentTriggers the deployment triggers
  * @param {object} params the package params
  * @param {boolean} [namesOnly=false] if false, set the namespaces as well
  * @param {object} [owOptions={}] additional OpenWhisk options
- * @returns {object} object with all the new package contents
+ * @returns {OpenWhiskEntities} deployment entities
  */
 function processPackage (packages,
   deploymentPackages,
@@ -699,12 +895,15 @@ function processPackage (packages,
   params,
   namesOnly = false,
   owOptions = {}) {
+  // eslint - do not rewrite function arguments
+  let pkgs = packages
+  let deploymentPkgs = deploymentPackages
   if (owOptions.apihost === 'https://adobeioruntime.net') {
     // rewrite packages in case there are any `require-adobe-auth` annotations
     // this is a temporary feature and will be replaced by a native support in Adobe I/O Runtime
-    const { newPackages, newDeploymentPackages } = rewriteActionsWithAdobeAuthAnnotation(packages, deploymentPackages)
-    packages = newPackages
-    deploymentPackages = newDeploymentPackages
+    const { newPackages, newDeploymentPackages } = rewriteActionsWithAdobeAuthAnnotation(pkgs, deploymentPkgs)
+    pkgs = newPackages
+    deploymentPkgs = newDeploymentPackages
   }
 
   const pkgAndDeps = []
@@ -716,19 +915,19 @@ function processPackage (packages,
   const ruleTrigger = []
   const arrSequence = []
 
-  Object.keys(packages).forEach((key) => {
+  Object.keys(pkgs).forEach((key) => {
     // back-patch from adobe/aio-cli-plugin-runtime/commit/d455ed57b6d5c20a202b495e6a5dab477473854c
     const objPackage = { name: key }
-    if (packages[key].public) {
-      objPackage.package = { publish: packages[key].public }
+    if (pkgs[key].public) {
+      objPackage.package = { publish: pkgs[key].public }
     }
     pkgAndDeps.push(objPackage)
     // From wskdeploy repo : currently, the 'version' and 'license' values are not stored in Apache OpenWhisk, but there are plans to support it in the future
     // pkg.version = packages[key]['version']
     // pkg.license = packages[key]['license']
-    if (packages[key].dependencies) {
-      Object.keys(packages[key].dependencies).forEach((depName) => {
-        const thisDep = packages[key].dependencies[depName]
+    if (pkgs[key].dependencies) {
+      Object.keys(pkgs[key].dependencies).forEach((depName) => {
+        const thisDep = pkgs[key].dependencies[depName]
         const objDep = { name: depName }
         if (!namesOnly) {
           let objDepPackage = {}
@@ -746,8 +945,8 @@ function processPackage (packages,
           // Parse inputs
           let deploymentInputs = {}
           const packageInputs = thisDep.inputs || {}
-          if (deploymentPackages[key] && deploymentPackages[key].dependencies && deploymentPackages[key].dependencies[depName]) {
-            deploymentInputs = deploymentPackages[key].dependencies[depName].inputs || {}
+          if (deploymentPkgs[key] && deploymentPkgs[key].dependencies && deploymentPkgs[key].dependencies[depName]) {
+            deploymentInputs = deploymentPkgs[key].dependencies[depName].inputs || {}
           }
           const allInputs = returnUnion(packageInputs, deploymentInputs)
           // if parameter is provided as key : 'data type' , process it to set default values before deployment
@@ -760,16 +959,16 @@ function processPackage (packages,
         pkgAndDeps.push(objDep)
       })
     }
-    if (packages[key].actions) {
-      Object.keys(packages[key].actions).forEach((actionName) => {
-        const thisAction = packages[key].actions[actionName]
+    if (pkgs[key].actions) {
+      Object.keys(pkgs[key].actions).forEach((actionName) => {
+        const thisAction = pkgs[key].actions[actionName]
         let objAction = { name: `${key}/${actionName}` }
         if (!namesOnly) {
-          objAction = createActionObject(thisAction, objAction)
+          objAction = createActionObject(objAction.name, thisAction)
           let deploymentInputs = {}
           const packageInputs = thisAction.inputs || {}
-          if (deploymentPackages[key] && deploymentPackages[key].actions && deploymentPackages[key].actions[actionName]) {
-            deploymentInputs = deploymentPackages[key].actions[actionName].inputs || {}
+          if (deploymentPkgs[key] && deploymentPkgs[key].actions && deploymentPkgs[key].actions[actionName]) {
+            deploymentInputs = deploymentPkgs[key].actions[actionName].inputs || {}
           }
           const allInputs = returnUnion(packageInputs, deploymentInputs)
           // if parameter is provided as key : 'data type' , process it to set default values before deployment
@@ -783,27 +982,26 @@ function processPackage (packages,
       })
     }
 
-    if (packages[key].sequences) {
+    if (pkgs[key].sequences) {
       // Sequences can have only one field : actions
       // Usage: aio runtime:action:create <action-name> --sequence existingAction1, existingAction2
-      Object.keys(packages[key].sequences).forEach((sequenceName) => {
+      Object.keys(pkgs[key].sequences).forEach((sequenceName) => {
         let objSequence = { name: `${key}/${sequenceName}` }
         if (!namesOnly) {
-          objSequence.action = ''
-          const thisSequence = packages[key].sequences[sequenceName]
-          objSequence = createSequenceObject(thisSequence.actions, objSequence, key)
+          const thisSequence = pkgs[key].sequences[sequenceName]
+          objSequence = createSequenceObject(objSequence.name, thisSequence, key)
           objSequence.annotations = returnAnnotations(thisSequence)
           arrSequence.push(sequenceName)
         }
         actions.push(objSequence)
       })
     }
-    if (packages[key].triggers) {
-      Object.keys(packages[key].triggers).forEach((triggerName) => {
+    if (pkgs[key].triggers) {
+      Object.keys(pkgs[key].triggers).forEach((triggerName) => {
         const objTrigger = { name: triggerName }
         if (!namesOnly) {
           objTrigger.trigger = {}
-          const packageInputs = packages[key].triggers[triggerName].inputs || {}
+          const packageInputs = pkgs[key].triggers[triggerName].inputs || {}
           let deploymentInputs = {}
           if (triggerName in deploymentTriggers) {
             deploymentInputs = deploymentTriggers[triggerName]
@@ -813,11 +1011,11 @@ function processPackage (packages,
           if (Object.entries(allInputs).length !== 0) {
             objTrigger.trigger.parameters = allInputs
           }
-          if (packages[key].triggers[triggerName].annotations) {
-            objTrigger.trigger.annotations = createKeyValueInput(packages[key].triggers[triggerName].annotations)
+          if (pkgs[key].triggers[triggerName].annotations) {
+            objTrigger.trigger.annotations = createKeyValueInput(pkgs[key].triggers[triggerName].annotations)
           }
-          if (packages[key].triggers[triggerName].feed) {
-            objTrigger.trigger.feed = packages[key].triggers[triggerName].feed
+          if (pkgs[key].triggers[triggerName].feed) {
+            objTrigger.trigger.feed = pkgs[key].triggers[triggerName].feed
           }
           ruleTrigger.push(triggerName)
         }
@@ -826,13 +1024,13 @@ function processPackage (packages,
       })
     }
     // Rules cannot belong to any package
-    if (packages[key].rules) {
-      Object.keys(packages[key].rules).forEach((ruleName) => {
+    if (pkgs[key].rules) {
+      Object.keys(pkgs[key].rules).forEach((ruleName) => {
         const objRule = { name: ruleName }
         if (!namesOnly) {
-          if (packages[key].rules[ruleName].trigger && packages[key].rules[ruleName].action) {
-            objRule.trigger = packages[key].rules[ruleName].trigger
-            objRule.action = packages[key].rules[ruleName].action
+          if (pkgs[key].rules[ruleName].trigger && pkgs[key].rules[ruleName].action) {
+            objRule.trigger = pkgs[key].rules[ruleName].trigger
+            objRule.action = pkgs[key].rules[ruleName].action
             if (objRule.action.split('/').length > 1) {
               objRule.action = objRule.action.split('/').pop()
             }
@@ -849,9 +1047,9 @@ function processPackage (packages,
       })
     }
 
-    if (packages[key].apis) {
-      Object.keys(packages[key].apis).forEach((apiName) => {
-        const apiRoutes = createApiRoutes(packages[key], key, apiName, ruleAction, arrSequence, namesOnly)
+    if (pkgs[key].apis) {
+      Object.keys(pkgs[key].apis).forEach((apiName) => {
+        const apiRoutes = createApiRoutes(pkgs[key], key, apiName, ruleAction, arrSequence, namesOnly)
         routes.push.apply(routes, apiRoutes) // faster than concat for < 100k elements
       })
     }
@@ -864,15 +1062,6 @@ function processPackage (packages,
     actions
   }
 }
-/**
- * @typedef {object} DeploymentFileComponents
- * @property {Array} packages Packages in the manifest
- * @property {Array} deploymentTriggers Triggers in the manifest
- * @property {Array} deploymentPackages Packages in the manifest
- * @property {string} manifestPath Path to manifest
- * @property {object} manifestContent Parsed manifest object
- * @property {string} projectName Name of the project
- */
 
 /**
  * Get the deployment file components.
@@ -883,7 +1072,7 @@ function processPackage (packages,
 function setPaths (flags = {}) {
   let manifestPath
   if (!flags.manifest) {
-    manifestPath = setManifestPath()
+    manifestPath = getManifestPath()
   } else {
     manifestPath = flags.manifest
   }
@@ -892,7 +1081,7 @@ function setPaths (flags = {}) {
   let deploymentPath
   let deploymentPackages = {}
   if (!flags.deployment) {
-    deploymentPath = setDeploymentPath()
+    deploymentPath = getDeploymentPath()
   } else {
     deploymentPath = flags.deployment
   }
@@ -949,8 +1138,8 @@ function setPaths (flags = {}) {
  * The IMS org id must be stored beforehand in `@adobe/aio-lib-core-config` under the
  * `'project.org.ims_org_id'` key. TODO: pass in imsOrgId
  *
- * @param {object} actions the actions
- * @param {object} owOptions OpenWhisk actions
+ * @param {Array<OpenWhiskEntitiesAction>} actions the array of action deployment entities
+ * @param {object} owOptions OpenWhisk options
  * @param {string} imsOrgId the IMS Org Id
  */
 async function setupAdobeAuth (actions, owOptions, imsOrgId) {
@@ -987,10 +1176,10 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
 }
 
 /**
- * Deploy a package
+ * Deploy all processed entities: can deploy packages, actions, triggers, rules and apis.
  *
- * @param {object} entities the entities
- * @param {object} ow the OpenWhisk object
+ * @param {OpenWhiskEntitiesAction} entities the processed entities
+ * @param {object} ow the OpenWhisk client
  * @param {object} logger the logger
  * @param {string} imsOrgId the IMS Org ID
  */
@@ -1016,11 +1205,11 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
           snamespace/spackage/saction => /snamespace/spackage/saction
           /snamespace/spackage/saction => /snamespace/spackage/saction
         */
-        sequence = sequence.startsWith('/') ? sequence.substr(1) : sequence
-        const actionItemCount = sequence.split('/').length
+        const normalizedSequence = sequence.startsWith('/') ? sequence.substr(1) : sequence
+        const actionItemCount = normalizedSequence.split('/').length
         return (actionItemCount > 2)
-          ? `/${sequence}`
-          : `/${ns}/${sequence}`
+          ? `/${normalizedSequence}`
+          : `/${ns}/${normalizedSequence}`
       })
     }
     logger(`Info: Deploying action [${action.name}]...`)
@@ -1049,9 +1238,10 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
 }
 
 /**
- * Undeploy a package
+ * Undeploy all processed entities: can undeploy packages, actions, triggers, rules and apis.
+ * Entity definitions do not need to be complete, only the names are needed for un-deployment.
  *
- * @param {object} entities the entities
+ * @param {object} entities the processed entities, only names are enough for undeploy
  * @param {object} ow the OpenWhisk object
  * @param {object} logger the logger
  */
@@ -1086,12 +1276,18 @@ async function undeployPackage (entities, ow, logger) {
 }
 
 /**
- * Sync a project.
+ *
+ * Sync a project. This is a higher level function that can be used to sync a local
+ * manifest with deployed entities.
+ *
+ * `syncProject` doesn't only deploy entities it might also undeploy entities that are not
+ * defined in the manifest. This behavior can be disabled via the `deleteEntities` boolean
+ * parameter.
  *
  * @param {string} projectName the project name
  * @param {string} manifestPath the manifest path
- * @param {string} manifestContent the manifest content
- * @param {object} entities the entities
+ * @param {string} manifestContent the manifest content, needed to compute hash
+ * @param {OpenWhiskEntities} entities the entities, extracted via `processPackage`
  * @param {object} ow the OpenWhisk object
  * @param {object} logger the logger
  * @param {string} imsOrgId the IMS Org ID
@@ -1113,11 +1309,19 @@ async function syncProject (projectName, manifestPath, manifestContent, entities
 }
 
 /**
- * Get project entities
  *
- * @param {string} project the project
- * @param {boolean} isProjectHash set to true if the project is a hash, and not just the name
- * @param {object} ow the OpenWhisk object
+ * Get deployed entities for a managed project. This methods retrieves all the deployed
+ * entities for a given project name or project hash. This only works if the project was
+ * deployed using the `whisk-managed` annotation. This annotation can be set
+ * pre-deployement using `[addManagedProjectAnnotations](#addmanagedprojectannotations)`.
+ *
+ * Note that returned apis will always be empty as they don't support annotations and
+ * hence are not managed as part of a project.
+ *
+ * @param {string} project the project name or hash
+ * @param {boolean} isProjectHash set to true if the project is a hash, and not the name
+ * @param {object} ow the OpenWhisk client object
+ * @returns {Promise<OpenWhiskEntities>} the deployed project entities
  */
 async function getProjectEntities (project, isProjectHash, ow) {
   let paramtobeChecked
@@ -1163,9 +1367,11 @@ async function getProjectEntities (project, isProjectHash, ow) {
 }
 
 /**
- * Add managed project annotations ( modifies contents of entities )
  *
- * @param {object} entities the entities
+ * Add the `whisk-managed` annotation to processed entities. This is needed for syncing
+ * managed projects.
+ *
+ * @param {OpenWhiskEntities} entities the processed entities
  * @param {string} manifestPath the manifest path
  * @param {string} projectName the project name
  * @param {string} projectHash the project hash
@@ -1209,7 +1415,8 @@ async function addManagedProjectAnnotations (entities, manifestPath, projectName
 }
 
 /**
- * Get the project hash
+ * Compute the project hash based on the manifest content and manifest path. This is used
+ * for syncing managed projects.
  *
  * @param {string} manifestContent the manifest content
  * @param {string} manifestPath the manifest path
@@ -1224,11 +1431,12 @@ function getProjectHash (manifestContent, manifestPath) {
 }
 
 /**
- * Find project hash on the server
  *
- * @param {object} ow the OpenWhisk object
+ * Retrieve the project hash from a deployed managed project.
+ *
+ * @param {object} ow the OpenWhisk client object
  * @param {string} projectName the project name
- * @returns {string} the project hash, or '' if not found
+ * @returns {Promise<string>} the project hash, or '' if not found
  */
 async function findProjectHashonServer (ow, projectName) {
   let projectHash = ''
@@ -1295,10 +1503,10 @@ module.exports = {
   createComponentsfromSequence,
   processInputs,
   createKeyValueInput, /* internal */
-  setManifestPath, /* internal */
+  getManifestPath, /* internal */
   returnUnion,
   returnDeploymentTriggerInputs, /* internal */
-  setDeploymentPath, /* internal */
+  getDeploymentPath, /* internal */
   createActionObject, /* internal */
   checkWebFlags, /* internal */
   createSequenceObject, /* internal */

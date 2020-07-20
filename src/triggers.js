@@ -11,36 +11,58 @@ governing permissions and limitations under the License.
 
 const { createKeyValueObjectFromArray } = require('./utils')
 const FEED_ANNOTATION_KEY = 'feed'
+const cloneDeep = require('lodash.clonedeep')
 
+/**
+ * A class to manage triggers
+ *
+ * @class Triggers
+ */
 class Triggers {
   constructor (client) {
     this.owclient = client
   }
 
+  /**
+   * Creates a trigger and associated feeds
+   *
+   * @param {object} options input options to create the trigger from manifest
+   * @returns {Promise<object>} the result of the create operation
+   * @memberof Triggers
+   */
   async create (options) {
-    if (options && options.trigger && options.trigger.feed) {
-      options.trigger.annotations = options.trigger.annotations || []
-      options.trigger.annotations.push({ key: FEED_ANNOTATION_KEY, value: options.trigger.feed })
+    // avoid side effects
+    const copyOptions = cloneDeep(options)
+    if (copyOptions && copyOptions.trigger && copyOptions.trigger.feed) {
+      copyOptions.trigger.annotations = copyOptions.trigger.annotations || []
+      copyOptions.trigger.annotations.push({ key: FEED_ANNOTATION_KEY, value: copyOptions.trigger.feed })
     }
-    const ret = await this.owclient.triggers.create(options)
-    if (options && options.trigger && options.trigger.feed) {
+    const ret = await this.owclient.triggers.create(copyOptions)
+    if (copyOptions && copyOptions.trigger && copyOptions.trigger.feed) {
       try {
         // Feed update does not work if the feed is not already present and create fails if it's already there.
         // So we are deleting it and ignoring the error if any.
         try {
-          await this.owclient.feeds.delete({ name: options.trigger.feed, trigger: options.name })
+          await this.owclient.feeds.delete({ name: copyOptions.trigger.feed, trigger: copyOptions.name })
         } catch (err) {
           // Ignore
         }
-        await this.owclient.feeds.create({ name: options.trigger.feed, trigger: options.name, params: createKeyValueObjectFromArray(options.trigger.parameters) })
+        await this.owclient.feeds.create({ name: copyOptions.trigger.feed, trigger: copyOptions.name, params: createKeyValueObjectFromArray(copyOptions.trigger.parameters) })
       } catch (err) {
-        await this.owclient.triggers.delete(options)
+        await this.owclient.triggers.delete(copyOptions)
         throw err
       }
     }
     return ret
   }
 
+  /**
+   * Deletes a trigger and associated feeds
+   *
+   * @param {object} options options with the `name` of the trigger
+   * @returns {Promise<object>} the result of the delete operation
+   * @memberof Triggers
+   */
   async delete (options) {
     const retTrigger = await this.owclient.triggers.get(options)
     if (retTrigger.annotations) {
