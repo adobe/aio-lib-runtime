@@ -12,6 +12,7 @@ governing permissions and limitations under the License.
 const ow = require('openwhisk')()
 const fs = require('fs')
 const cloneDeep = require('lodash.clonedeep')
+const os = require('os')
 
 jest.mock('cross-fetch')
 
@@ -634,7 +635,10 @@ describe('processPackage', () => {
 
   test('basic manifest', async () => {
     const entities = utils.processPackage(JSON.parse(fs.readFileSync('/basic_manifest.json')), {}, {}, {})
-    expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/basic_manifest_res.json')))
+    const res = JSON.parse(fs.readFileSync('/basic_manifest_res.json'))
+    res.actions[0].action = res.actions[0].action.split('\n').join(os.EOL)
+    res.actions[1].action = res.actions[1].action.split('\n').join(os.EOL)
+    expect(entities).toMatchObject(res)
   })
 
   test('basic manifest with namesOnly flag', async () => {
