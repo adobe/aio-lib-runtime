@@ -17,8 +17,18 @@ const mockOpenWhisk = {
     method = method[cmd.shift()] = jest.fn()
     return method
   },
-  mockResolvedFixtureMulitValue: function (methodName, returnValues) {
-    return this.mockResolvedMulitValue(methodName, returnValues, true)
+  mockProp: function (propertyName, propertyValue) {
+    const prop = propertyName.split('.')
+    let method = this
+    while (prop.length > 1) {
+      const word = prop.shift()
+      method = method[word] = method[word] || {}
+    }
+    method = method[prop.shift()] = propertyValue
+    return method
+  },
+  mockResolvedFixtureMultiValue: function (methodName, returnValues) {
+    return this.mockResolvedMultiValue(methodName, returnValues, true)
   },
   mockResolvedFixture: function (methodName, returnValue) {
     return this.mockResolved(methodName, returnValue, true)
@@ -26,7 +36,7 @@ const mockOpenWhisk = {
   mockRejectedFixture: function (methodName, returnValue) {
     return this.mockRejected(methodName, returnValue, true)
   },
-  mockResolvedMulitValue: function (methodName, returnValues, isFile) {
+  mockResolvedMultiValue: function (methodName, returnValues, isFile) {
     let vals = (isFile) ? fixtureFile(returnValues) : returnValues
     try {
       vals = JSON.parse(vals)
@@ -44,6 +54,14 @@ const mockOpenWhisk = {
       val = JSON.parse(val)
     } catch (e) { }
     return this.mockFn(methodName).mockResolvedValue(val, isFile)
+  },
+  mockResolvedProperty: function (propertyName, propertyValue) {
+    try {
+      // this could be a stringified object, so attempt to convert it first
+      const retValue = JSON.parse(propertyValue)
+      return this.mockProp(propertyName, retValue)
+    } catch (e) { }
+    return this.mockProp(propertyName, propertyValue)
   },
   mockRejected: function (methodName, err) {
     return this.mockFn(methodName).mockRejectedValue(err)

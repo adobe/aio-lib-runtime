@@ -1,20 +1,50 @@
 /*
-Copyright 2020 Adobe. All rights reserved.
+Copyright 2020 Adobe Inc. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software distributed under
 the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
 
-/* global fakeFileSystem */
+// const { stdout } = require('stdout-stderr')
+const fs = require.requireActual('fs')
+const eol = require('eol')
 
+const fetch = require('jest-fetch-mock')
 const fileSystem = require('jest-plugin-fs').default
 
 // dont touch the real fs
 jest.mock('fs', () => require('jest-plugin-fs/mock'))
+
+process.env.CI = true
+
+jest.setTimeout(30000)
+jest.useFakeTimers()
+
+jest.setMock('cross-fetch', fetch)
+
+// trap console log
+// beforeEach(() => { stdout.start() })
+// afterEach(() => { stdout.stop() })
+
+// helper for fixtures
+global.fixtureFile = (output) => {
+  return fs.readFileSync(`./test/__fixtures__/${output}`).toString()
+}
+
+// helper for fixtures
+global.fixtureJson = (output) => {
+  return JSON.parse(fs.readFileSync(`./test/__fixtures__/${output}`).toString())
+}
+
+// helper for zip fixtures
+global.fixtureZip = (output) => {
+  return fs.readFileSync(`./test/__fixtures__/${output}`)
+}
 
 // set the fake filesystem
 global.fakeFileSystem = {
@@ -48,3 +78,22 @@ global.fakeFileSystem = {
 }
 // seed the fake filesystem
 fakeFileSystem.reset()
+
+// fixture matcher
+expect.extend({
+  toMatchFixture (received, argument) {
+    const val = fixtureFile(argument)
+    // eslint-disable-next-line jest/no-standalone-expect
+    expect(eol.auto(received)).toEqual(eol.auto(val))
+    return { pass: true }
+  }
+})
+
+expect.extend({
+  toMatchFixtureJson (received, argument) {
+    const val = fixtureJson(argument)
+    // eslint-disable-next-line jest/no-standalone-expect
+    expect(received).toEqual(val)
+    return { pass: true }
+  }
+})
