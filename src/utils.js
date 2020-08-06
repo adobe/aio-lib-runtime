@@ -378,6 +378,26 @@ function parsePackageName (name) {
   }
 }
 
+function getKeyValueArrayFromMergedParameters (paramCharFlags, paramStringFlags) {
+  const paramsActionObj = getKeyValueObjectFromMergedParameters(paramCharFlags, paramStringFlags)
+  if (Object.keys(paramsActionObj).length > 0) {
+    return createKeyValueArrayFromObject(paramsActionObj)
+  } else {
+    return undefined
+  }
+}
+
+function getKeyValueObjectFromMergedParameters (paramCharFlags, paramStringFlags) {
+  let paramsActionObj = {}
+  if (paramStringFlags) {
+    paramsActionObj = createKeyValueObjectFromFile(paramStringFlags)
+  }
+  if (paramCharFlags) {
+    Object.assign(paramsActionObj, createKeyValueObjectFromFlag(paramCharFlags))
+  }
+  return paramsActionObj
+}
+
 /**
  * @description returns key value pairs from the parameters supplied. Used to create --param-file and --annotation-file key value pairs
  * @param {string} file from flags['param-file'] or flags['annotation-file']
@@ -1498,6 +1518,8 @@ module.exports = {
   createKeyValueArrayFromFlag,
   createKeyValueObjectFromFlag,
   createKeyValueObjectFromFile,
+  getKeyValueArrayFromMergedParameters,
+  getKeyValueObjectFromMergedParameters,
   parsePathPattern,
   parsePackageName,
   createComponentsfromSequence,
