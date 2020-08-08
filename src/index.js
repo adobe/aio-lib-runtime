@@ -14,6 +14,7 @@ const { codes } = require('./SDKErrors')
 const ow = require('openwhisk')
 const Triggers = require('./triggers')
 const utils = require('./utils')
+const buildActions = require('./build-actions')
 
 /**
  * @typedef {object} OpenwhiskOptions
@@ -109,5 +110,6 @@ class RuntimeAPI {
 
 module.exports = {
   init,
+  buildActions,
   utils
 }

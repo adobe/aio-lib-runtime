@@ -10,12 +10,13 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const fs = require('fs')
+const fs = require('fs-extra')
 const sha1 = require('sha1')
 const cloneDeep = require('lodash.clonedeep')
 const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:index', { level: process.env.LOG_LEVEL })
 const yaml = require('js-yaml')
 const fetch = require('cross-fetch')
+const globby = require('globby')
 
 /**
  *
@@ -62,6 +63,48 @@ const fetch = require('cross-fetch')
  * @property {ManifestActionAnnotations} [annotations] the manifest action annotations
  *
  */
+
+/**
+ * @typedef ManifestAction
+ * @type {object}
+ * @property {array} include - array of include glob patterns
+ */
+
+/**
+ * @typedef IncludeEntry
+ * @type {object}
+ * @property {string} dest - destination for included files
+ * @property {Array} sources - list of files that matched pattern
+ */
+
+/**
+ * Gets the list of files matching the patterns defined by action.include
+ *
+ * @param {ManifestAction} action - action object from manifest which defines includes
+ * @returns {Array(IncludeEntry)}
+ */
+async function getIncludesForAction (action) {
+  const includeFiles = []
+  if (action.include) {
+    // include is array of [ src, dest ] : dest is optional
+    const files = await Promise.all(action.include.map(async elem => {
+      if (elem.length === 0) {
+        throw new Error('Invalid manifest `include` entry: Empty')
+      } else if (elem.length === 1) {
+        // src glob only, dest is root of action
+      } else if (elem.length === 2) {
+        // src glob + dest path both defined
+      } else {
+        throw new Error('Invalid manifest `include` entry: ' + elem.toString())
+      }
+      const pair = { dest: elem[1] }
+      pair.sources = await globby(elem[0])
+      return pair
+    }))
+    includeFiles.push(...files)
+  }
+  return includeFiles
+}
 
 /**
  *
@@ -248,6 +291,20 @@ function printLogs (activation, strip, logger) {
       }
     })
   }
+}
+
+/**
+ * returns path to main function as defined in package.json OR default of index.js
+ * note: file MUST exist, caller's responsibility, this method will throw if it does not exist
+ * @param {*} pkgJson : path to a package.json file
+ * @returns {string}
+ */
+function getActionEntryFile (pkgJson) {
+  const pkgJsonContent = fs.readJsonSync(pkgJson)
+  if (pkgJsonContent.main) {
+    return pkgJsonContent.main
+  }
+  return 'index.js'
 }
 
 /**
@@ -1492,6 +1549,8 @@ async function findProjectHashonServer (ow, projectName) {
 }
 
 module.exports = {
+  getActionEntryFile,
+  getIncludesForAction,
   createKeyValueObjectFromArray,
   createKeyValueArrayFromObject,
   createKeyValueArrayFromFile,

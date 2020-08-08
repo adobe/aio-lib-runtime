@@ -1,0 +1,198 @@
+/*
+Copyright 2020 Adobe. All rights reserved.
+This file is licensed to you under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License. You may obtain a copy
+of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under
+the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+OF ANY KIND, either express or implied. See the License for the specific language
+governing permissions and limitations under the License.
+*/
+
+const fs = require('fs-extra')
+const path = require('path')
+const webpack = require('webpack')
+const utils = require('./utils')
+const archiver = require('archiver')
+
+const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:action-builder', { provider: 'debug' })
+
+/** Instance utilities */
+// _relApp (p) {
+//   return path.relative(this.config.root, path.normalize(p))
+// }
+
+// _absApp (p) {
+//   if (path.isAbsolute(p)) return p
+//   return path.join(this.config.root, path.normalize(p))
+// }
+
+/**
+ * Zip a file/folder using archiver
+ * @param {String} filePath
+ * @param {String} out
+ * @param {boolean} pathInZip
+ * @returns {Promise}
+ */
+function zip (filePath, out, pathInZip = false) {
+  aioLogger.debug(`Creating zip of file/folder ${filePath}`)
+  const stream = fs.createWriteStream(out)
+  const archive = archiver('zip', { zlib: { level: 9 } })
+
+  return new Promise((resolve, reject) => {
+    stream.on('close', () => resolve())
+    archive.pipe(stream)
+    archive.on('error', err => reject(err))
+
+    let stats
+    try {
+      stats = fs.lstatSync(filePath) // throws if enoent
+    } catch (e) {
+      archive.destroy()
+      reject(e)
+    }
+
+    if (stats.isDirectory()) {
+      archive.directory(filePath, pathInZip)
+    } else if (stats.isFile()) {
+      archive.file(filePath, { name: pathInZip || path.basename(filePath) })
+    } else {
+      archive.destroy()
+      reject(new Error(`${filePath} is not a valid dir or file`)) // e.g. symlinks
+    }
+
+    archive.finalize()
+  })
+}
+
+// need config.root
+// config.actions.dist
+const buildAction = async (name, action, root, dist) => {
+  const actionPath = path.isAbsolute(action.function) ? action.function : path.join(root, action.function)
+  const outPath = path.join(dist, `${name}.zip`)
+  const tempBuildDir = path.join(path.dirname(outPath), `${name}-temp`) // build all to tempDir first
+  const actionFileStats = fs.lstatSync(actionPath)
+
+  // make sure temp/ exists
+  fs.ensureDirSync(tempBuildDir)
+
+  if (!actionFileStats.isDirectory() && !actionFileStats.isFile()) {
+    throw new Error(`${action.function} is not a valid file or directory`)
+  }
+
+  // Process include(d) files
+  const includeFiles = await utils.getIncludesForAction(action)
+  includeFiles.forEach(incFile => {
+    const dest = path.join(tempBuildDir, incFile.dest)
+    fs.ensureDirSync(dest)
+    // dest is expected to be a dir ...
+    incFile.sources.forEach(file => {
+      fs.copyFileSync(file, path.join(dest, path.parse(file).base))
+    })
+  })
+
+  if (actionFileStats.isDirectory()) {
+    // make sure package.json exists OR index.js
+    const packageJsonPath = path.join(actionPath, 'package.json')
+    if (!fs.existsSync(packageJsonPath)) {
+      if (!fs.existsSync(path.join(actionPath, 'index.js'))) {
+        throw new Error(`missing required ${this._relApp(packageJsonPath)} or index.js for folder actions`)
+      }
+      aioLogger.debug('action directory has an index.js, allowing zip')
+    } else {
+      // make sure package.json exposes main or there is an index.js
+      const expectedActionName = utils.getActionEntryFile(packageJsonPath)
+      if (!fs.existsSync(path.join(actionPath, expectedActionName))) {
+        throw new Error(`the directory ${action.function} must contain either a package.json with a 'main' flag or an index.js file at its root`)
+      }
+    }
+    // TODO: when we get to excludes, use a filter function here.
+    fs.copySync(actionPath, tempBuildDir, { dereference: true })
+  } else {
+    const outBuildFilename = 'index.js' // `${name}.tmp.js`
+    // if not directory => package and minify to single file
+    const compiler = webpack({
+      entry: [
+        actionPath
+      ],
+      output: {
+        path: tempBuildDir,
+        filename: outBuildFilename,
+        libraryTarget: 'commonjs2'
+      },
+      // see https://webpack.js.org/configuration/mode/
+      mode: 'production',
+      target: 'node',
+      optimization: {
+        // error on minification for some libraries
+        minimize: false
+      },
+      // the following lines are used to require es6 module, e.g.node-fetch which is used by azure sdk
+      resolve: {
+        extensions: ['.js', '.json'],
+        mainFields: ['main']
+      }
+      // todo remove packages from bundled file that are available in runtime (add the deps of deps as well)
+      // disabled for now as we need to consider versions (at least majors) to avoid nasty bugs
+      // ,externals: ['express', 'request', 'request-promise', 'body-parser', 'openwhisk']
+    })
+
+    // run the compiler and wait for a result
+    await new Promise((resolve, reject) => compiler.run((err, stats) => {
+      if (err) {
+        reject(err)
+      }
+      // stats must be defined at this point
+      const info = stats.toJson()
+      if (stats.hasWarnings()) {
+        aioLogger.debug(`webpack compilation warnings:\n${info.warnings}`)
+      }
+      if (stats.hasErrors()) {
+        reject(new Error(`action build failed, webpack compilation errors:\n${info.errors}`))
+      }
+      return resolve(stats)
+    }))
+  }
+
+  // todo: split out zipping
+  // zip the dir
+  await zip(tempBuildDir, outPath)
+  // fs.remove(tempBuildDir) // remove the build file, don't need to wait ...
+
+  // const fStats = fs.statSync(outPath)
+  // if (fStats && fStats.size > (22 * 1024 * 1024)) {
+  //   this.emit('warning', `file size exceeds 22 MB, you may not be able to deploy this action. file size is ${fStats.size} Bytes`)
+  // }
+  return outPath
+}
+
+const buildActions = async (config, filterActions) => {
+  if (!config.app.hasBackend) {
+    throw new Error('cannot build actions, app has no backend')
+  }
+  // clear out dist dir
+  fs.emptyDirSync(config.actions.dist)
+
+  let packageToBuild = config.manifest.package
+  // which actions to build, check filter
+  if (!packageToBuild) {
+    const firstPkgName = Object.keys(config.manifest.full.packages)[0]
+    packageToBuild = config.manifest.full.packages[firstPkgName]
+  }
+  // todo: build ALL actions of ALL packages
+  let actionsToBuild = Object.entries(packageToBuild.actions)
+  if (Array.isArray(filterActions)) {
+    actionsToBuild = actionsToBuild.filter(([name, value]) => filterActions.includes(name))
+  }
+
+  // build all sequentially (todo make bundler execution parallel)
+  for (const [name, action] of actionsToBuild) {
+    // const out =  // todo: log output of each action as it is built
+    // need config.root
+    // config.actions.dist
+    await buildAction(name, action, config.root, config.actions.dist)
+  }
+}
+
+module.exports = buildActions
