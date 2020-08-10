@@ -15,6 +15,7 @@ const ow = require('openwhisk')
 const Triggers = require('./triggers')
 const utils = require('./utils')
 const buildActions = require('./build-actions')
+const deployActions = require('./deploy-actions')
 
 /**
  * @typedef {object} OpenwhiskOptions
@@ -86,7 +87,7 @@ class RuntimeAPI {
       throw new codes.ERROR_SDK_INITIALIZATION({ sdkDetails, messageValues: `${initErrors.join(', ')}` })
     }
 
-    this.ow = await ow(options)
+    this.ow = ow(options)
     const self = this
 
     return {
@@ -111,5 +112,6 @@ class RuntimeAPI {
 module.exports = {
   init,
   buildActions,
+  deployActions,
   utils
 }
