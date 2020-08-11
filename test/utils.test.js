@@ -10,7 +10,7 @@ governing permissions and limitations under the License.
 */
 
 const ow = require('openwhisk')()
-const fs = require('fs')
+const fs = require('fs-extra')
 const cloneDeep = require('lodash.clonedeep')
 const os = require('os')
 

@@ -17,6 +17,7 @@ const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:in
 const yaml = require('js-yaml')
 const fetch = require('cross-fetch')
 const globby = require('globby')
+const path = require('path')
 
 /**
  *
@@ -1548,7 +1549,81 @@ async function findProjectHashonServer (ow, projectName) {
   return projectHash
 }
 
+function _relApp (root, p) {
+  return path.relative(root, path.normalize(p))
+}
+
+function _absApp (root, p) {
+  if (path.isAbsolute(p)) return p
+  return path.join(root, path.normalize(p))
+}
+
+function checkOpenWhiskCredentials (config) {
+  const owConfig = config.ow
+
+  // todo errors are too specific to env context
+
+  // this condition cannot happen because config defines it as empty object
+  /* istanbul ignore next */
+  if (typeof owConfig !== 'object') {
+    throw new Error('missing aio runtime config, did you set AIO_RUNTIME_XXX env variables?')
+  }
+  // this condition cannot happen because config defines a default apihost for now
+  /* istanbul ignore next */
+  if (!owConfig.apihost) {
+    throw new Error('missing Adobe I/O Runtime apihost, did you set the AIO_RUNTIME_APIHOST environment variable?')
+  }
+  if (!owConfig.namespace) {
+    throw new Error('missing Adobe I/O Runtime namespace, did you set the AIO_RUNTIME_NAMESPACE environment variable?')
+  }
+  if (!owConfig.auth) {
+    throw new Error('missing Adobe I/O Runtime auth, did you set the AIO_RUNTIME_AUTH environment variable?')
+  }
+}
+
+function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
+  // set action urls
+  // action urls {name: url}, if !LocalDev subdomain uses namespace
+  return Object.entries({ ...config.manifest.package.actions, ...(config.manifest.package.sequences || {}) }).reduce((obj, [name, action]) => {
+    const webArg = action['web-export'] || action.web
+    const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
+    if (isLocalDev) {
+      // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
+      obj[name] = urlJoin(config.ow.apihost, 'api', config.ow.apiversion, webUri, config.ow.namespace, config.ow.package, name)
+    } else if (isRemoteDev || !webUri || !config.app.hasFrontend) {
+      // - if remote dev we don't care about same domain as the UI runs on localhost
+      // - if action is non web it cannot be called from the UI and we can point directly to ApiHost domain
+      // - if action has no UI no need to use the CDN url
+      // NOTE this will not work for apihosts that do not support <ns>.apihost url
+      // https://<ns>.adobeioruntime.net/api/v1/web/<package>/<action>
+      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.ow.apihost), 'api', config.ow.apiversion, webUri, config.ow.package, name)
+    } else {
+      // https://<ns>.adobe-static.net/api/v1/web/<package>/<action>
+      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.app.hostname), 'api', config.ow.apiversion, webUri, config.ow.package, name)
+    }
+    return obj
+  }, {})
+}
+
+/**
+ * Joins url path parts
+ * @param {...string} args url parts
+ * @returns {string}
+ */
+function urlJoin (...args) {
+  let start = ''
+  if (args[0] && args[0].startsWith('/')) start = '/'
+  return start + args.map(a => a && a.replace(/(^\/|\/$)/g, ''))
+    .filter(a => a) // remove empty strings / nulls
+    .join('/')
+}
+
+function removeProtocolFromURL (url) {
+  return url.replace(/(^\w+:|^)\/\//, '')
+}
+
 module.exports = {
+  checkOpenWhiskCredentials,
   getActionEntryFile,
   getIncludesForAction,
   createKeyValueObjectFromArray,
@@ -1580,5 +1655,10 @@ module.exports = {
   findProjectHashonServer,
   getProjectHash,
   addManagedProjectAnnotations,
-  printLogs
+  printLogs,
+  _relApp,
+  _absApp,
+  getActionUrls,
+  urlJoin,
+  removeProtocolFromURL
 }
