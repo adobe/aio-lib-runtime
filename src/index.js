@@ -13,6 +13,7 @@ const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:in
 const utils = require('./utils')
 const buildActions = require('./build-actions')
 const deployActions = require('./deploy-actions')
+const undeployActions = require('./undeploy-actions')
 const RuntimeAPI = require('./RuntimeAPI')
 
 /**
@@ -41,5 +42,6 @@ module.exports = {
   init,
   buildActions,
   deployActions,
+  undeployActions,
   utils
 }
