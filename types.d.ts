@@ -316,6 +316,22 @@ declare function createKeyValueObjectFromFlag(flag: any[]): any;
 declare function parsePackageName(name: string): any;
 
 /**
+ * returns key value array from the params and/or param-file supplied with more precendence to params.
+ * @param params - from flags.param or flags.annotation
+ * @param paramFilePath - from flags['param-file'] or flags['annotation-file']
+ * @returns An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
+ */
+declare function getKeyValueArrayFromMergedParameters(params: any[], paramFilePath: string): any[];
+
+/**
+ * returns key value object from the params and/or param-file supplied with more precendence to params.
+ * @param params - from flags.param or flags.annotation
+ * @param paramFilePath - from flags['param-file'] or flags['annotation-file']
+ * @returns An object of key value pairs in this format : {Your key1 : 'Your Value 1' , Your key2: 'Your value 2'}
+ */
+declare function getKeyValueObjectFromMergedParameters(params: any[], paramFilePath: string): any;
+
+/**
  * returns key value pairs from the parameters supplied. Used to create --param-file and --annotation-file key value pairs
  * @param file - from flags['param-file'] or flags['annotation-file']
  * @returns An object of key value pairs in this format : {Your key1 : 'Your Value 1' , Your key2: 'Your value 2'}

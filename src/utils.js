@@ -378,8 +378,14 @@ function parsePackageName (name) {
   }
 }
 
-function getKeyValueArrayFromMergedParameters (paramCharFlags, paramStringFlags) {
-  const paramsActionObj = getKeyValueObjectFromMergedParameters(paramCharFlags, paramStringFlags)
+/**
+ * @description returns key value array from the params and/or param-file supplied with more precendence to params.
+ * @param {Array} params from flags.param or flags.annotation
+ * @param {string} paramFilePath from flags['param-file'] or flags['annotation-file']
+ * @returns {Array} An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
+ */
+function getKeyValueArrayFromMergedParameters (params, paramFilePath) {
+  const paramsActionObj = getKeyValueObjectFromMergedParameters(params, paramFilePath)
   if (Object.keys(paramsActionObj).length > 0) {
     return createKeyValueArrayFromObject(paramsActionObj)
   } else {
@@ -387,13 +393,19 @@ function getKeyValueArrayFromMergedParameters (paramCharFlags, paramStringFlags)
   }
 }
 
-function getKeyValueObjectFromMergedParameters (paramCharFlags, paramStringFlags) {
+/**
+ * @description returns key value object from the params and/or param-file supplied with more precendence to params.
+ * @param {Array} params from flags.param or flags.annotation
+ * @param {string} paramFilePath from flags['param-file'] or flags['annotation-file']
+ * @returns {object} An object of key value pairs in this format : {Your key1 : 'Your Value 1' , Your key2: 'Your value 2'}
+ */
+function getKeyValueObjectFromMergedParameters (params, paramFilePath) {
   let paramsActionObj = {}
-  if (paramStringFlags) {
-    paramsActionObj = createKeyValueObjectFromFile(paramStringFlags)
+  if (paramFilePath) {
+    paramsActionObj = createKeyValueObjectFromFile(paramFilePath)
   }
-  if (paramCharFlags) {
-    Object.assign(paramsActionObj, createKeyValueObjectFromFlag(paramCharFlags))
+  if (params) {
+    Object.assign(paramsActionObj, createKeyValueObjectFromFlag(params))
   }
   return paramsActionObj
 }

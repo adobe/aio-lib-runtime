@@ -96,6 +96,12 @@ with valid options argument</p>
 <dt><a href="#parsePackageName">parsePackageName(name)</a> ⇒ <code>object</code></dt>
 <dd><p>parses a package name string and returns the namespace and entity name for a package</p>
 </dd>
+<dt><a href="#getKeyValueArrayFromMergedParameters">getKeyValueArrayFromMergedParameters(params, paramFilePath)</a> ⇒ <code>Array</code></dt>
+<dd><p>returns key value array from the params and/or param-file supplied with more precendence to params.</p>
+</dd>
+<dt><a href="#getKeyValueObjectFromMergedParameters">getKeyValueObjectFromMergedParameters(params, paramFilePath)</a> ⇒ <code>object</code></dt>
+<dd><p>returns key value object from the params and/or param-file supplied with more precendence to params.</p>
+</dd>
 <dt><a href="#createKeyValueObjectFromFile">createKeyValueObjectFromFile(file)</a> ⇒ <code>object</code></dt>
 <dd><p>returns key value pairs from the parameters supplied. Used to create --param-file and --annotation-file key value pairs</p>
 </dd>
@@ -425,6 +431,32 @@ parses a package name string and returns the namespace and entity name for a pac
 | Param | Type | Description |
 | --- | --- | --- |
 | name | <code>string</code> | package name |
+
+<a name="getKeyValueArrayFromMergedParameters"></a>
+
+## getKeyValueArrayFromMergedParameters(params, paramFilePath) ⇒ <code>Array</code>
+returns key value array from the params and/or param-file supplied with more precendence to params.
+
+**Kind**: global function  
+**Returns**: <code>Array</code> - An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| params | <code>Array</code> | from flags.param or flags.annotation |
+| paramFilePath | <code>string</code> | from flags['param-file'] or flags['annotation-file'] |
+
+<a name="getKeyValueObjectFromMergedParameters"></a>
+
+## getKeyValueObjectFromMergedParameters(params, paramFilePath) ⇒ <code>object</code>
+returns key value object from the params and/or param-file supplied with more precendence to params.
+
+**Kind**: global function  
+**Returns**: <code>object</code> - An object of key value pairs in this format : {Your key1 : 'Your Value 1' , Your key2: 'Your value 2'}  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| params | <code>Array</code> | from flags.param or flags.annotation |
+| paramFilePath | <code>string</code> | from flags['param-file'] or flags['annotation-file'] |
 
 <a name="createKeyValueObjectFromFile"></a>
 
