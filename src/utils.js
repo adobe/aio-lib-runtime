@@ -93,6 +93,7 @@ async function getIncludesForAction (action) {
         throw new Error('Invalid manifest `include` entry: Empty')
       } else if (elem.length === 1) {
         // src glob only, dest is root of action
+        elem.push('./')
       } else if (elem.length === 2) {
         // src glob + dest path both defined
       } else {
