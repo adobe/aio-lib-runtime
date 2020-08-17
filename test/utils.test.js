@@ -53,6 +53,8 @@ describe('utils has the right functions', () => {
     expect(typeof utils.createKeyValueArrayFromFlag).toEqual('function')
     expect(typeof utils.createKeyValueObjectFromFile).toEqual('function')
     expect(typeof utils.createKeyValueObjectFromFlag).toEqual('function')
+    expect(typeof utils.getKeyValueArrayFromMergedParameters).toEqual('function')
+    expect(typeof utils.getKeyValueObjectFromMergedParameters).toEqual('function')
     expect(typeof utils.parsePathPattern).toEqual('function')
 
     expect(typeof utils.createKeyValueObjectFromArray).toEqual('function')
@@ -1292,6 +1294,62 @@ describe('createKeyValueObjectFromFile', () => {
     const res = utils.createKeyValueObjectFromFile('/file.json')
     expect(typeof res).toEqual('object')
     expect(res).toMatchObject({ param1: 'param1value', param2: 'param2value' })
+  })
+})
+
+describe('getKeyValueObjectFromMergedParameters', () => {
+  test('empty -p and empty -P', () => {
+    const res = utils.getKeyValueObjectFromMergedParameters(undefined, undefined)
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({})
+  })
+  test('empty -p with some params from -P', () => {
+    const res = utils.getKeyValueObjectFromMergedParameters(undefined, '/file.json')
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ param1: 'param1value', param2: 'param2value' })
+  })
+  test('some params from -p with empty -P', () => {
+    const res = utils.getKeyValueObjectFromMergedParameters(['param1', 'cmdline1'], undefined)
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ param1: 'cmdline1' })
+  })
+  test('-p overriding some params from -P', () => {
+    const res = utils.getKeyValueObjectFromMergedParameters(['param1', 'cmdline1'], '/file.json')
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ param1: 'cmdline1', param2: 'param2value' })
+  })
+  test('-p overriding all params from -P', () => {
+    const res = utils.getKeyValueObjectFromMergedParameters(['param1', 'cmdline1', 'param2', 'cmdline2'], '/file.json')
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ param1: 'cmdline1', param2: 'cmdline2' })
+  })
+})
+
+describe('getKeyValueArrayFromMergedParameters', () => {
+  test('empty -p and empty -P', () => {
+    const res = utils.getKeyValueArrayFromMergedParameters(undefined, undefined)
+    expect(typeof res).toEqual('undefined')
+    expect(res).toBe(undefined)
+  })
+  test('empty -p with some params from -P', () => {
+    const res = utils.getKeyValueArrayFromMergedParameters(undefined, '/file.json')
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject([{ key: 'param1', value: 'param1value' }, { key: 'param2', value: 'param2value' }])
+  })
+  test('some params from -p with empty -P', () => {
+    const res = utils.getKeyValueArrayFromMergedParameters(['param1', 'cmdline1'], undefined)
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject([{ key: 'param1', value: 'cmdline1' }])
+  })
+  test('-p overriding some params from -P', () => {
+    const res = utils.getKeyValueArrayFromMergedParameters(['param1', 'cmdline1'], '/file.json')
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject([{ key: 'param1', value: 'cmdline1' }, { key: 'param2', value: 'param2value' }])
+  })
+  test('-p overriding all params from -P', () => {
+    const res = utils.getKeyValueArrayFromMergedParameters(['param1', 'cmdline1', 'param2', 'cmdline2'], '/file.json')
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject([{ key: 'param1', value: 'cmdline1' }, { key: 'param2', value: 'cmdline2' }])
   })
 })
 
