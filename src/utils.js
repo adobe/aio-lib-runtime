@@ -14,10 +14,12 @@ const fs = require('fs-extra')
 const sha1 = require('sha1')
 const cloneDeep = require('lodash.clonedeep')
 const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:index', { level: process.env.LOG_LEVEL })
+const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:utils', { provider: 'debug' })
 const yaml = require('js-yaml')
 const fetch = require('cross-fetch')
 const globby = require('globby')
 const path = require('path')
+const archiver = require('archiver')
 
 /**
  *
@@ -307,6 +309,44 @@ function getActionEntryFile (pkgJson) {
     return pkgJsonContent.main
   }
   return 'index.js'
+}
+
+/**
+ * Zip a file/folder using archiver
+ * @param {String} filePath
+ * @param {String} out
+ * @param {boolean} pathInZip
+ * @returns {Promise}
+ */
+function zip (filePath, out, pathInZip = false) {
+  aioLogger.debug(`Creating zip of file/folder ${filePath}`)
+  const stream = fs.createWriteStream(out)
+  const archive = archiver('zip', { zlib: { level: 9 } })
+
+  return new Promise((resolve, reject) => {
+    stream.on('close', () => resolve())
+    archive.pipe(stream)
+    archive.on('error', err => reject(err))
+
+    let stats
+    try {
+      stats = fs.lstatSync(filePath) // throws if enoent
+    } catch (e) {
+      archive.destroy()
+      reject(e)
+    }
+
+    if (stats.isDirectory()) {
+      archive.directory(filePath, pathInZip)
+    } else if (stats.isFile()) {
+      archive.file(filePath, { name: pathInZip || path.basename(filePath) })
+    } else {
+      archive.destroy()
+      reject(new Error(`${filePath} is not a valid dir or file`)) // e.g. symlinks
+    }
+
+    archive.finalize()
+  })
 }
 
 /**
@@ -1695,5 +1735,6 @@ module.exports = {
   _absApp,
   getActionUrls,
   urlJoin,
-  removeProtocolFromURL
+  removeProtocolFromURL,
+  zip
 }

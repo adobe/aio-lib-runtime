@@ -14,57 +14,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const webpack = require('webpack')
 const utils = require('./utils')
-const archiver = require('archiver')
-
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:action-builder', { provider: 'debug' })
-
-/** Instance utilities */
-// _relApp (p) {
-//   return path.relative(this.config.root, path.normalize(p))
-// }
-
-// _absApp (p) {
-//   if (path.isAbsolute(p)) return p
-//   return path.join(this.config.root, path.normalize(p))
-// }
-
-/**
- * Zip a file/folder using archiver
- * @param {String} filePath
- * @param {String} out
- * @param {boolean} pathInZip
- * @returns {Promise}
- */
-function zip (filePath, out, pathInZip = false) {
-  aioLogger.debug(`Creating zip of file/folder ${filePath}`)
-  const stream = fs.createWriteStream(out)
-  const archive = archiver('zip', { zlib: { level: 9 } })
-
-  return new Promise((resolve, reject) => {
-    stream.on('close', () => resolve())
-    archive.pipe(stream)
-    archive.on('error', err => reject(err))
-
-    let stats
-    try {
-      stats = fs.lstatSync(filePath) // throws if enoent
-    } catch (e) {
-      archive.destroy()
-      reject(e)
-    }
-
-    if (stats.isDirectory()) {
-      archive.directory(filePath, pathInZip)
-    } else if (stats.isFile()) {
-      archive.file(filePath, { name: pathInZip || path.basename(filePath) })
-    } else {
-      archive.destroy()
-      reject(new Error(`${filePath} is not a valid dir or file`)) // e.g. symlinks
-    }
-
-    archive.finalize()
-  })
-}
 
 // need config.root
 // config.actions.dist
@@ -97,7 +47,7 @@ const buildAction = async (name, action, root, dist) => {
     const packageJsonPath = path.join(actionPath, 'package.json')
     if (!fs.existsSync(packageJsonPath)) {
       if (!fs.existsSync(path.join(actionPath, 'index.js'))) {
-        throw new Error(`missing required ${this._relApp(packageJsonPath)} or index.js for folder actions`)
+        throw new Error(`missing required ${utils._relApp(root, packageJsonPath)} or index.js for folder actions`)
       }
       aioLogger.debug('action directory has an index.js, allowing zip')
     } else {
@@ -157,7 +107,7 @@ const buildAction = async (name, action, root, dist) => {
 
   // todo: split out zipping
   // zip the dir
-  await zip(tempBuildDir, outPath)
+  await utils.zip(tempBuildDir, outPath)
   // fs.remove(tempBuildDir) // remove the build file, don't need to wait ...
 
   // const fStats = fs.statSync(outPath)

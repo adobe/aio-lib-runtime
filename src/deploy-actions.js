@@ -40,7 +40,7 @@ async function deployActions (config, deployConfig = {}, eventEmitter) {
   const taskName = 'Deploy actions'
   eventEmitter.emit('start', taskName)
 
-  const isLocalDev = deployConfig.isLocalDev || false
+  const isLocalDev = deployConfig.isLocalDev
 
   // checks
   /// a. missing credentials
