@@ -1485,3 +1485,35 @@ describe('findProjectHashonServer', () => {
     expect(result).toBe('projectHash')
   })
 })
+
+describe('checkOpenWhiskCredentials', () => {
+  let config
+  beforeEach(async () => {
+    config = cloneDeep(global.sampleAppConfig)
+  })
+
+  test('check valid OW creds', () => {
+    const result = utils.checkOpenWhiskCredentials(config)
+    expect(result).toBe(undefined)
+  })
+  test('no ow config', () => {
+    delete config.ow
+    const func = () => utils.checkOpenWhiskCredentials(config)
+    expect(func).toThrow(new Error('missing aio runtime config, did you set AIO_RUNTIME_XXX env variables?'))
+  })
+  test('no ow apihost', () => {
+    delete config.ow.apihost
+    const func = () => utils.checkOpenWhiskCredentials(config)
+    expect(func).toThrow(new Error('missing Adobe I/O Runtime apihost, did you set the AIO_RUNTIME_APIHOST environment variable?'))
+  })
+  test('no ow apihost', () => {
+    delete config.ow.namespace
+    const func = () => utils.checkOpenWhiskCredentials(config)
+    expect(func).toThrow(new Error('missing Adobe I/O Runtime namespace, did you set the AIO_RUNTIME_NAMESPACE environment variable?'))
+  })
+  test('no ow apihost', () => {
+    delete config.ow.auth
+    const func = () => utils.checkOpenWhiskCredentials(config)
+    expect(func).toThrow(new Error('missing Adobe I/O Runtime auth, did you set the AIO_RUNTIME_AUTH environment variable?'))
+  })
+})
