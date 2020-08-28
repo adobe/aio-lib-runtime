@@ -15,7 +15,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const deepCopy = require('lodash.clonedeep')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:deploy', { provider: 'debug' })
-const ioruntime = require('./RuntimeAPI')
+const IOruntime = require('./RuntimeAPI')
 
 /**
  * runs the command
@@ -28,6 +28,7 @@ const ioruntime = require('./RuntimeAPI')
  * @param {Array} [deployConfig.filterEntities.triggers] filter list of triggers to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.rules] filter list of rules to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.apis] filter list of apis to deploy, e.g. ['name1', ..]
+ * @param eventEmitter
  * @param {Array} [deployConfig.filterEntities.dependencies] filter list of package dependencies to deploy, e.g. ['name1', ..]
  * @returns {Promise<object>} deployedEntities
  */
@@ -35,7 +36,7 @@ async function deployActions (config, deployConfig = {}, eventEmitter) {
   if (!config.app.hasBackend) throw new Error('cannot deploy actions, app has no backend')
   // TODO: Should we still support emitting events (start, progress, end ... )
   eventEmitter = eventEmitter || {
-    emit: (event, message) => { console.log(`${event}: ${message}`)}
+    emit: (event, message) => { console.log(`${event}: ${message}`) }
   }
   const taskName = 'Deploy actions'
   eventEmitter.emit('start', taskName)
@@ -103,6 +104,12 @@ async function deployActions (config, deployConfig = {}, eventEmitter) {
   return deployedEntities
 }
 
+/**
+ * @param scriptConfig
+ * @param manifestContent
+ * @param logger
+ * @param filterEntities
+ */
 async function deployWsk (scriptConfig, manifestContent, logger, filterEntities) {
   const packageName = scriptConfig.ow.package
   const manifestPath = scriptConfig.manifest.src
@@ -113,8 +120,12 @@ async function deployWsk (scriptConfig, manifestContent, logger, filterEntities)
     namespace: scriptConfig.ow.namespace
   }
 
-  const ow = await new ioruntime().init(owOptions)
+  const ow = await new IOruntime().init(owOptions)
 
+  /**
+   * @param pkgEntity
+   * @param filter
+   */
   function _filterOutPackageEntity (pkgEntity, filter) {
     filter = filter || []
     pkgEntity = pkgEntity || {}

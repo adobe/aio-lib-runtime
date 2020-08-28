@@ -65,7 +65,7 @@ global.fakeFileSystem = {
       }
     }})
     return */
-    //console.log(folderPath)
+    // console.log(folderPath)
     // console.log(getFilesRecursively(folderPath))
     fileSystem.mock(getFilesRecursively(folderPath))
     /* fs.readdirSync(folderPath).forEach(file => {
@@ -75,13 +75,13 @@ global.fakeFileSystem = {
   removeKeys: (arr) => {
     // remove from existing
     const files = fileSystem.files()
-    console.log(Object.keys(files))
+    // console.log(Object.keys(files))
     for (const prop in files) {
       if (arr.includes(prop)) {
         delete files[prop]
       }
     }
-    console.log(Object.keys(files))
+    // console.log(Object.keys(files))
     fileSystem.restore()
     fileSystem.mock(files)
   },
@@ -302,7 +302,7 @@ global.sampleAppIncludesConfig = {
               function: 'actions/action.js',
               web: 'yes',
               runtime: 'nodejs:12',
-              include: [ [ '*.txt', 'text/' ] ]
+              include: [['*.txt', 'text/']]
             }
           }
         }
@@ -314,7 +314,7 @@ global.sampleAppIncludesConfig = {
           function: 'actions/action.js',
           web: 'yes',
           runtime: 'nodejs:12',
-          include: [ [ '*.txt', 'text/' ] ]
+          include: [['*.txt', 'text/']]
         }
       }
     }
@@ -459,33 +459,37 @@ global.sampleAppReducedConfig = {
   root: '/'
 }
 
-function getFilesRecursively(folderPath, relativePath = '') {
-  let files = []
-  let filesJson = {}
+/**
+ * @param folderPath
+ * @param relativePath
+ */
+function getFilesRecursively (folderPath, relativePath = '') {
+  const files = []
+  const filesJson = {}
   fs.readdirSync(folderPath).forEach(file => {
-    //console.log(file)
-    if(fs.lstatSync(folderPath+'/'+file).isFile()) {
-      //console.log('its a file')
+    // console.log(file)
+    if (fs.lstatSync(folderPath + '/' + file).isFile()) {
+      // console.log('its a file')
       files.push(file)
       /* if(relativePath !== '')
         relativePath = relativePath + '/' */
-      filesJson[relativePath+file] = fs.readFileSync(folderPath+'/'+file).toString()
+      filesJson[relativePath + file] = fs.readFileSync(folderPath + '/' + file).toString()
     } else {
-      //files = [...files, ...getFilesRecursively(folderPath+'/'+file)]
-      Object.assign(filesJson, getFilesRecursively(folderPath+'/'+file, file+'/'))
+      // files = [...files, ...getFilesRecursively(folderPath+'/'+file)]
+      Object.assign(filesJson, getFilesRecursively(folderPath + '/' + file, file + '/'))
     }
   })
   return filesJson
 }
 
 global.addSampleAppFiles = () => {
-  global.fakeFileSystem.addJson({ 
+  global.fakeFileSystem.addJson({
     'actions/action-zip/index.js': global.fixtureFile('/sample-app/actions/action-zip/index.js'),
     'actions/action-zip/package.json': global.fixtureFile('/sample-app/actions/action-zip/package.json'),
     'actions/action.js': global.fixtureFile('/sample-app/actions/action.js'),
     'web-src/index.html': global.fixtureFile('/sample-app/web-src/index.html'),
     'manifest.yml': global.fixtureFile('/sample-app/manifest.yml'),
-    'package.json': global.fixtureFile('/sample-app/package.json'),
+    'package.json': global.fixtureFile('/sample-app/package.json')
   })
 }
 
@@ -496,14 +500,14 @@ global.addNamedPackageFiles = () => {
     'actions/action.js': global.fixtureFile('/named-package/actions/action.js'),
     'web-src/index.html': global.fixtureFile('/named-package/web-src/index.html'),
     'manifest.yml': global.fixtureFile('/named-package/manifest.yml'),
-    'package.json': global.fixtureFile('/named-package/package.json'),
+    'package.json': global.fixtureFile('/named-package/package.json')
   })
 }
 
 global.addSampleAppReducedFiles = () => {
-  global.fakeFileSystem.addJson({ 
+  global.fakeFileSystem.addJson({
     'actions/action.js': global.fixtureFile('/sample-app-reduced/actions/action.js'),
     'manifest.yml': global.fixtureFile('/sample-app-reduced/manifest.yml'),
-    'package.json': global.fixtureFile('/sample-app-reduced/package.json'),
+    'package.json': global.fixtureFile('/sample-app-reduced/package.json')
   })
 }

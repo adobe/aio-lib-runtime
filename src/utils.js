@@ -70,7 +70,7 @@ const archiver = require('archiver')
 /**
  * @typedef ManifestAction
  * @type {object}
- * @property {array} include - array of include glob patterns
+ * @property {Array} include - array of include glob patterns
  */
 
 /**
@@ -111,66 +111,59 @@ async function getIncludesForAction (action) {
 }
 
 /**
- *
  * The manifest sequence definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md
  *
  * @typedef {object} ManifestSequence
- *
+ * @property
  */
 
 /**
- *
  * The manifest trigger definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_triggers.md
  *
  * @typedef {object} ManifestTrigger
- *
+ * @property
  */
 
 /**
- *
  * The manifest rule definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_rules.md
  *
  * @typedef {object} ManifestRule
- *
+ * @property
  */
 
 /**
- *
  * The manifest api definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_apis.md
  *
  * @typedef {object} ManifestApi
- *
+ * @property
  */
 
 /**
- *
  * The manifest dependency definition
  * TODO
  *
  * @typedef {object} ManifestDependency
- *
+ * @property
  */
 
 /**
- *
  * The manifest action limits definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#valid-limit-keys.md
  *
  * @typedef {object} ManifestActionLimits
- *
+ * @property
  */
 
 /**
- *
  * The manifest action annotations definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#action-annotations
  *
  * @typedef {object} ManifestActionAnnotations
- *
+ * @property
  */
 
 /**
@@ -201,39 +194,35 @@ async function getIncludesForAction (action) {
  */
 
 /**
- *
  * The action entity definition
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesAction
- *
+ * @property
  */
 
 /**
- *
  * The rule entity definition
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesRule
- *
+ * @property
  */
 
 /**
- *
  * The trigger entity definition
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesTrigger
- *
+ * @property
  */
 
 /**
- *
  * The package entity definition
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesPackage
- *
+ * @property
  */
 
 /**
@@ -247,12 +236,11 @@ async function getIncludesForAction (action) {
  */
 
 /**
- *
  * The deployment trigger definition
  * TODO
  *
  * @typedef {object} DeploymentTrigger
- *
+ * @property
  */
 
 /**
@@ -300,6 +288,7 @@ function printLogs (activation, strip, logger) {
 /**
  * returns path to main function as defined in package.json OR default of index.js
  * note: file MUST exist, caller's responsibility, this method will throw if it does not exist
+ *
  * @param {*} pkgJson : path to a package.json file
  * @returns {string}
  */
@@ -313,8 +302,9 @@ function getActionEntryFile (pkgJson) {
 
 /**
  * Zip a file/folder using archiver
- * @param {String} filePath
- * @param {String} out
+ *
+ * @param {string} filePath
+ * @param {string} out
  * @param {boolean} pathInZip
  * @returns {Promise}
  */
@@ -1622,15 +1612,26 @@ async function findProjectHashonServer (ow, projectName) {
   return projectHash
 }
 
+/**
+ * @param root
+ * @param p
+ */
 function _relApp (root, p) {
   return path.relative(root, path.normalize(p))
 }
 
+/**
+ * @param root
+ * @param p
+ */
 function _absApp (root, p) {
   if (path.isAbsolute(p)) return p
   return path.join(root, path.normalize(p))
 }
 
+/**
+ * @param config
+ */
 function checkOpenWhiskCredentials (config) {
   const owConfig = config.ow
 
@@ -1654,6 +1655,11 @@ function checkOpenWhiskCredentials (config) {
   }
 }
 
+/**
+ * @param config
+ * @param isRemoteDev
+ * @param isLocalDev
+ */
 function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
   // set action urls
   // action urls {name: url}, if !LocalDev subdomain uses namespace
@@ -1680,6 +1686,7 @@ function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, 
 
 /**
  * Joins url path parts
+ *
  * @param {...string} args url parts
  * @returns {string}
  */
@@ -1691,6 +1698,9 @@ function urlJoin (...args) {
     .join('/')
 }
 
+/**
+ * @param url
+ */
 function removeProtocolFromURL (url) {
   return url.replace(/(^\w+:|^)\/\//, '')
 }

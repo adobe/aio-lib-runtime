@@ -13,24 +13,25 @@ governing permissions and limitations under the License.
 const path = require('path')
 const deployActions = require('../src/deploy-actions')
 const runtimeLibUtils = require('../src/utils')
-//jest.mock('@adobe/aio-lib-runtime')
+// jest.mock('@adobe/aio-lib-runtime')
 runtimeLibUtils.processPackage = jest.fn()
 runtimeLibUtils.syncProject = jest.fn()
 
 jest.mock('../src/RuntimeAPI')
 const ioruntime = require('../src/RuntimeAPI')
 ioruntime.mockImplementation(() => {
-  return { 
+  return {
     init: () => {
       return { fake: 'ow' }
     }
-  }})
+  }
+})
 const deepCopy = require('lodash.clonedeep')
 
 afterEach(() => global.fakeFileSystem.reset())
 
 beforeEach(() => {
-  //mockAIOConfig.get.mockReset()
+  // mockAIOConfig.get.mockReset()
   runtimeLibUtils.processPackage.mockReset()
   runtimeLibUtils.syncProject.mockReset()
 })
@@ -104,7 +105,7 @@ test('deploy full manifest', async () => {
 
   const buildDir = global.sampleAppConfig.actions.dist
   // fake a previous build
-  let fakeFiles = {}
+  const fakeFiles = {}
   fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
   fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)
@@ -128,7 +129,7 @@ test('deploy full manifest with package name specified', async () => {
 
   const buildDir = global.namedPackageConfig.actions.dist
   // fake a previous build
-  let fakeFiles = {}
+  const fakeFiles = {}
   fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
   fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)
@@ -148,7 +149,7 @@ test('use deployConfig.filterEntities to deploy only one action', async () => {
 
   const buildDir = global.sampleAppConfig.actions.dist
   // fake a previous build
-  let fakeFiles = {}
+  const fakeFiles = {}
   fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
   fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)
@@ -186,7 +187,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action'
 
   const buildDir = global.sampleAppConfig.actions.dist
   // fake a previous build
-  let fakeFiles = {}
+  const fakeFiles = {}
   fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
   fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)
@@ -227,7 +228,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action 
   runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
   const buildDir = global.sampleAppConfig.actions.dist
   // fake a previous build
-  let fakeFiles = {}
+  const fakeFiles = {}
   fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
   fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)
@@ -276,7 +277,7 @@ test('use deployConfig.filterEntities to deploy only one action and one api', as
   runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
   const buildDir = global.sampleAppConfig.actions.dist
   // fake a previous build
-  let fakeFiles = {}
+  const fakeFiles = {}
   fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
   fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)
@@ -326,7 +327,7 @@ test('use deployConfig.filterEntities to deploy only two actions and one sequenc
 
   const buildDir = global.sampleAppConfig.actions.dist
   // fake a previous build
-  let fakeFiles = {}
+  const fakeFiles = {}
   fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
   fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)
@@ -376,7 +377,7 @@ test('use deployConfig.filterEntities to deploy only one pkg dependency', async 
 
   const buildDir = global.sampleAppConfig.actions.dist
   // fake a previous build
-  let fakeFiles = {}
+  const fakeFiles = {}
   fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
   fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)
@@ -629,44 +630,56 @@ test('if actions are deployed with the headless validator and custom package and
 
 test('No backend is present', async () => {
   addSampleAppFiles()
-  //vol.unlinkSync('./manifest.yml')
-  global.sampleAppConfig.app.hasBackend=false
+  // vol.unlinkSync('./manifest.yml')
+  global.sampleAppConfig.app.hasBackend = false
 
   await expect(deployActions(global.sampleAppConfig)).rejects.toThrow('cannot deploy actions, app has no backend')
 })
 
-function addSampleAppFiles() {
-  global.fakeFileSystem.addJson({ 
+/**
+ *
+ */
+function addSampleAppFiles () {
+  global.fakeFileSystem.addJson({
     'actions/action-zip/index.js': global.fixtureFile('/sample-app/actions/action-zip/index.js'),
     'actions/action-zip/package.json': global.fixtureFile('/sample-app/actions/action-zip/package.json'),
     'actions/action.js': global.fixtureFile('/sample-app/actions/action.js'),
     'web-src/index.html': global.fixtureFile('/sample-app/web-src/index.html'),
     'manifest.yml': global.fixtureFile('/sample-app/manifest.yml'),
-    'package.json': global.fixtureFile('/sample-app/package.json'),
+    'package.json': global.fixtureFile('/sample-app/package.json')
   })
 }
 
-function addNamedPackageFiles() {
+/**
+ *
+ */
+function addNamedPackageFiles () {
   global.fakeFileSystem.addJson({
     'actions/action-zip/index.js': global.fixtureFile('/named-package/actions/action-zip/index.js'),
     'actions/action-zip/package.json': global.fixtureFile('/named-package/actions/action-zip/package.json'),
     'actions/action.js': global.fixtureFile('/named-package/actions/action.js'),
     'web-src/index.html': global.fixtureFile('/named-package/web-src/index.html'),
     'manifest.yml': global.fixtureFile('/named-package/manifest.yml'),
-    'package.json': global.fixtureFile('/named-package/package.json'),
+    'package.json': global.fixtureFile('/named-package/package.json')
   })
 }
 
-function addSampleAppReducedFiles() {
-  global.fakeFileSystem.addJson({ 
+/**
+ *
+ */
+function addSampleAppReducedFiles () {
+  global.fakeFileSystem.addJson({
     'actions/action.js': global.fixtureFile('/sample-app-reduced/actions/action.js'),
     'manifest.yml': global.fixtureFile('/sample-app-reduced/manifest.yml'),
-    'package.json': global.fixtureFile('/sample-app-reduced/package.json'),
+    'package.json': global.fixtureFile('/sample-app-reduced/package.json')
   })
 }
 
-function addFakeFiles(buildDir) {
-  let fakeFiles = {}
+/**
+ * @param buildDir
+ */
+function addFakeFiles (buildDir) {
+  const fakeFiles = {}
   fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
   fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)

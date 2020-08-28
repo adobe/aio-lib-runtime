@@ -18,6 +18,9 @@ const deepClone = require('lodash.clonedeep')
 
 const fs = require('fs-extra')
 
+const globby = require('globby')
+jest.mock('globby')
+
 const mockLogger = require('@adobe/aio-lib-core-logging')
 
 // zip implementation is complex to test => tested in utils.test.js
@@ -37,7 +40,7 @@ const webpackStatsMock = {
 }
 
 beforeEach(() => {
-  //global.cleanFs(vol)
+  // global.cleanFs(vol)
 
   webpack.mockClear()
   webpackMock.run.mockReset()
@@ -56,22 +59,22 @@ describe('build by zipping js action folder', () => {
   let config
   beforeEach(async () => {
     // mock config, prepare file, load app scripts
-    //mockAIOConfig.get.mockReturnValue(global.fakeConfig.tvm)
-    //global.loadFs(vol, 'sample-app')
-    //global.fakeFileSystem.addJson({ 'manifest.yml': 'packages: testpackage' })
-    //global.fakeFileSystem.addJsonFolder(path.resolve('./test/__fixtures__/sample-app'))
-    global.fakeFileSystem.addJson({ 
+    // mockAIOConfig.get.mockReturnValue(global.fakeConfig.tvm)
+    // global.loadFs(vol, 'sample-app')
+    // global.fakeFileSystem.addJson({ 'manifest.yml': 'packages: testpackage' })
+    // global.fakeFileSystem.addJsonFolder(path.resolve('./test/__fixtures__/sample-app'))
+    global.fakeFileSystem.addJson({
       'actions/action-zip/index.js': global.fixtureFile('/sample-app/actions/action-zip/index.js'),
       'actions/action-zip/package.json': global.fixtureFile('/sample-app/actions/action-zip/package.json'),
-      //'actions/action.js': global.fixtureFile('/sample-app/actions/action.js'),
+      // 'actions/action.js': global.fixtureFile('/sample-app/actions/action.js'),
       'web-src/index.html': global.fixtureFile('/sample-app/web-src/index.html'),
       'manifest.yml': global.fixtureFile('/sample-app/manifest.yml'),
-      'package.json': global.fixtureFile('/sample-app/package.json'),
+      'package.json': global.fixtureFile('/sample-app/package.json')
     })
     // remove js action , focus on zip use case
     // todo use fixtures instead
     // delete non zip action (focus only on zip case)
-    //vol.unlinkSync('/actions/action.js')
+    // vol.unlinkSync('/actions/action.js')
     config = deepClone(global.sampleAppConfig)
     delete config.manifest.package.actions.action
   })
@@ -80,7 +83,7 @@ describe('build by zipping js action folder', () => {
     // reset back to normal
     global.fakeFileSystem.reset()
   })
-/* 
+  /*
   test('should fail if zip action folder does not exists', async () => {
     global.fakeFileSystem.removeKeys(['/actions/action-zip/index.js','/actions/action-zip/package.json','/actions/action-zip'])
     await expect(buildActions(config)).rejects.toEqual(expect.objectContaining({ message: expect.stringContaining('ENOENT') }))
@@ -99,7 +102,13 @@ describe('build by zipping js action folder', () => {
     await buildActions(config)
     expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-zip-temp'), r('/dist/actions/action-zip.zip'))
   })
-/* 
+
+  test('should build a zip action folder with a package.json and action named index.js', async () => {
+    // console.log(config)
+    await buildActions(config)
+    expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-zip-temp'), r('/dist/actions/action-zip.zip'))
+  })
+  /*
   test('should still build a zip action if there is no ui', async () => {
     global.fakeFileSystem.removeKeys(['/web-src/index.html'])
     // vol.unlinkSync('/web-src/index.html')
@@ -128,20 +137,30 @@ describe('build by zipping js action folder', () => {
     await expect(buildActions(config)).rejects.toThrow(`missing required ${n('actions/action-zip/package.json')} or index.js for folder actions`)
   })
 
+  test('should pass if no package.json but index.js', async () => {
+    // delete package.json
+    global.fakeFileSystem.removeKeys(['/actions/action-zip/package.json'])
+    global.fakeFileSystem.addJson({
+      'actions/action-zip/sample.js': global.fixtureFile('/sample-app/actions/action-zip/index.js')
+    })
+    await expect(buildActions(config))
+    expect(mockLogger.debug).toHaveBeenCalledWith('action directory has an index.js, allowing zip')
+  })
+
   test('should fail if package.json main field is not defined and there is no index.js file', async () => {
     // rename index.js
     global.fakeFileSystem.addJson({
       'actions/action-zip/action.js': global.fakeFileSystem.files()['/actions/action-zip/index.js']
     })
     global.fakeFileSystem.removeKeys(['/actions/action-zip/index.js'])
-    //vol.renameSync('/actions/action-zip/index.js', '/actions/action-zip/action.js')
+    // vol.renameSync('/actions/action-zip/index.js', '/actions/action-zip/action.js')
     // rewrite package.json
     const packagejson = JSON.parse(global.fakeFileSystem.files()['/actions/action-zip/package.json'])
     delete packagejson.main
     global.fakeFileSystem.addJson({
       'actions/action-zip/package.json': JSON.stringify(packagejson)
     })
-    //vol.writeFileSync('/actions/action-zip/package.json', JSON.stringify(packagejson))
+    // vol.writeFileSync('/actions/action-zip/package.json', JSON.stringify(packagejson))
     await expect(buildActions(config)).rejects.toThrow('the directory actions/action-zip must contain either a package.json with a \'main\' flag or an index.js file at its root')
   })
 
@@ -193,23 +212,23 @@ describe('build by bundling js action file with webpack', () => {
     // mock webpack
     webpackMock.run.mockImplementation(cb => {
       // fake the build files
-      //vol.writeFileSync('/dist/actions/action.tmp.js', 'fake')
+      // vol.writeFileSync('/dist/actions/action.tmp.js', 'fake')
       global.fakeFileSystem.addJson({
         '/dist/actions/action.tmp.js': 'fake'
       })
       cb(null, webpackStatsMock)
     })
     // mock env, load files, load scripts
-    global.fakeFileSystem.addJson({ 
+    global.fakeFileSystem.addJson({
       // 'actions/action-zip/index.js': global.fixtureFile('/sample-app/actions/action-zip/index.js'),
       // 'actions/action-zip/package.json': global.fixtureFile('/sample-app/actions/action-zip/package.json'),
       'actions/action.js': global.fixtureFile('/sample-app/actions/action.js'),
       'web-src/index.html': global.fixtureFile('/sample-app/web-src/index.html'),
       'manifest.yml': global.fixtureFile('/sample-app/manifest.yml'),
-      'package.json': global.fixtureFile('/sample-app/package.json'),
+      'package.json': global.fixtureFile('/sample-app/package.json')
     })
-    //mockAIOConfig.get.mockReturnValue(global.fakeConfig.tvm)
-    //scripts = await AppScripts()
+    // mockAIOConfig.get.mockReturnValue(global.fakeConfig.tvm)
+    // scripts = await AppScripts()
     // remove folder zip action , focus on bundled js use case
     // todo use fixtures instead
     /* vol.unlinkSync('/actions/action-zip/index.js')
@@ -235,6 +254,19 @@ describe('build by bundling js action file with webpack', () => {
     await expect(buildActions(config)).rejects.toThrow('actions/action.js is not a valid file or directory')
   }) */
 
+  test('should fail for invalid file or directory', async () => {
+    await buildActions(config)
+    expect(webpackMock.run).toHaveBeenCalledTimes(1)
+    expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
+      entry: [r('/actions/action.js')],
+      output: expect.objectContaining({
+        path: r('/dist/actions/action-temp'),
+        filename: 'index.js'
+      })
+    }))
+    expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-temp'), r('/dist/actions/action.zip'))
+  })
+
   test('should bundle a single action file using webpack and zip it', async () => {
     await buildActions(config)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
@@ -249,15 +281,15 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it with includes', async () => {
-    //global.loadFs(vol, 'sample-app-includes')
+    // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()
-    global.fakeFileSystem.addJson({ 
+    global.fakeFileSystem.addJson({
       'actions/action.js': global.fixtureFile('/sample-app-includes/actions/action.js'),
       'includeme.txt': global.fixtureFile('/sample-app-includes/includeme.txt'),
       'manifest.yml': global.fixtureFile('/sample-app-includes/manifest.yml'),
-      'package.json': global.fixtureFile('/sample-app-includes/package.json'),
+      'package.json': global.fixtureFile('/sample-app-includes/package.json')
     })
-    
+    globby.mockReturnValue(['/includeme.txt'])
     await buildActions(global.sampleAppIncludesConfig)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
@@ -272,7 +304,7 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it with manifest named package', async () => {
-    //global.loadFs(vol, 'named-package')
+    // global.loadFs(vol, 'named-package')
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
       'actions/action-zip/index.js': global.fixtureFile('/named-package/actions/action-zip/index.js'),
@@ -280,10 +312,10 @@ describe('build by bundling js action file with webpack', () => {
       'actions/action.js': global.fixtureFile('/named-package/actions/action.js'),
       'web-src/index.html': global.fixtureFile('/named-package/web-src/index.html'),
       'manifest.yml': global.fixtureFile('/named-package/manifest.yml'),
-      'package.json': global.fixtureFile('/named-package/package.json'),
+      'package.json': global.fixtureFile('/named-package/package.json')
     })
 
-    //mockAIOConfig.get.mockReturnValue(global.fakeConfig.tvm)
+    // mockAIOConfig.get.mockReturnValue(global.fakeConfig.tvm)
 
     await buildActions(global.namedPackageConfig)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
@@ -346,14 +378,13 @@ describe('build by bundling js action file with webpack', () => {
   })
 })
 
-
 test('should build 1 zip action and 1 bundled action in one go', async () => {
   // global.loadFs(vol, 'sample-app')
   addSampleAppFiles()
   // mockAIOConfig.get.mockReturnValue(global.fakeConfig.tvm)
   webpackMock.run.mockImplementation(cb => {
     // fake the build files
-    //vol.writeFileSync('/dist/actions/action.tmp.js', 'fake')
+    // vol.writeFileSync('/dist/actions/action.tmp.js', 'fake')
     global.fakeFileSystem.addJson({
       'dist/actions/action.tmp.js': 'fake'
     })
@@ -413,19 +444,22 @@ test('use buildConfig.filterActions to build only action called `action-zip`', a
 test('No backend is present', async () => {
   addSampleAppFiles()
   // global.fakeFileSystem.removeKeys(['./manifest.yml'])
-  let config = deepClone(global.sampleAppConfig)
+  const config = deepClone(global.sampleAppConfig)
   config.app.hasBackend = false
 
   await expect(buildActions(config)).rejects.toThrow('cannot build actions, app has no backend')
 })
 
-function addSampleAppFiles() {
-  global.fakeFileSystem.addJson({ 
+/**
+ *
+ */
+function addSampleAppFiles () {
+  global.fakeFileSystem.addJson({
     'actions/action-zip/index.js': global.fixtureFile('/sample-app/actions/action-zip/index.js'),
     'actions/action-zip/package.json': global.fixtureFile('/sample-app/actions/action-zip/package.json'),
     'actions/action.js': global.fixtureFile('/sample-app/actions/action.js'),
     'web-src/index.html': global.fixtureFile('/sample-app/web-src/index.html'),
     'manifest.yml': global.fixtureFile('/sample-app/manifest.yml'),
-    'package.json': global.fixtureFile('/sample-app/package.json'),
+    'package.json': global.fixtureFile('/sample-app/package.json')
   })
 }

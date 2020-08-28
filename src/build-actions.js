@@ -26,11 +26,6 @@ const buildAction = async (name, action, root, dist) => {
 
   // make sure temp/ exists
   fs.ensureDirSync(tempBuildDir)
-
-  if (!actionFileStats.isDirectory() && !actionFileStats.isFile()) {
-    throw new Error(`${action.function} is not a valid file or directory`)
-  }
-
   // Process include(d) files
   const includeFiles = await utils.getIncludesForAction(action)
   includeFiles.forEach(incFile => {
