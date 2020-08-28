@@ -1517,3 +1517,45 @@ describe('checkOpenWhiskCredentials', () => {
     expect(func).toThrow(new Error('missing Adobe I/O Runtime auth, did you set the AIO_RUNTIME_AUTH environment variable?'))
   })
 })
+
+describe('getActionUrls', () => {
+  let config
+  beforeEach(async () => {
+    config = cloneDeep(global.sampleAppConfig)
+  })
+
+  test('local dev false', () => {
+    const expected = {"action": "https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action",
+    "action-sequence": "https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence",
+    "action-zip": "https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip"}
+
+    const result = utils.getActionUrls(config, config.actions.devRemote, false)
+    expect(result).toEqual(expect.objectContaining(expected))
+  })
+
+  test('local dev false', () => {
+    const expected = {"action": "https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action",
+    "action-sequence": "https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-sequence",
+    "action-zip": "https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip"}
+
+    const result = utils.getActionUrls(config, config.actions.devRemote, true)
+    expect(result).toEqual(expect.objectContaining(expected))
+  })
+})
+
+describe('_absApp', () => {
+
+  test('relative path', () => {
+    const expected = '/test.txt'
+
+    const result = utils._absApp('/', 'test.txt')
+    expect(result).toEqual(expected)
+  })
+
+  test('absolute path', () => {
+    const expected = '/fakedir/test.txt'
+
+    const result = utils._absApp('/', '/fakedir/test.txt')
+    expect(result).toEqual(expected)
+  })
+})
