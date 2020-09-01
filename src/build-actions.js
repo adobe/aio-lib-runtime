@@ -19,7 +19,10 @@ const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime
 // need config.root
 // config.actions.dist
 const buildAction = async (name, action, root, dist) => {
-  const actionPath = path.isAbsolute(action.function) ? action.function : path.join(root, action.function)
+  // const actionPath = path.isAbsolute(action.function) ? action.function : path.join(root, action.function)
+  // note: it does not seem to be possible to get here with an absolute path ...
+  const actionPath = path.join(root, action.function)
+
   const outPath = path.join(dist, `${name}.zip`)
   const tempBuildDir = path.join(path.dirname(outPath), `${name}-temp`) // build all to tempDir first
   const actionFileStats = fs.lstatSync(actionPath)
@@ -131,13 +134,15 @@ const buildActions = async (config, filterActions) => {
     actionsToBuild = actionsToBuild.filter(([name, value]) => filterActions.includes(name))
   }
 
+  const builtList = []
   // build all sequentially (todo make bundler execution parallel)
   for (const [name, action] of actionsToBuild) {
     // const out =  // todo: log output of each action as it is built
     // need config.root
     // config.actions.dist
-    await buildAction(name, action, config.root, config.actions.dist)
+    builtList.push(await buildAction(name, action, config.root, config.actions.dist))
   }
+  return builtList
 }
 
 module.exports = buildActions
