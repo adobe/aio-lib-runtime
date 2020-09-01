@@ -328,13 +328,9 @@ function zip (filePath, out, pathInZip = false) {
 
     if (stats.isDirectory()) {
       archive.directory(filePath, pathInZip)
-    } else if (stats.isFile()) {
+    } else { //  if (stats.isFile()) {
       archive.file(filePath, { name: pathInZip || path.basename(filePath) })
-    } else {
-      archive.destroy()
-      reject(new Error(`${filePath} is not a valid dir or file`)) // e.g. symlinks
     }
-
     archive.finalize()
   })
 }
