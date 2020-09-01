@@ -13,9 +13,13 @@ governing permissions and limitations under the License.
 const utils = require('./utils')
 const cloneDeep = require('lodash.clonedeep')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:undeploy', { provider: 'debug' })
-const ioruntime = require('./RuntimeAPI')
+const IORuntime = require('./RuntimeAPI')
 
-async function undeployActions(config, logFunc) {
+/**
+ * @param config
+ * @param logFunc
+ */
+async function undeployActions (config, logFunc) {
   if (!config.app.hasBackend) {
     throw new Error('cannot undeploy actions, app has no backend')
   }
@@ -49,8 +53,14 @@ async function undeployActions(config, logFunc) {
   await undeployWsk(packageName, manifest, owOptions, log)
 }
 
-async function undeployWsk(packageName, manifestContent, owOptions, logger) {
-  const ow = await new ioruntime().init(owOptions)
+/**
+ * @param packageName
+ * @param manifestContent
+ * @param owOptions
+ * @param logger
+ */
+async function undeployWsk (packageName, manifestContent, owOptions, logger) {
+  const ow = await new IORuntime().init(owOptions)
 
   aioLogger.debug('Undeploying')
   // 1. make sure that the package exists

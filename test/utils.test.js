@@ -1516,12 +1516,12 @@ describe('checkOpenWhiskCredentials', () => {
     const func = () => utils.checkOpenWhiskCredentials(config)
     expect(func).toThrow(new Error('missing Adobe I/O Runtime apihost, did you set the AIO_RUNTIME_APIHOST environment variable?'))
   })
-  test('no ow apihost', () => {
+  test('no ow namespace', () => {
     delete config.ow.namespace
     const func = () => utils.checkOpenWhiskCredentials(config)
     expect(func).toThrow(new Error('missing Adobe I/O Runtime namespace, did you set the AIO_RUNTIME_NAMESPACE environment variable?'))
   })
-  test('no ow apihost', () => {
+  test('no ow auth', () => {
     delete config.ow.auth
     const func = () => utils.checkOpenWhiskCredentials(config)
     expect(func).toThrow(new Error('missing Adobe I/O Runtime auth, did you set the AIO_RUNTIME_AUTH environment variable?'))
@@ -1569,7 +1569,6 @@ describe('getActionUrls', () => {
 })
 
 describe('_absApp', () => {
-
   test('relative path', () => {
     const expected = '/test.txt'
 
@@ -1630,7 +1629,6 @@ describe('urlJoin', () => {
     expect(utils.urlJoin('a', 'b')).toBe('a/b')
     expect(utils.urlJoin('/a', 'b')).toBe('/a/b')
     expect(utils.urlJoin('/', 'a', 'b')).toBe('/a/b')
-
   })
 })
 

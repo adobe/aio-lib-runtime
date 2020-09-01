@@ -12,11 +12,10 @@ governing permissions and limitations under the License.
 const utils = require('../src/utils')
 const buildActions = require('../src/build-actions')
 const path = require('path')
+
 const execa = require('execa')
 jest.mock('execa')
 const deepClone = require('lodash.clonedeep')
-
-const fs = require('fs-extra')
 
 const globby = require('globby')
 jest.mock('globby')
@@ -99,20 +98,15 @@ describe('build by zipping js action folder', () => {
   test('should build a zip action folder with a package.json and action named index.js', async () => {
     // console.log(config)
     await buildActions(config)
-    expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-zip-temp'), r('/dist/actions/action-zip.zip'))
+    expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/action-zip-temp'), path.resolve('/dist/actions/action-zip.zip'))
   })
 
-  test('should build a zip action folder with a package.json and action named index.js', async () => {
-    // console.log(config)
-    await buildActions(config)
-    expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-zip-temp'), r('/dist/actions/action-zip.zip'))
-  })
   /*
   test('should still build a zip action if there is no ui', async () => {
     global.fakeFileSystem.removeKeys(['/web-src/index.html'])
     // vol.unlinkSync('/web-src/index.html')
     await buildActions(config)
-    expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-zip-temp'), r('/dist/actions/action-zip.zip'))
+    expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/action-zip-temp'), path.resolve('/dist/actions/action-zip.zip'))
   })
 
   test('should not fail if no package.json if there is an index.js', async () => {
@@ -120,7 +114,7 @@ describe('build by zipping js action folder', () => {
     global.fakeFileSystem.removeKeys(['/actions/action-zip/package.json'])
     // vol.unlinkSync('/actions/action-zip/package.json')
     await buildActions(config)
-    expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-zip-temp'), r('/dist/actions/action-zip.zip'))
+    expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/action-zip-temp'), path.resolve('/dist/actions/action-zip.zip'))
     // expect(execa).not.toHaveBeenCalled()
   })
  */
@@ -133,7 +127,7 @@ describe('build by zipping js action folder', () => {
     })
     /* vol.unlinkSync('/actions/action-zip/package.json')
     vol.unlinkSync('/actions/action-zip/index.js') */
-    await expect(buildActions(config)).rejects.toThrow(`missing required ${n('actions/action-zip/package.json')} or index.js for folder actions`)
+    await expect(buildActions(config)).rejects.toThrow(`missing required ${path.normalize('actions/action-zip/package.json')} or index.js for folder actions`)
   })
 
   test('should pass if no package.json but index.js', async () => {
@@ -183,7 +177,7 @@ describe('build by zipping js action folder', () => {
     })
     await buildActions(config)
     expect(webpackMock.run).toHaveBeenCalledTimes(0) // no webpack bundling
-    expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-zip-temp'), r('/dist/actions/action-zip.zip'))
+    expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/action-zip-temp'), path.resolve('/dist/actions/action-zip.zip'))
   })
 
   test('should build a zip action package.json main field points to file not called index.js', async () => {
@@ -201,7 +195,7 @@ describe('build by zipping js action folder', () => {
 
     await buildActions(config)
     expect(webpackMock.run).toHaveBeenCalledTimes(0) // no webpack bundling
-    expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-zip-temp'), r('/dist/actions/action-zip.zip'))
+    expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/action-zip-temp'), path.resolve('/dist/actions/action-zip.zip'))
   })
 })
 
@@ -257,26 +251,26 @@ describe('build by bundling js action file with webpack', () => {
     await buildActions(config)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-      entry: [r('/actions/action.js')],
+      entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
-        path: r('/dist/actions/action-temp'),
+        path: path.resolve('/dist/actions/action-temp'),
         filename: 'index.js'
       })
     }))
-    expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-temp'), r('/dist/actions/action.zip'))
+    expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/action-temp'), path.resolve('/dist/actions/action.zip'))
   })
 
   test('should bundle a single action file using webpack and zip it', async () => {
     await buildActions(config)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-      entry: [r('/actions/action.js')],
+      entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
-        path: r('/dist/actions/action-temp'),
+        path: path.resolve('/dist/actions/action-temp'),
         filename: 'index.js'
       })
     }))
-    expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-temp'), r('/dist/actions/action.zip'))
+    expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/action-temp'), path.resolve('/dist/actions/action.zip'))
   })
 
   test('should bundle a single action file using webpack and zip it with includes', async () => {
@@ -292,13 +286,13 @@ describe('build by bundling js action file with webpack', () => {
     await buildActions(global.sampleAppIncludesConfig)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-      entry: [r('/actions/action.js')],
+      entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
-        path: r('/dist/actions/action-temp'),
+        path: path.resolve('/dist/actions/action-temp'),
         filename: 'index.js'
       })
     }))
-    expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-temp'), r('/dist/actions/action.zip'))
+    expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/action-temp'), path.resolve('/dist/actions/action.zip'))
     expect(Object.keys(global.fakeFileSystem.files())).toEqual(expect.arrayContaining(['/includeme.txt']))
   })
 
@@ -319,13 +313,13 @@ describe('build by bundling js action file with webpack', () => {
     await buildActions(global.namedPackageConfig)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-      entry: [r('/actions/action.js')],
+      entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
-        path: r('/dist/actions/action-temp'),
+        path: path.resolve('/dist/actions/action-temp'),
         filename: 'index.js'
       })
     }))
-    expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-temp'), r('/dist/actions/action.zip'))
+    expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/action-temp'), path.resolve('/dist/actions/action.zip'))
   })
 
   test('should still bundle a single action file when there is no ui', async () => {
@@ -333,13 +327,13 @@ describe('build by bundling js action file with webpack', () => {
     await buildActions(config)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-      entry: [r('/actions/action.js')],
+      entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
-        path: r('/dist/actions/action-temp'),
+        path: path.resolve('/dist/actions/action-temp'),
         filename: 'index.js'
       })
     }))
-    expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-temp'), r('/dist/actions/action.zip'))
+    expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/action-temp'), path.resolve('/dist/actions/action.zip'))
   })
 
   test('should fail if webpack throws an error', async () => {
@@ -394,17 +388,17 @@ test('should build 1 zip action and 1 bundled action in one go', async () => {
 
   expect(webpackMock.run).toHaveBeenCalledTimes(1)
   expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-    entry: [r('/actions/action.js')],
+    entry: [path.resolve('/actions/action.js')],
     output: expect.objectContaining({
-      path: expect.stringContaining(r('/dist/actions/action-temp')),
+      path: expect.stringContaining(path.resolve('/dist/actions/action-temp')),
       filename: 'index.js'
     })
   }))
   expect(utils.zip).toHaveBeenCalledTimes(2)
-  expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-temp'),
-    r('/dist/actions/action.zip'))
-  expect(utils.zip).toHaveBeenCalledWith(r('/dist/actions/action-zip-temp'),
-    r('/dist/actions/action-zip.zip'))
+  expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/action-temp'),
+    path.resolve('/dist/actions/action.zip'))
+  expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/action-zip-temp'),
+    path.resolve('/dist/actions/action-zip.zip'))
 })
 
 test('use buildConfig.filterActions to build only action called `action`', async () => {
@@ -421,23 +415,23 @@ test('use buildConfig.filterActions to build only action called `action`', async
 
   expect(webpackMock.run).toHaveBeenCalledTimes(1)
   expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-    entry: [r('/actions/action.js')],
+    entry: [path.resolve('/actions/action.js')],
     output: expect.objectContaining({
-      path: r('/dist/actions/action-temp'),
+      path: path.resolve('/dist/actions/action-temp'),
       filename: 'index.js'
     })
   }))
   expect(utils.zip).toHaveBeenCalledTimes(1)
-  expect(utils.zip).toHaveBeenCalledWith(expect.stringContaining(r('/dist/actions/action-temp')),
-    r('/dist/actions/action.zip'))
+  expect(utils.zip).toHaveBeenCalledWith(expect.stringContaining(path.resolve('/dist/actions/action-temp')),
+    path.resolve('/dist/actions/action.zip'))
 })
 
 test('use buildConfig.filterActions to build only action called `action-zip`', async () => {
   addSampleAppFiles()
   await buildActions(global.sampleAppConfig, ['action-zip'])
   expect(utils.zip).toHaveBeenCalledTimes(1)
-  expect(utils.zip).toHaveBeenCalledWith(expect.stringContaining(r('/dist/actions/action-zip-temp')),
-    r('/dist/actions/action-zip.zip'))
+  expect(utils.zip).toHaveBeenCalledWith(expect.stringContaining(path.resolve('/dist/actions/action-zip-temp')),
+    path.resolve('/dist/actions/action-zip.zip'))
 })
 
 test('No backend is present', async () => {

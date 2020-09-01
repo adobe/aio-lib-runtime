@@ -43,12 +43,12 @@ const expectedDistManifest = {
       version: '1.0.0',
       actions: {
         action: {
-          function: n('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         },
         'action-zip': {
-          function: n('dist/actions/action-zip.zip'),
+          function: path.normalize('dist/actions/action-zip.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -116,7 +116,7 @@ test('deploy full manifest', async () => {
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', r('/manifest.yml'), expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', path.resolve('/manifest.yml'), expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
 })
 
 test('deploy full manifest with package name specified', async () => {
@@ -140,7 +140,7 @@ test('deploy full manifest with package name specified', async () => {
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedNamedPackage, {}, {}, {}, false, expectedOWOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('bobby-mcgee', r('/manifest.yml'), { packages: expectedNamedPackage }, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('bobby-mcgee', path.resolve('/manifest.yml'), { packages: expectedNamedPackage }, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
 })
 
 test('use deployConfig.filterEntities to deploy only one action', async () => {
@@ -166,7 +166,7 @@ test('use deployConfig.filterEntities to deploy only one action', async () => {
       version: '1.0.0',
       actions: {
         action: {
-          function: n('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -178,7 +178,7 @@ test('use deployConfig.filterEntities to deploy only one action', async () => {
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', r('/manifest.yml'), expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', path.resolve('/manifest.yml'), expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
 })
 
 test('use deployConfig.filterEntities to deploy only one trigger and one action', async () => {
@@ -205,7 +205,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action'
       version: '1.0.0',
       actions: {
         action: {
-          function: n('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -220,7 +220,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action'
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', r('/manifest.yml'), expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', path.resolve('/manifest.yml'), expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
 })
 
 test('use deployConfig.filterEntities to deploy only one trigger and one action and one rule', async () => {
@@ -247,7 +247,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action 
       version: '1.0.0',
       actions: {
         action: {
-          function: n('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -269,7 +269,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', r('/manifest.yml'), expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', path.resolve('/manifest.yml'), expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
 })
 
 test('use deployConfig.filterEntities to deploy only one action and one api', async () => {
@@ -295,7 +295,7 @@ test('use deployConfig.filterEntities to deploy only one action and one api', as
       version: '1.0.0',
       actions: {
         action: {
-          function: n('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -318,7 +318,7 @@ test('use deployConfig.filterEntities to deploy only one action and one api', as
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', r('/manifest.yml'), expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', path.resolve('/manifest.yml'), expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
 })
 
 test('use deployConfig.filterEntities to deploy only two actions and one sequence', async () => {
@@ -345,12 +345,12 @@ test('use deployConfig.filterEntities to deploy only two actions and one sequenc
       version: '1.0.0',
       actions: {
         action: {
-          function: n('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         },
         'action-zip': {
-          function: n('dist/actions/action-zip.zip'),
+          function: path.normalize('dist/actions/action-zip.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -368,7 +368,7 @@ test('use deployConfig.filterEntities to deploy only two actions and one sequenc
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', r('/manifest.yml'), expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', path.resolve('/manifest.yml'), expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
 })
 
 test('use deployConfig.filterEntities to deploy only one pkg dependency', async () => {
@@ -404,7 +404,7 @@ test('use deployConfig.filterEntities to deploy only one pkg dependency', async 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', r('/manifest.yml'), expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', path.resolve('/manifest.yml'), expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
 })
 
 test('use deployConfig.filterEntities on non existing pkgEntity should work', async () => {
@@ -429,7 +429,7 @@ test('use deployConfig.filterEntities on non existing pkgEntity should work', as
         version: '1.0.0',
         actions: {
           action: {
-            function: n('dist/actions/action.zip'),
+            function: path.normalize('dist/actions/action.zip'),
             runtime: 'nodejs:12',
             web: 'yes'
           }
@@ -454,7 +454,7 @@ test('use deployConfig.filterEntities on non existing pkgEntity should work', as
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-reduced-1.0.0', r('/manifest.yml'), expectedDistReducedManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-reduced-1.0.0', path.resolve('/manifest.yml'), expectedDistReducedManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
 })
 
 test('Deploy actions should fail if there are no build files and no filters', async () => {

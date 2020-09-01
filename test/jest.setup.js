@@ -10,10 +10,9 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-// const { stdout } = require('stdout-stderr')
+const { stdout } = require('stdout-stderr')
 const fs = require.requireActual('fs')
 const eol = require('eol')
-const path = require('path')
 
 const fetch = require('jest-fetch-mock')
 const fileSystem = require('jest-plugin-fs').default
@@ -29,12 +28,8 @@ jest.useFakeTimers()
 jest.setMock('cross-fetch', fetch)
 
 // trap console log
-// beforeEach(() => { stdout.start() })
-// afterEach(() => { stdout.stop() })
-
-// quick normalization to test windows paths
-global.n = p => path.normalize(p)
-global.r = p => path.resolve(p)
+beforeEach(() => { stdout.start() })
+afterEach(() => { stdout.stop() })
 
 // helper for fixtures
 global.fixtureFile = (output) => {

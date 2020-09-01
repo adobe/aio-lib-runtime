@@ -35,52 +35,52 @@ const Triggers = require('./triggers')
  * @property {ow.Routes} routes routes
  */
 
- /**
+/**
  * This class provides methods to call your RuntimeAPI APIs.
  * Before calling any method initialize the instance by calling the `init` method on it
  * with valid options argument
  */
 class RuntimeAPI {
-    /**
-     * Initializes a RuntimeAPI object and returns it.
-     *
-     * @param {OpenwhiskOptions} options options for initialization
-     * @returns {Promise<OpenwhiskClient>} a RuntimeAPI object
-     */
-    async init (options) {
-      const initErrors = []
-      if (!options || !options.api_key) {
-        initErrors.push('api_key')
-      }
-      if (!options || !options.apihost) {
-        initErrors.push('apihost')
-      }
-  
-      if (initErrors.length) {
-        const sdkDetails = { options }
-        throw new codes.ERROR_SDK_INITIALIZATION({ sdkDetails, messageValues: `${initErrors.join(', ')}` })
-      }
-  
-      this.ow = ow(options)
-      const self = this
-  
-      return {
-        actions: this.ow.actions,
-        activations: this.ow.activations,
-        namespaces: this.ow.namespaces,
-        packages: this.ow.packages,
-        rules: this.ow.rules,
-        triggers: new Proxy(this.ow.triggers, {
-          get (target, property) {
-            const proxyTrigger = new Triggers(self.ow)
-            return property in proxyTrigger
-              ? proxyTrigger[property]
-              : target[property]
-          }
-        }),
-        routes: this.ow.routes
-      }
+  /**
+   * Initializes a RuntimeAPI object and returns it.
+   *
+   * @param {OpenwhiskOptions} options options for initialization
+   * @returns {Promise<OpenwhiskClient>} a RuntimeAPI object
+   */
+  async init (options) {
+    const initErrors = []
+    if (!options || !options.api_key) {
+      initErrors.push('api_key')
+    }
+    if (!options || !options.apihost) {
+      initErrors.push('apihost')
+    }
+
+    if (initErrors.length) {
+      const sdkDetails = { options }
+      throw new codes.ERROR_SDK_INITIALIZATION({ sdkDetails, messageValues: `${initErrors.join(', ')}` })
+    }
+
+    this.ow = ow(options)
+    const self = this
+
+    return {
+      actions: this.ow.actions,
+      activations: this.ow.activations,
+      namespaces: this.ow.namespaces,
+      packages: this.ow.packages,
+      rules: this.ow.rules,
+      triggers: new Proxy(this.ow.triggers, {
+        get (target, property) {
+          const proxyTrigger = new Triggers(self.ow)
+          return property in proxyTrigger
+            ? proxyTrigger[property]
+            : target[property]
+        }
+      }),
+      routes: this.ow.routes
     }
   }
+}
 
-  module.exports = RuntimeAPI
+module.exports = RuntimeAPI

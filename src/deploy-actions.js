@@ -29,6 +29,7 @@ const IOruntime = require('./RuntimeAPI')
  * @param {Array} [deployConfig.filterEntities.rules] filter list of rules to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.apis] filter list of apis to deploy, e.g. ['name1', ..]
  * @param eventEmitter
+ * @param logFunc
  * @param {Array} [deployConfig.filterEntities.dependencies] filter list of package dependencies to deploy, e.g. ['name1', ..]
  * @returns {Promise<object>} deployedEntities
  */
