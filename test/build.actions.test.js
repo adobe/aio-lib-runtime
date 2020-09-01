@@ -51,7 +51,6 @@ beforeEach(() => {
   webpackMock.run.mockImplementation(cb => cb(null, webpackStatsMock))
 
   execa.mockReset()
-
   utils.zip.mockReset()
 })
 
@@ -143,8 +142,8 @@ describe('build by zipping js action folder', () => {
     global.fakeFileSystem.addJson({
       'actions/action-zip/sample.js': global.fixtureFile('/sample-app/actions/action-zip/index.js')
     })
-    await expect(buildActions(config))
-    expect(mockLogger.debug).toHaveBeenCalledWith('action directory has an index.js, allowing zip')
+    const res = await buildActions(config)
+    expect(res).toEqual(expect.arrayContaining(['/dist/actions/action-zip.zip']))
   })
 
   test('should fail if package.json main field is not defined and there is no index.js file', async () => {

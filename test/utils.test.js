@@ -14,7 +14,11 @@ const fs = require('fs-extra')
 const cloneDeep = require('lodash.clonedeep')
 const os = require('os')
 
+const archiver = require('archiver')
+jest.mock('archiver')
+
 jest.mock('cross-fetch')
+jest.mock('globby')
 
 const utils = require('../src/utils')
 const activationLog = { logs: ['2020-06-25T05:50:23.641Z       stdout: logged from action code'] }
@@ -83,6 +87,12 @@ describe('utils has the right functions', () => {
     expect(typeof utils.getProjectHash).toEqual('function')
     expect(typeof utils.addManagedProjectAnnotations).toEqual('function')
     expect(typeof utils.printLogs).toEqual('function')
+
+    expect(utils.urlJoin).toBeDefined()
+    expect(typeof utils.urlJoin).toBe('function')
+
+    expect(utils.zip).toBeDefined()
+    expect(typeof utils.zip).toBe('function')
   })
 })
 
@@ -1525,19 +1535,34 @@ describe('getActionUrls', () => {
   })
 
   test('local dev false', () => {
-    const expected = {"action": "https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action",
-    "action-sequence": "https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence",
-    "action-zip": "https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip"}
+    const expected = {
+      action: 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
+      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip'
+    }
 
     const result = utils.getActionUrls(config, config.actions.devRemote, false)
     expect(result).toEqual(expect.objectContaining(expected))
   })
 
-  test('local dev false', () => {
-    const expected = {"action": "https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action",
-    "action-sequence": "https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-sequence",
-    "action-zip": "https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip"}
+  test('local dev true', () => {
+    const expected = {
+      action: 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
+      'action-sequence': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
+    }
+    const result = utils.getActionUrls(config, config.actions.devRemote, true)
+    expect(result).toEqual(expect.objectContaining(expected))
+  })
 
+  test('web false', () => {
+    const expected = {
+      action: 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action',
+      'action-sequence': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
+    }
+    config.manifest.package.actions.action.web = 'no'
+    config.manifest.package.sequences['action-sequence'].web = false
     const result = utils.getActionUrls(config, config.actions.devRemote, true)
     expect(result).toEqual(expect.objectContaining(expected))
   })
@@ -1557,5 +1582,123 @@ describe('_absApp', () => {
 
     const result = utils._absApp('/', '/fakedir/test.txt')
     expect(result).toEqual(expected)
+  })
+})
+
+describe('getIncludesForAction', () => {
+  test('invalid manifest', async () => {
+    // include length == 0
+    await expect(utils.getIncludesForAction({ include: [[]] })).rejects.toThrow('Invalid manifest `include` entry:')
+    // include length > 2
+    await expect(utils.getIncludesForAction({ include: [[1, 2, 3]] })).rejects.toThrow('Invalid manifest `include` entry:')
+    // only src glob specified
+    expect(await utils.getIncludesForAction({ include: [['src*']] }))
+      .toEqual([{ dest: './', sources: undefined }])
+    // src and dest specified
+    expect(await utils.getIncludesForAction({ include: [['src*', 'dest/']] }))
+      .toEqual([{ dest: 'dest/', sources: undefined }])
+  })
+})
+
+// todo: cover all of getActionEntryFile from here ... LN:300
+// describe('getActionEntryFile', () => {
+//   test('empty package.json', () => {
+//     global.fakeFileSystem.reset()
+//     // global.fakeFileSystem.removeKeys(['/actions/action-zip/package.json'])
+//     global.fakeFileSystem.removeKeys(['/actions/action-zip/index.js'])
+//     global.fakeFileSystem.addJson({
+//       'actions/action-zip/sample.js': global.fixtureFile('/sample-app/actions/action-zip/index.js')
+//     })
+//     const res = utils.getActionEntryFile('actions/action-zip/package.json')
+//     expect(res).toBe('index.js')
+//   })
+// })
+
+/*
+
+  function urlJoin (...args) {
+    let start = ''
+    if (args[0] && args[0].startsWith('/')) start = '/'
+    return start + args.map(a => a && a.replace(/(^\/|\/$)/g, ''))
+      .filter(a => a) // remove empty strings / nulls
+      .join('/')
+  }
+  */
+
+describe('urlJoin', () => {
+  test('a', () => {
+    expect(utils.urlJoin('a', 'b')).toBe('a/b')
+    expect(utils.urlJoin('/a', 'b')).toBe('/a/b')
+    expect(utils.urlJoin('/', 'a', 'b')).toBe('/a/b')
+
+  })
+})
+
+describe('zip', () => {
+  beforeEach(async () => {
+    global.fakeFileSystem.reset()
+    archiver.mockReset()
+  })
+
+  test('should zip a directory', async () => {
+    global.fakeFileSystem.addJson({
+      '/indir/fake1.js': '// js file 1',
+      '/indir/fake2.js': '// js file 2'
+    })
+    await utils.zip('/indir', '/out.zip')
+
+    expect(archiver.mockDirectory).toHaveBeenCalledWith('/indir', false)
+    expect(archiver.mockFile).toHaveBeenCalledTimes(0)
+    expect(fs.existsSync('/out.zip')).toEqual(true)
+  })
+
+  test('should zip a file with pathInZip=false', async () => {
+    global.fakeFileSystem.addJson({
+      '/indir/fake1.js': '// js file 1',
+      '/indir/fake2.js': '// js file 2'
+    })
+    await utils.zip('/indir/fake1.js', '/out.zip')
+
+    expect(archiver.mockFile).toHaveBeenCalledWith('/indir/fake1.js', { name: 'fake1.js' })
+    expect(archiver.mockDirectory).toHaveBeenCalledTimes(0)
+    expect(fs.existsSync('/out.zip')).toEqual(true)
+  })
+
+  test('should zip a file with pathInZip=some/path.js', async () => {
+    global.fakeFileSystem.addJson({
+      '/indir/fake1.js': '// js file 1',
+      '/indir/fake2.js': '// js file 2'
+    })
+
+    await utils.zip('/indir/fake1.js', '/out.zip', 'some/path.js')
+
+    expect(archiver.mockFile).toHaveBeenCalledWith('/indir/fake1.js', { name: 'some/path.js' })
+    expect(archiver.mockDirectory).toHaveBeenCalledTimes(0)
+    expect(fs.existsSync('/out.zip')).toEqual(true)
+  })
+
+  // test('should fail if symlink', async () => {
+  //   global.addFakeFiles(vol, '/indir', ['fake1.js'])
+  //   vol.symlinkSync('/indir/fake1.js', '/indir/symlink.js')
+  //   await expect(utils.zip('/indir/symlink.js', '/out.zip')).rejects.toThrow('symlink.js is not a valid dir or file')
+  //   expect(archiver.mockFile).toHaveBeenCalledTimes(0)
+  //   expect(archiver.mockDirectory).toHaveBeenCalledTimes(0)
+  //   expect(vol.existsSync('/out.zip')).toEqual(false)
+  // })
+
+  test('should fail if file does not exists', async () => {
+    await expect(utils.zip('/notexist.js', '/out.zip')).rejects.toEqual(expect.objectContaining({ message: expect.stringContaining('ENOENT') }))
+    expect(archiver.mockFile).toHaveBeenCalledTimes(0)
+    expect(archiver.mockDirectory).toHaveBeenCalledTimes(0)
+    expect(fs.existsSync('/out.zip')).toEqual(false)
+  })
+
+  test('should fail if there is a stream error', async () => {
+    global.fakeFileSystem.addJson({
+      '/indir/fake1.js': '// js file 1',
+      '/indir/fake2.js': '// js file 2'
+    })
+    archiver.setFakeError(new Error('fake stream error'))
+    await expect(utils.zip('/indir/fake1.js', '/out.zip')).rejects.toThrow('fake stream error')
   })
 })
