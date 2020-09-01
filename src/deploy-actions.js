@@ -32,16 +32,12 @@ const IOruntime = require('./RuntimeAPI')
  * @param {Array} [deployConfig.filterEntities.dependencies] filter list of package dependencies to deploy, e.g. ['name1', ..]
  * @returns {Promise<object>} deployedEntities
  */
-async function deployActions (config, deployConfig = {}, eventEmitter) {
+async function deployActions (config, deployConfig = {}, logFunc) {
   if (!config.app.hasBackend) throw new Error('cannot deploy actions, app has no backend')
   // TODO: Should we still support emitting events (start, progress, end ... )
-  eventEmitter = eventEmitter || {
-    emit: (event, message) => { console.log(`${event}: ${message}`) }
-  }
-  const taskName = 'Deploy actions'
-  eventEmitter.emit('start', taskName)
 
   const isLocalDev = deployConfig.isLocalDev
+  const log = logFunc || console.log
 
   // checks
   /// a. missing credentials
@@ -83,34 +79,32 @@ async function deployActions (config, deployConfig = {}, eventEmitter) {
   const deployedEntities = await deployWsk(
     config,
     manifest,
-    eventEmitter.emit.bind(eventEmitter, 'progress'),
+    log,
     deployConfig.filterEntities
   )
 
   // enrich actions array with urls
   if (Array.isArray(deployedEntities.actions)) {
     const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
-    deployedEntities.actions = deployedEntities.actions.map(a => {
+    deployedEntities.actions = deployedEntities.actions.map(action => {
       // in deployedEntities.actions, names are <package>/<action>
-      const url = actionUrlsFromManifest[a.name.split('/')[1]]
+      const url = actionUrlsFromManifest[action.name.split('/')[1]]
       if (url) {
-        a.url = url
+        action.url = url
       }
-      return a
+      return action
     })
   }
-
-  eventEmitter.emit('end', taskName, deployedEntities)
   return deployedEntities
 }
 
 /**
  * @param scriptConfig
  * @param manifestContent
- * @param logger
+ * @param logFunc
  * @param filterEntities
  */
-async function deployWsk (scriptConfig, manifestContent, logger, filterEntities) {
+async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities) {
   const packageName = scriptConfig.ow.package
   const manifestPath = scriptConfig.manifest.src
   const owOptions = {
@@ -176,7 +170,7 @@ async function deployWsk (scriptConfig, manifestContent, logger, filterEntities)
   /* END temporary workaround */
 
   // do the deployment, manifestPath and manifestContent needed for creating a project hash
-  await utils.syncProject(packageName, manifestPath, manifestContent, entities, ow, logger, scriptConfig.imsOrgId, deleteOldEntities)
+  await utils.syncProject(packageName, manifestPath, manifestContent, entities, ow, logFunc, scriptConfig.imsOrgId, deleteOldEntities)
   return entities
 }
 module.exports = deployActions
