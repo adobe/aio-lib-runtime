@@ -454,7 +454,7 @@ test('use deployConfig.filterEntities on non existing pkgEntity should work', as
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-reduced-1.0.0', path.resolve('/manifest.yml'), expectedDistReducedManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-reduced-1.0.0', n('/manifest.yml'), expectedDistReducedManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
 })
 
 test('Deploy actions should fail if there are no build files and no filters', async () => {
