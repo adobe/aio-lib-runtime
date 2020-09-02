@@ -1573,7 +1573,7 @@ describe('_absApp', () => {
     const expected = '/test.txt'
 
     const result = utils._absApp('/', 'test.txt')
-    expect(result).toEqual(expected)
+    expect(result).toEqual(n(expected))
   })
 
   test('absolute path', () => {
