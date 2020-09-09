@@ -10,12 +10,16 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const fs = require('fs')
+const fs = require('fs-extra')
 const sha1 = require('sha1')
 const cloneDeep = require('lodash.clonedeep')
 const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:index', { level: process.env.LOG_LEVEL })
+const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:utils', { provider: 'debug' })
 const yaml = require('js-yaml')
 const fetch = require('cross-fetch')
+const globby = require('globby')
+const path = require('path')
+const archiver = require('archiver')
 
 /**
  *
@@ -64,66 +68,102 @@ const fetch = require('cross-fetch')
  */
 
 /**
+ * @typedef ManifestAction
+ * @type {object}
+ * @property {Array} include - array of include glob patterns
+ */
+
+/**
+ * @typedef IncludeEntry
+ * @type {object}
+ * @property {string} dest - destination for included files
+ * @property {Array} sources - list of files that matched pattern
+ */
+
+/**
+ * Gets the list of files matching the patterns defined by action.include
  *
+ * @param {ManifestAction} action - action object from manifest which defines includes
+ * @returns {Array(IncludeEntry)}
+ */
+async function getIncludesForAction (action) {
+  const includeFiles = []
+  if (action.include) {
+    // include is array of [ src, dest ] : dest is optional
+    const files = await Promise.all(action.include.map(async elem => {
+      if (elem.length === 0) {
+        throw new Error('Invalid manifest `include` entry: Empty')
+      } else if (elem.length === 1) {
+        // src glob only, dest is root of action
+        elem.push('./')
+      } else if (elem.length === 2) {
+        // src glob + dest path both defined
+      } else {
+        throw new Error('Invalid manifest `include` entry: ' + elem.toString())
+      }
+      const pair = { dest: elem[1] }
+      pair.sources = await globby(elem[0])
+      return pair
+    }))
+    includeFiles.push(...files)
+  }
+  return includeFiles
+}
+
+/**
  * The manifest sequence definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md
  *
  * @typedef {object} ManifestSequence
- *
+ * @property
  */
 
 /**
- *
  * The manifest trigger definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_triggers.md
  *
  * @typedef {object} ManifestTrigger
- *
+ * @property
  */
 
 /**
- *
  * The manifest rule definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_rules.md
  *
  * @typedef {object} ManifestRule
- *
+ * @property
  */
 
 /**
- *
  * The manifest api definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_apis.md
  *
  * @typedef {object} ManifestApi
- *
+ * @property
  */
 
 /**
- *
  * The manifest dependency definition
  * TODO
  *
  * @typedef {object} ManifestDependency
- *
+ * @property
  */
 
 /**
- *
  * The manifest action limits definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#valid-limit-keys.md
  *
  * @typedef {object} ManifestActionLimits
- *
+ * @property
  */
 
 /**
- *
  * The manifest action annotations definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#action-annotations
  *
  * @typedef {object} ManifestActionAnnotations
- *
+ * @property
  */
 
 /**
@@ -154,39 +194,35 @@ const fetch = require('cross-fetch')
  */
 
 /**
- *
  * The action entity definition
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesAction
- *
+ * @property
  */
 
 /**
- *
  * The rule entity definition
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesRule
- *
+ * @property
  */
 
 /**
- *
  * The trigger entity definition
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesTrigger
- *
+ * @property
  */
 
 /**
- *
  * The package entity definition
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesPackage
- *
+ * @property
  */
 
 /**
@@ -200,12 +236,11 @@ const fetch = require('cross-fetch')
  */
 
 /**
- *
  * The deployment trigger definition
  * TODO
  *
  * @typedef {object} DeploymentTrigger
- *
+ * @property
  */
 
 /**
@@ -248,6 +283,56 @@ function printLogs (activation, strip, logger) {
       }
     })
   }
+}
+
+/**
+ * returns path to main function as defined in package.json OR default of index.js
+ * note: file MUST exist, caller's responsibility, this method will throw if it does not exist
+ *
+ * @param {*} pkgJson : path to a package.json file
+ * @returns {string}
+ */
+function getActionEntryFile (pkgJson) {
+  const pkgJsonContent = fs.readJsonSync(pkgJson)
+  if (pkgJsonContent.main) {
+    return pkgJsonContent.main
+  }
+  return 'index.js'
+}
+
+/**
+ * Zip a file/folder using archiver
+ *
+ * @param {string} filePath
+ * @param {string} out
+ * @param {boolean} pathInZip
+ * @returns {Promise}
+ */
+function zip (filePath, out, pathInZip = false) {
+  aioLogger.debug(`Creating zip of file/folder ${filePath}`)
+  const stream = fs.createWriteStream(out)
+  const archive = archiver('zip', { zlib: { level: 9 } })
+
+  return new Promise((resolve, reject) => {
+    stream.on('close', () => resolve())
+    archive.pipe(stream)
+    archive.on('error', err => reject(err))
+
+    let stats
+    try {
+      stats = fs.lstatSync(filePath) // throws if enoent
+    } catch (e) {
+      archive.destroy()
+      reject(e)
+    }
+
+    if (stats.isDirectory()) {
+      archive.directory(filePath, pathInZip)
+    } else { //  if (stats.isFile()) {
+      archive.file(filePath, { name: pathInZip || path.basename(filePath) })
+    }
+    archive.finalize()
+  })
 }
 
 /**
@@ -1523,7 +1608,103 @@ async function findProjectHashonServer (ow, projectName) {
   return projectHash
 }
 
+/**
+ * @param root
+ * @param p
+ */
+function _relApp (root, p) {
+  return path.relative(root, path.normalize(p))
+}
+
+/**
+ * @param root
+ * @param p
+ */
+function _absApp (root, p) {
+  if (path.isAbsolute(p)) return p
+  return path.join(root, path.normalize(p))
+}
+
+/**
+ * @param config
+ */
+function checkOpenWhiskCredentials (config) {
+  const owConfig = config.ow
+
+  // todo errors are too specific to env context
+
+  // this condition cannot happen because config defines it as empty object
+  /* istanbul ignore next */
+  if (typeof owConfig !== 'object') {
+    throw new Error('missing aio runtime config, did you set AIO_RUNTIME_XXX env variables?')
+  }
+  // this condition cannot happen because config defines a default apihost for now
+  /* istanbul ignore next */
+  if (!owConfig.apihost) {
+    throw new Error('missing Adobe I/O Runtime apihost, did you set the AIO_RUNTIME_APIHOST environment variable?')
+  }
+  if (!owConfig.namespace) {
+    throw new Error('missing Adobe I/O Runtime namespace, did you set the AIO_RUNTIME_NAMESPACE environment variable?')
+  }
+  if (!owConfig.auth) {
+    throw new Error('missing Adobe I/O Runtime auth, did you set the AIO_RUNTIME_AUTH environment variable?')
+  }
+}
+
+/**
+ * @param config
+ * @param isRemoteDev
+ * @param isLocalDev
+ */
+function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
+  // set action urls
+  // action urls {name: url}, if !LocalDev subdomain uses namespace
+  return Object.entries({ ...config.manifest.package.actions, ...(config.manifest.package.sequences || {}) }).reduce((obj, [name, action]) => {
+    const webArg = action['web-export'] || action.web
+    const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
+    if (isLocalDev) {
+      // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
+      obj[name] = urlJoin(config.ow.apihost, 'api', config.ow.apiversion, webUri, config.ow.namespace, config.ow.package, name)
+    } else if (isRemoteDev || !webUri || !config.app.hasFrontend) {
+      // - if remote dev we don't care about same domain as the UI runs on localhost
+      // - if action is non web it cannot be called from the UI and we can point directly to ApiHost domain
+      // - if action has no UI no need to use the CDN url
+      // NOTE this will not work for apihosts that do not support <ns>.apihost url
+      // https://<ns>.adobeioruntime.net/api/v1/web/<package>/<action>
+      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.ow.apihost), 'api', config.ow.apiversion, webUri, config.ow.package, name)
+    } else {
+      // https://<ns>.adobe-static.net/api/v1/web/<package>/<action>
+      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.app.hostname), 'api', config.ow.apiversion, webUri, config.ow.package, name)
+    }
+    return obj
+  }, {})
+}
+
+/**
+ * Joins url path parts
+ *
+ * @param {...string} args url parts
+ * @returns {string}
+ */
+function urlJoin (...args) {
+  let start = ''
+  if (args[0] && args[0].startsWith('/')) start = '/'
+  return start + args.map(a => a && a.replace(/(^\/|\/$)/g, ''))
+    .filter(a => a) // remove empty strings / nulls
+    .join('/')
+}
+
+/**
+ * @param url
+ */
+function removeProtocolFromURL (url) {
+  return url.replace(/(^\w+:|^)\/\//, '')
+}
+
 module.exports = {
+  checkOpenWhiskCredentials,
+  getActionEntryFile,
+  getIncludesForAction,
   createKeyValueObjectFromArray,
   createKeyValueArrayFromObject,
   createKeyValueArrayFromFile,
@@ -1555,5 +1736,11 @@ module.exports = {
   findProjectHashonServer,
   getProjectHash,
   addManagedProjectAnnotations,
-  printLogs
+  printLogs,
+  _relApp,
+  _absApp,
+  getActionUrls,
+  urlJoin,
+  removeProtocolFromURL,
+  zip
 }
