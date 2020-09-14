@@ -31,6 +31,8 @@ const webpack = require('webpack')
 const webpackMock = {
   run: jest.fn()
 }
+webpack.DefinePlugin = jest.fn().mockImplementation(() => ({
+}))
 webpack.mockReturnValue(webpackMock)
 const webpackStatsMock = {
   toJson: jest.fn(),
