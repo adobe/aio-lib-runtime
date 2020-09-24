@@ -1659,22 +1659,34 @@ function checkOpenWhiskCredentials (config) {
 function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
   // set action urls
   // action urls {name: url}, if !LocalDev subdomain uses namespace
-  return Object.entries({ ...config.manifest.package.actions, ...(config.manifest.package.sequences || {}) }).reduce((obj, [name, action]) => {
+  let actionsAndSequences = {}
+  Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
+    const actualPkgName = pkgName.replace(config.manifest.packagePlaceholder, config.ow.package)
+    Object.entries(pkg.actions || {}).forEach(([actionName, action]) => {
+      actionsAndSequences[actualPkgName + '/' + actionName] = action
+    })
+    Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
+      actionsAndSequences[actualPkgName + '/' + actionName] = action
+    })
+  })
+  // console.log(actionsAndSequences)
+  // return
+  return Object.entries(actionsAndSequences).reduce((obj, [name, action]) => {
     const webArg = action['web-export'] || action.web
     const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
     if (isLocalDev) {
       // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
-      obj[name] = urlJoin(config.ow.apihost, 'api', config.ow.apiversion, webUri, config.ow.namespace, config.ow.package, name)
+      obj[name] = urlJoin(config.ow.apihost, 'api', config.ow.apiversion, webUri, config.ow.namespace, name)
     } else if (isRemoteDev || !webUri || !config.app.hasFrontend) {
       // - if remote dev we don't care about same domain as the UI runs on localhost
       // - if action is non web it cannot be called from the UI and we can point directly to ApiHost domain
       // - if action has no UI no need to use the CDN url
       // NOTE this will not work for apihosts that do not support <ns>.apihost url
       // https://<ns>.adobeioruntime.net/api/v1/web/<package>/<action>
-      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.ow.apihost), 'api', config.ow.apiversion, webUri, config.ow.package, name)
+      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.ow.apihost), 'api', config.ow.apiversion, webUri, name)
     } else {
       // https://<ns>.adobe-static.net/api/v1/web/<package>/<action>
-      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.app.hostname), 'api', config.ow.apiversion, webUri, config.ow.package, name)
+      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.app.hostname), 'api', config.ow.apiversion, webUri, name)
     }
     return obj
   }, {})

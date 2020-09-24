@@ -64,32 +64,45 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     config.manifest.package = config.manifest.full.packages[packageNames[0]]
   }
 
-  manifestPackage.version = config.app.version
+  const relDist = utils._relApp(config.root, config.actions.dist)
+  await Promise.all(Object.entries(manifest.packages).map(async ([pkgName, pkg]) => {
+    pkg.version = config.app.version
+    await Promise.all(Object.entries(pkg.actions).map(async ([name, action]) => {
+      // change path to built action
+      action.function = path.join(relDist, pkgName + '-' + name + '.zip')
+    }))
+  }))
+  /* manifestPackage.version = config.app.version
   const relDist = utils._relApp(config.root, config.actions.dist)
   await Promise.all(Object.entries(manifestPackage.actions).map(async ([name, action]) => {
     // change path to built action
-    action.function = path.join(relDist, name + '.zip')
-  }))
+    action.function = path.join(relDist, config.ow.package + '-' + name + '.zip')
+  })) */
+  // console.log(manifest)
   if (!usingCustomPackageName) {
     // replace package name
     manifest.packages[config.ow.package] = manifest.packages[config.manifest.packagePlaceholder]
     delete manifest.packages[config.manifest.packagePlaceholder]
   }
-
+  // console.log(config)
+  // console.log(manifest)
+  // return
   // 2. deploy manifest
+  // TODO: deployWsk uses config.ow.package to filter out entities from that one package. It should do that for all packages.
   const deployedEntities = await deployWsk(
     config,
     manifest,
     log,
     deployConfig.filterEntities
   )
-
+  // console.log(deployedEntities)
   // enrich actions array with urls
   if (Array.isArray(deployedEntities.actions)) {
     const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
+    // console.log(actionUrlsFromManifest)
     deployedEntities.actions = deployedEntities.actions.map(action => {
       // in deployedEntities.actions, names are <package>/<action>
-      const url = actionUrlsFromManifest[action.name.split('/')[1]]
+      const url = actionUrlsFromManifest[action.name/* .split('/')[1] */]
       if (url) {
         action.url = url
       }
