@@ -1737,6 +1737,7 @@ module.exports = {
   getProjectHash,
   addManagedProjectAnnotations,
   printLogs,
+  stripLog,
   _relApp,
   _absApp,
   getActionUrls,
