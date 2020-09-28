@@ -1656,17 +1656,20 @@ function checkOpenWhiskCredentials (config) {
  * @param isRemoteDev
  * @param isLocalDev
  */
-function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
+function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
   // set action urls
   // action urls {name: url}, if !LocalDev subdomain uses namespace
   let actionsAndSequences = {}
+  // console.log(appConfig)
+  let config = replacePackagePlaceHolder(appConfig)
+  // console.log(config)
   Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
-    const actualPkgName = pkgName.replace(config.manifest.packagePlaceholder, config.ow.package)
+    // const actualPkgName = pkgName.replace(config.manifest.packagePlaceholder, config.ow.package)
     Object.entries(pkg.actions || {}).forEach(([actionName, action]) => {
-      actionsAndSequences[actualPkgName + '/' + actionName] = action
+      actionsAndSequences[pkgName + '/' + actionName] = action
     })
     Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
-      actionsAndSequences[actualPkgName + '/' + actionName] = action
+      actionsAndSequences[pkgName + '/' + actionName] = action
     })
   })
   // console.log(actionsAndSequences)
@@ -1713,6 +1716,22 @@ function removeProtocolFromURL (url) {
   return url.replace(/(^\w+:|^)\/\//, '')
 }
 
+function replacePackagePlaceHolder (config) {
+  // TODO: Should we read the first package and put it in config.ow.package ?
+  if (!config.ow.package) { // Either the placeHolder does not exist or it has already been modified
+    console.log('No config.ow.package. Returning same config')
+    return config
+  }
+  const modifiedConfig = cloneDeep(config)
+  const modifiedPackages = modifiedConfig.manifest.full.packages
+  const packagePlaceholder = modifiedConfig.manifest.packagePlaceholder
+  if(modifiedPackages[packagePlaceholder]) {
+    modifiedPackages[config.ow.package] = modifiedPackages[packagePlaceholder]
+    delete modifiedPackages[packagePlaceholder]
+  }
+  return modifiedConfig
+}
+
 module.exports = {
   checkOpenWhiskCredentials,
   getActionEntryFile,
@@ -1754,5 +1773,6 @@ module.exports = {
   getActionUrls,
   urlJoin,
   removeProtocolFromURL,
-  zip
+  zip,
+  replacePackagePlaceHolder
 }

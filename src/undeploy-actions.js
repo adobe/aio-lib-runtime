@@ -28,29 +28,23 @@ async function undeployActions (config, logFunc) {
 
   // 0. check credentials
   utils.checkOpenWhiskCredentials(config)
-
-  // 1. rewrite wskManifest config
-  const manifest = cloneDeep(config.manifest.full)
-  // replace package name
-  let packageName = null
-  if (manifest.packages[config.manifest.packagePlaceholder]) {
-    manifest.packages[config.ow.package] = manifest.packages[config.manifest.packagePlaceholder]
-    delete manifest.packages[config.manifest.packagePlaceholder]
-    const manifestPackage = manifest.packages[config.ow.package]
-    manifestPackage.version = config.app.version
-    packageName = config.ow.package
-  } else {
-    packageName = Object.keys(manifest.packages)[0]
-  }
-
-  // 2. undeploy
   const owOptions = {
     apihost: config.ow.apihost,
     apiversion: config.ow.apiversion,
     api_key: config.ow.auth,
     namespace: config.ow.namespace
   }
-  await undeployWsk(packageName, manifest, owOptions, log)
+
+  // replace package name
+  const modifiedConfig = utils.replacePackagePlaceHolder(config)
+  const manifest = modifiedConfig.manifest.full
+  for ( const [packageName, pkg] of Object.entries(manifest.packages) ) {
+    // TODO: Do we still need this?
+    pkg.version = config.app.version
+
+    await undeployWsk(packageName, manifest, owOptions, log)
+  }
+
 }
 
 /**
@@ -90,6 +84,7 @@ async function undeployWsk (packageName, manifestContent, owOptions, logger) {
 
   // 4. add apis and rules to undeployment, apis and rules are not part of the managed whisk project as they don't support annotations and
   //    hence can't be retrieved with getProjectEntities + api delete is idempotent so no risk of 404s
+  // TODO: Get manifest entities from a single package. This is fine for now since undeploy does not have filter feature
   const manifestEntities = utils.processPackage(manifestContent.packages, {}, {}, {}, true)
   entities.apis = manifestEntities.apis
   entities.rules = manifestEntities.rules

@@ -119,6 +119,7 @@ const buildAction = async (packageName, actionName, action, root, dist) => {
 }
 
 const buildActions = async (config, filterActions) => {
+  // console.log(config)
   if (!config.app.hasBackend) {
     throw new Error('cannot build actions, app has no backend')
   }
@@ -131,9 +132,9 @@ const buildActions = async (config, filterActions) => {
     const firstPkgName = Object.keys(config.manifest.full.packages)[0]
     packageToBuild = config.manifest.full.packages[firstPkgName]
   } */
-  // todo: build ALL actions of ALL packages
+  const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const builtList = []
-  for (const [pkgName, pkg] of Object.entries(config.manifest.full.packages)) {
+  for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
     let actionsToBuild = Object.entries(pkg.actions)
 
     // build all sequentially (todo make bundler execution parallel)
