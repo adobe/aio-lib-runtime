@@ -11,7 +11,7 @@
   "bundleDependencies": false,
   "dependencies": {
     "@adobe/aio-lib-core-errors": "^3.0.0",
-    "@adobe/aio-lib-core-logging": "1.0.0",
+    "@adobe/aio-lib-core-logging": "^1.1.2",
     "archiver": "^5.0.0",
     "cross-fetch": "^3.0.4",
     "execa": "^4.0.3",
