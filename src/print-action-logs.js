@@ -51,6 +51,7 @@ async function printActionLogs (config, logger, limit, filterActions, strip, tai
       break
     }
   }
+  return { lastActivationTime }
 }
 
 module.exports = printActionLogs
