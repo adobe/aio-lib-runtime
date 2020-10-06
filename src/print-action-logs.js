@@ -11,12 +11,16 @@ governing permissions and limitations under the License.
 */
 
 const util = require('util')
-const { checkOpenWhiskCredentials, stripLog} = require('./utils')
+const { checkOpenWhiskCredentials, printFilteredActionLogs } = require('./utils')
 const sleep = util.promisify(setTimeout)
 const IOruntime = require('./RuntimeAPI')
 
 /**
  * Prints action logs.
+ * filterActions array formats and functionality ->
+ * ['pkg1/'] = logs of all deployed actions under package pkg1
+ * ['pkg1/action'] = logs of action 'action' under package 'pkg1'
+ * [] = logs of all actions in the namespace
  *
  * @param {object} config openwhisk config
  * @param {object} logger an instance of a logger to emit messages to
@@ -27,87 +31,31 @@ const IOruntime = require('./RuntimeAPI')
  * @param {number} fetchLogsInterval number of seconds to wait before fetching logs again when tail is set to true
  * @param {number} startTime time in milliseconds. Only logs after this time will be fetched
  */
-async function printActionLogs (config, logger, limit, filterActions, strip = false, tail = false, fetchLogsInterval = 10000, startTime = 0) {
-    // console.log(arguments)
-    // check for runtime credentials
-    checkOpenWhiskCredentials(config)
-    const runtime = await new IOruntime().init({
-      // todo make this.config.ow compatible with Openwhisk config
-      apihost: config.ow.apihost,
-      apiversion: config.ow.apiversion,
-      api_key: config.ow.auth,
-      namespace: config.ow.namespace
-    })
-  
-    // get activations
-    const listOptions = { limit: limit, skip: 0 }
-    const logFunc = logger || console.log
-    if (filterActions.length === 1 && !filterActions[0].endsWith('/')) {
-      listOptions.name = filterActions[0]
-    }
-    // console.log(listOptions)
-    let activations = await runtime.activations.list(listOptions)
-    let lastActivationTime = 0
-    // console.log('activations = ', activations.length)
-    const actionFilterFunc = (actionPath, annotationValue) => {
-      if (actionPath.endsWith('/')) {
-        actionPath = actionPath.startsWith('/') ? actionPath : '/' + actionPath
-        return annotationValue.includes(actionPath)
-      }
-      return annotationValue.endsWith(actionPath)
-    }
-    if (typeof filterActions === 'string') {
-      // let setPaths()
-    } else if (filterActions.length > 0) {
-      activations = activations.filter((activation) => {
-        let includeActivation = false
-        activation.annotations.forEach((annotation) => {
-          //if(annotation.key === 'path' && filterActions.includes(annotation.value)) {
-          /* if(annotation.key === 'path') {
-          console.log(annotation.value)
-          console.log(filterActions.some(actionPath => annotation.value.endsWith(actionPath)))
-          } */
-          if(annotation.key === 'path' && filterActions.some(actionPath => actionFilterFunc(actionPath, annotation.value))) {
-            includeActivation = true
-          }
-        })
-        return includeActivation
-      })
-    }
-    // console.log('activations = ', activations.length)
+async function printActionLogs (config, logger, limit, filterActions, strip, tail = false, fetchLogsInterval = 10000, startTime) {
+  // check for runtime credentials
+  checkOpenWhiskCredentials(config)
+  const runtime = await new IOruntime().init({
+    apihost: config.ow.apihost,
+    apiversion: config.ow.apiversion,
+    api_key: config.ow.auth,
+    namespace: config.ow.namespace
+  })
 
-    for (let i = (activations.length - 1); i >= 0; i--) {
-      const activation = activations[i]
-      lastActivationTime = activation.start
-      // console.log('before activation time check')
-      if (lastActivationTime > startTime) {
-        // console.log('before getting logs for activationId: ' + activation.activationId)
-        let allResults = []
-        const results = await runtime.activations.logs({ activationId: activation.activationId })
-        //console.log(results)
-        if (results.logs.length > 0) {
-          logFunc(activation.name + ':' + activation.activationId)
-          results.logs.forEach(function (logMsg) {
-            //console.log(logMsg)
-            if (strip) {
-              allResults.push(stripLog(logMsg))
-            } else {
-              allResults.push(logMsg)
-            }
-          })
-        }
-        //console.log(allResults)
-        allResults.sort()
-        allResults.forEach((logMsg) => {
-            logFunc(logMsg)
-        })
-    }
-    }
+  let lastActivationTime = startTime
+  while (true) {
+    // console.log('at start of loop')
+    const ret = await printFilteredActionLogs(runtime, logger, limit, filterActions, strip, lastActivationTime)
+    // console.log(ret)
+    lastActivationTime = ret.lastActivationTime
     if (tail) {
+      // console.log(fetchLogsInterval)
       await sleep(fetchLogsInterval)
-      return printActionLogs(config, logger, limit, filterActions, strip, tail, fetchLogsInterval, lastActivationTime)
+      // console.log('done waiting')
+    } else {
+      break
     }
-    return { lastActivationTime }
+    // console.log('at end of loop')
   }
+}
 
-  module.exports = printActionLogs
+module.exports = printActionLogs
