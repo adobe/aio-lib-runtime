@@ -115,7 +115,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md
  *
  * @typedef {object} ManifestSequence
- * @property
  */
 
 /**
@@ -123,7 +122,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_triggers.md
  *
  * @typedef {object} ManifestTrigger
- * @property
  */
 
 /**
@@ -131,7 +129,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_rules.md
  *
  * @typedef {object} ManifestRule
- * @property
  */
 
 /**
@@ -139,7 +136,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_apis.md
  *
  * @typedef {object} ManifestApi
- * @property
  */
 
 /**
@@ -147,7 +143,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} ManifestDependency
- * @property
  */
 
 /**
@@ -155,7 +150,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#valid-limit-keys.md
  *
  * @typedef {object} ManifestActionLimits
- * @property
  */
 
 /**
@@ -163,7 +157,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#action-annotations
  *
  * @typedef {object} ManifestActionAnnotations
- * @property
  */
 
 /**
@@ -198,7 +191,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesAction
- * @property
  */
 
 /**
@@ -206,7 +198,7 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesRule
- * @property
+
  */
 
 /**
@@ -214,7 +206,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesTrigger
- * @property
  */
 
 /**
@@ -222,7 +213,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesPackage
- * @property
  */
 
 /**
@@ -240,7 +230,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} DeploymentTrigger
- * @property
  */
 
 /**
@@ -287,21 +276,18 @@ function printLogs (activation, strip, logger) {
 
 /**
  * Filters and prints action logs.
- * filterActions array formats and functionality ->
- * ['pkg1/'] = logs of all deployed actions under package pkg1
- * ['pkg1/action'] = logs of action 'action' under package 'pkg1'
- * [] = logs of all actions in the namespace
  *
  * @param {object} runtime runtime (openwhisk) object
  * @param {object} logger an instance of a logger to emit messages to
  * @param {number} limit maximum number of activations to fetch logs from
  * @param {Array} filterActions array of actions to fetch logs from
+ *    ['pkg1/'] = logs of all deployed actions under package pkg1
+ *    ['pkg1/action'] = logs of action 'action' under package 'pkg1'
+ *    [] = logs of all actions in the namespace
  * @param {boolean} strip if true, strips the timestamp which prefixes every log line
  * @param {number} startTime time in milliseconds. Only logs after this time will be fetched
  */
 async function printFilteredActionLogs (runtime, logger, limit, filterActions = [], strip = false, startTime = 0) {
-  // console.log(filterActions)
-
   // Get activations
   const listOptions = { limit: limit, skip: 0 }
   const logFunc = logger || console.log
@@ -309,13 +295,11 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
   if (filterActions.length === 1 && !filterActions[0].endsWith('/')) {
     listOptions.name = filterActions[0]
   }
-  // console.log(listOptions)
   let activations = await runtime.activations.list(listOptions)
   let lastActivationTime = 0
-  // console.log('activations = ', activations.length)
   // Filter the activations
   const actionFilterFunc = (actionPath, annotationValue) => {
-    // For deployed actions in a package
+    // For logs of all deployed actions under a package
     if (actionPath.endsWith('/')) {
       actionPath = actionPath.startsWith('/') ? actionPath : '/' + actionPath
       return annotationValue.includes(actionPath)
@@ -334,15 +318,12 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
       return includeActivation
     })
   }
-  // console.log('activations = ', activations.length)
 
   // Getting and printing activation logs
   for (let i = (activations.length - 1); i >= 0; i--) {
     const activation = activations[i]
     lastActivationTime = activation.start
-    // console.log('before activation time check')
     if (lastActivationTime > startTime) {
-      // console.log('before getting logs for activationId: ' + activation.activationId)
       const allResults = []
       let results
       try {
@@ -352,7 +333,6 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
         // results = await runtime.activations.get({ activationId: activation.activationId })
         continue
       }
-      // console.log(results)
       if (results.logs.length > 0) {
         activation.annotations.forEach((annotation) => {
           if (annotation.key === 'path') {
@@ -360,7 +340,6 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
           }
         })
         results.logs.forEach(function (logMsg) {
-          // console.log(logMsg)
           if (strip) {
             allResults.push(stripLog(logMsg))
           } else {
@@ -371,7 +350,7 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
       allResults.sort()
       allResults.forEach((logMsg) => {
         logFunc(logMsg)
-        // logFunc()
+        // logFunc()  // new line ?
       })
     }
   }
