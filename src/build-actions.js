@@ -83,7 +83,11 @@ const buildAction = async (packageName, actionName, action, root, dist) => {
       resolve: {
         extensions: ['.js', '.json'],
         mainFields: ['main']
-      }
+      },
+      plugins: [new webpack.DefinePlugin(
+        {
+          WEBPACK_ACTION_BUILD: JSON.stringify(true)
+        })]
       // todo remove packages from bundled file that are available in runtime (add the deps of deps as well)
       // disabled for now as we need to consider versions (at least majors) to avoid nasty bugs
       // ,externals: ['express', 'request', 'request-promise', 'body-parser', 'openwhisk']
