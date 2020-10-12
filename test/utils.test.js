@@ -1700,3 +1700,18 @@ describe('zip', () => {
     await expect(utils.zip('/indir/fake1.js', '/out.zip')).rejects.toThrow('fake stream error')
   })
 })
+
+describe('validateActionRuntime', () => {
+  beforeEach(async () => {
+  })
+
+  test('all good', async () => {
+    const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:12' } })
+    expect(func).not.toThrow()
+  })
+
+  test('invalid nodejs version', async () => {
+    const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })
+    expect(func).toThrowError('Unsupported node version in action undefined. Supported versions are ^10 || ^12')
+  })
+})
