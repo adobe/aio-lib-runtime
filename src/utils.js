@@ -20,6 +20,8 @@ const fetch = require('cross-fetch')
 const globby = require('globby')
 const path = require('path')
 const archiver = require('archiver')
+const semver = require('semver')
+const supportedEngines = require('../package.json').engines
 
 /**
  *
@@ -1385,6 +1387,7 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
     logger(`Info: package [${pkg.name}] has been successfully deployed.\n`)
   }
   for (const action of entities.actions) {
+    validateActionRuntime(action)
     if (action.exec && action.exec.kind === 'sequence') {
       action.exec.components = action.exec.components.map(sequence => {
         /*
@@ -1773,6 +1776,20 @@ function removeProtocolFromURL (url) {
   return url.replace(/(^\w+:|^)\/\//, '')
 }
 
+/**
+ * Checks the validity of nodejs version in action definition and throws an error if invalid.
+ *
+ * @param {object} action action object
+ */
+function validateActionRuntime (action) {
+  if (action.exec && action.exec.kind && action.exec.kind.toLowerCase().startsWith('nodejs:')) {
+    const nodeVer = semver.coerce(action.exec.kind.split(':')[1])
+    if (!semver.satisfies(nodeVer, supportedEngines.node)) {
+      throw new Error(`Unsupported node version in action ${action.name}. Supported versions are ${supportedEngines.node}`)
+    }
+  }
+}
+
 module.exports = {
   checkOpenWhiskCredentials,
   getActionEntryFile,
@@ -1816,5 +1833,6 @@ module.exports = {
   getActionUrls,
   urlJoin,
   removeProtocolFromURL,
-  zip
+  zip,
+  validateActionRuntime
 }
