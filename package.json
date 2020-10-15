@@ -21,6 +21,7 @@
     "lodash.clonedeep": "^4.5.0",
     "openwhisk": "^3.21.2",
     "openwhisk-fqn": "0.0.2",
+    "semver": "^7.3.2",
     "sha1": "^1.1.1",
     "webpack": "^4.44.1"
   },
@@ -52,7 +53,7 @@
     "tsd-jsdoc": "^2.4.0"
   },
   "engines": {
-    "node": ">=10.0.0"
+    "node": "^10 || ^12"
   },
   "scripts": {
     "e2e": "jest --config e2e/jest.config.js",
