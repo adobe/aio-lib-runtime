@@ -117,7 +117,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md
  *
  * @typedef {object} ManifestSequence
- * @property
  */
 
 /**
@@ -125,7 +124,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_triggers.md
  *
  * @typedef {object} ManifestTrigger
- * @property
  */
 
 /**
@@ -133,7 +131,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_rules.md
  *
  * @typedef {object} ManifestRule
- * @property
  */
 
 /**
@@ -141,7 +138,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_apis.md
  *
  * @typedef {object} ManifestApi
- * @property
  */
 
 /**
@@ -149,7 +145,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} ManifestDependency
- * @property
  */
 
 /**
@@ -157,7 +152,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#valid-limit-keys.md
  *
  * @typedef {object} ManifestActionLimits
- * @property
  */
 
 /**
@@ -165,7 +159,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#action-annotations
  *
  * @typedef {object} ManifestActionAnnotations
- * @property
  */
 
 /**
@@ -200,7 +193,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesAction
- * @property
  */
 
 /**
@@ -208,7 +200,7 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesRule
- * @property
+
  */
 
 /**
@@ -216,7 +208,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesTrigger
- * @property
  */
 
 /**
@@ -224,7 +215,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesPackage
- * @property
  */
 
 /**
@@ -242,7 +232,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} DeploymentTrigger
- * @property
  */
 
 /**
@@ -285,6 +274,89 @@ function printLogs (activation, strip, logger) {
       }
     })
   }
+}
+
+/**
+ * Filters and prints action logs.
+ *
+ * @param {object} runtime runtime (openwhisk) object
+ * @param {object} logger an instance of a logger to emit messages to
+ * @param {number} limit maximum number of activations to fetch logs from
+ * @param {Array} filterActions array of actions to fetch logs from
+ *    ['pkg1/'] = logs of all deployed actions under package pkg1
+ *    ['pkg1/action'] = logs of action 'action' under package 'pkg1'
+ *    [] = logs of all actions in the namespace
+ * @param {boolean} strip if true, strips the timestamp which prefixes every log line
+ * @param {number} startTime time in milliseconds. Only logs after this time will be fetched
+ */
+async function printFilteredActionLogs (runtime, logger, limit, filterActions = [], strip = false, startTime = 0) {
+  // Get activations
+  const listOptions = { limit: limit, skip: 0 }
+  const logFunc = logger || console.log
+  // This will narrow down the activation list to specific action
+  if (filterActions.length === 1 && !filterActions[0].endsWith('/')) {
+    listOptions.name = filterActions[0]
+  }
+  let activations = await runtime.activations.list(listOptions)
+  let lastActivationTime = 0
+  // Filter the activations
+  const actionFilterFunc = (actionPath, annotationValue) => {
+    // For logs of all deployed actions under a package
+    if (actionPath.endsWith('/')) {
+      actionPath = actionPath.startsWith('/') ? actionPath : '/' + actionPath
+      return annotationValue.includes(actionPath)
+    }
+    // For actions with full path (pkg/actionName) specified in filterActions
+    return annotationValue.endsWith(actionPath)
+  }
+  if (filterActions.length > 0) {
+    activations = activations.filter((activation) => {
+      let includeActivation = false
+      activation.annotations.forEach((annotation) => {
+        if (annotation.key === 'path' && filterActions.some(actionPath => actionFilterFunc(actionPath, annotation.value))) {
+          includeActivation = true
+        }
+      })
+      return includeActivation
+    })
+  }
+
+  // Getting and printing activation logs
+  for (let i = (activations.length - 1); i >= 0; i--) {
+    const activation = activations[i]
+    lastActivationTime = activation.start
+    if (lastActivationTime > startTime) {
+      const allResults = []
+      let results
+      try {
+        results = await runtime.activations.logs({ activationId: activation.activationId })
+      } catch (err) { // Happens in some cases such as trying to get logs of a trigger activation
+        // TODO: Trigger logs can be obtained from activation result but will need some formatting for the timestamp
+        // results = await runtime.activations.get({ activationId: activation.activationId })
+        continue
+      }
+      if (results.logs.length > 0) {
+        activation.annotations.forEach((annotation) => {
+          if (annotation.key === 'path') {
+            logFunc(annotation.value + ':' + activation.activationId)
+          }
+        })
+        results.logs.forEach(function (logMsg) {
+          if (strip) {
+            allResults.push(stripLog(logMsg))
+          } else {
+            allResults.push(logMsg)
+          }
+        })
+      }
+      allResults.sort()
+      allResults.forEach((logMsg) => {
+        logFunc(logMsg)
+        // logFunc()  // new line ?
+      })
+    }
+  }
+  return { lastActivationTime }
 }
 
 /**
@@ -1754,6 +1826,8 @@ module.exports = {
   getProjectHash,
   addManagedProjectAnnotations,
   printLogs,
+  stripLog,
+  printFilteredActionLogs,
   _relApp,
   _absApp,
   getActionUrls,

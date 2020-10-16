@@ -14,6 +14,7 @@ const utils = require('./utils')
 const buildActions = require('./build-actions')
 const deployActions = require('./deploy-actions')
 const undeployActions = require('./undeploy-actions')
+const printActionLogs = require('./print-action-logs')
 const RuntimeAPI = require('./RuntimeAPI')
 
 /**
@@ -43,5 +44,6 @@ module.exports = {
   buildActions,
   deployActions,
   undeployActions,
+  printActionLogs,
   utils
 }
