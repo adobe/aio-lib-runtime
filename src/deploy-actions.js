@@ -66,9 +66,9 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   } */
 
   const relDist = utils._relApp(config.root, config.actions.dist)
-  for ( const [pkgName, pkg] of Object.entries(manifest.packages)) {
+  for (const [pkgName, pkg] of Object.entries(manifest.packages)) {
     pkg.version = config.app.version
-    for ( const [name, action] of Object.entries(pkg.actions)) {
+    for (const [name, action] of Object.entries(pkg.actions)) {
       // change path to built action
       action.function = path.join(relDist, pkgName + '-' + name + '.zip')
     }

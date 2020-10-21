@@ -11,7 +11,6 @@ governing permissions and limitations under the License.
 */
 
 const utils = require('./utils')
-const cloneDeep = require('lodash.clonedeep')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:undeploy', { provider: 'debug' })
 const IORuntime = require('./RuntimeAPI')
 
@@ -38,13 +37,11 @@ async function undeployActions (config, logFunc) {
   // replace package name
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const manifest = modifiedConfig.manifest.full
-  for ( const [packageName, pkg] of Object.entries(manifest.packages) ) {
+  for (const [packageName, pkg] of Object.entries(manifest.packages)) {
     // TODO: Do we still need this?
     pkg.version = config.app.version
-
     await undeployWsk(packageName, manifest, owOptions, log)
   }
-
 }
 
 /**

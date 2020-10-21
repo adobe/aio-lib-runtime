@@ -1734,13 +1734,13 @@ function checkOpenWhiskCredentials (config) {
 function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
   // set action urls
   // action urls {name: url}, if !LocalDev subdomain uses namespace
-  let actionsAndSequences = {}
+  const actionsAndSequences = {}
   // console.log(appConfig)
-  let config = replacePackagePlaceHolder(appConfig)
+  const config = replacePackagePlaceHolder(appConfig)
   // console.log(config)
   Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
     // const actualPkgName = pkgName.replace(config.manifest.packagePlaceholder, config.ow.package)
-    Object.entries(pkg.actions || {}).forEach(([actionName, action]) => {
+    Object.entries(pkg.actions).forEach(([actionName, action]) => {
       actionsAndSequences[pkgName + '/' + actionName] = action
     })
     Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
@@ -1792,17 +1792,17 @@ function removeProtocolFromURL (url) {
 }
 
 function replacePackagePlaceHolder (config) {
-  // TODO: Should we read the first package and put it in config.ow.package ?
-  if (!config.ow.package) { // Either the placeHolder does not exist or it has already been modified
-    console.log('No config.ow.package. Returning same config')
-    return config
-  }
   const modifiedConfig = cloneDeep(config)
-  const modifiedPackages = modifiedConfig.manifest.full.packages
+  const packages = modifiedConfig.manifest.full.packages
   const packagePlaceholder = modifiedConfig.manifest.packagePlaceholder
-  if(modifiedPackages[packagePlaceholder]) {
-    modifiedPackages[config.ow.package] = modifiedPackages[packagePlaceholder]
-    delete modifiedPackages[packagePlaceholder]
+  if (packages[packagePlaceholder]) {
+    packages[config.ow.package] = packages[packagePlaceholder]
+    delete packages[packagePlaceholder]
+  } else {
+    // Using custom package name.
+    // Set config.ow.package so that syncProject can use it as project name for annotations.
+    const packageNames = Object.keys(packages)
+    config.ow.package = packageNames[0]
   }
   return modifiedConfig
 }

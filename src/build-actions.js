@@ -139,7 +139,7 @@ const buildActions = async (config, filterActions) => {
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const builtList = []
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
-    let actionsToBuild = Object.entries(pkg.actions)
+    const actionsToBuild = Object.entries(pkg.actions)
 
     // build all sequentially (todo make bundler execution parallel)
     for (const [actionName, action] of actionsToBuild) {
