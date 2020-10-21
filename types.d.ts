@@ -37,13 +37,6 @@ declare type OpenwhiskClient = {
 };
 
 /**
- * Returns a Promise that resolves with a new RuntimeAPI object.
- * @param options - options for initialization
- * @returns a Promise with a RuntimeAPI object
- */
-declare function init(options: OpenwhiskOptions): Promise<OpenwhiskClient>;
-
-/**
  * This class provides methods to call your RuntimeAPI APIs.
  * Before calling any method initialize the instance by calling the `init` method on it
  * with valid options argument
@@ -56,6 +49,54 @@ declare class RuntimeAPI {
      */
     init(options: OpenwhiskOptions): Promise<OpenwhiskClient>;
 }
+
+/**
+ * runs the command
+ * @param [deployConfig.filterEntities] - add filters to deploy only specified OpenWhisk entities
+ * @param [deployConfig.filterEntities.actions] - filter list of actions to deploy, e.g. ['name1', ..]
+ * @param [deployConfig.filterEntities.sequences] - filter list of sequences to deploy, e.g. ['name1', ..]
+ * @param [deployConfig.filterEntities.triggers] - filter list of triggers to deploy, e.g. ['name1', ..]
+ * @param [deployConfig.filterEntities.rules] - filter list of rules to deploy, e.g. ['name1', ..]
+ * @param [deployConfig.filterEntities.apis] - filter list of apis to deploy, e.g. ['name1', ..]
+ * @param [deployConfig.filterEntities.dependencies] - filter list of package dependencies to deploy, e.g. ['name1', ..]
+ * @returns deployedEntities
+ */
+declare function deployActions(config?: any, deployConfig?: {
+    filterEntities?: {
+        actions?: any[];
+        sequences?: any[];
+        triggers?: any[];
+        rules?: any[];
+        apis?: any[];
+        dependencies?: any[];
+    };
+}, eventEmitter: any, logFunc: any): Promise<object>;
+
+declare function deployWsk(scriptConfig: any, manifestContent: any, logFunc: any, filterEntities: any): void;
+
+/**
+ * Returns a Promise that resolves with a new RuntimeAPI object.
+ * @param options - options for initialization
+ * @returns a Promise with a RuntimeAPI object
+ */
+declare function init(options: OpenwhiskOptions): Promise<OpenwhiskClient>;
+
+/**
+ * Prints action logs.
+ * @param config - openwhisk config
+ * @param logger - an instance of a logger to emit messages to
+ * @param limit - maximum number of activations to fetch logs from
+ * @param filterActions - array of actions to fetch logs from
+ *    examples:-
+ *    ['pkg1/'] = logs of all deployed actions under package pkg1
+ *    ['pkg1/action'] = logs of action 'action' under package 'pkg1'
+ *    [] = logs of all actions in the namespace
+ * @param strip - if true, strips the timestamp which prefixes every log line
+ * @param tail - if true, logs are fetched continuously
+ * @param fetchLogsInterval - number of seconds to wait before fetching logs again when tail is set to true
+ * @param startTime - time in milliseconds. Only logs after this time will be fetched
+ */
+declare function printActionLogs(config: any, logger: any, limit: number, filterActions: any[], strip: boolean, tail: boolean, fetchLogsInterval?: number, startTime: number): void;
 
 /**
  * A class to manage triggers
@@ -74,6 +115,10 @@ declare class Triggers {
      */
     delete(options: any): Promise<object>;
 }
+
+declare function undeployActions(config: any, logFunc: any): void;
+
+declare function undeployWsk(packageName: any, manifestContent: any, owOptions: any, logger: any): void;
 
 /**
  * The entry point to the information read from the manifest, this can be extracted using
@@ -133,6 +178,52 @@ declare type ManifestAction = {
     docker?: string;
     annotations?: ManifestActionAnnotations;
 };
+
+/**
+ * The manifest action definition
+ * @property [version] - the manifest action version
+ * @property function - the path to the action code
+ * @property runtime - the runtime environment or kind in which the action
+ *                    executes, e.g. 'nodejs:12'
+ * @property [main] - the entry point to the function
+ * @property [inputs] - the list of action default parameters
+ * @property [limits] - limits for the action
+ * @property [web] - indicate if an action should be exported as web, can take the
+ *                    value of: true | false | yes | no | raw
+ * @property [web-export] - same as web
+ * @property [raw-http] - indicate if an action should be exported as raw web action, this
+ *                     option is only valid if `web` or `web-export` is set to true
+ * @property [docker] - the docker container to run the action into
+ * @property [annotations] - the manifest action annotations
+ */
+declare type ManifestAction = {
+    version?: string;
+    function: string;
+    runtime: string;
+    main?: string;
+    inputs?: any;
+    limits?: ManifestActionLimits;
+    web?: string;
+    web-export?: string;
+    raw-http?: boolean;
+    docker?: string;
+    annotations?: ManifestActionAnnotations;
+};
+
+/**
+ * @property dest - destination for included files
+ * @property sources - list of files that matched pattern
+ */
+declare type IncludeEntry = {
+    dest: string;
+    sources: any[];
+};
+
+/**
+ * Gets the list of files matching the patterns defined by action.include
+ * @param action - action object from manifest which defines includes
+ */
+declare function getIncludesForAction(action: ManifestAction): any[];
 
 /**
  * The manifest sequence definition
@@ -272,6 +363,32 @@ declare type DeploymentFileComponents = {
  * @param logger - an instance of a logger to emit messages to
  */
 declare function printLogs(activation: any, strip: boolean, logger: any): void;
+
+/**
+ * Filters and prints action logs.
+ * @param runtime - runtime (openwhisk) object
+ * @param logger - an instance of a logger to emit messages to
+ * @param limit - maximum number of activations to fetch logs from
+ * @param filterActions - array of actions to fetch logs from
+ *    ['pkg1/'] = logs of all deployed actions under package pkg1
+ *    ['pkg1/action'] = logs of action 'action' under package 'pkg1'
+ *    [] = logs of all actions in the namespace
+ * @param strip - if true, strips the timestamp which prefixes every log line
+ * @param startTime - time in milliseconds. Only logs after this time will be fetched
+ */
+declare function printFilteredActionLogs(runtime: any, logger: any, limit: number, filterActions: any[], strip: boolean, startTime: number): void;
+
+/**
+ * returns path to main function as defined in package.json OR default of index.js
+ * note: file MUST exist, caller's responsibility, this method will throw if it does not exist
+ * @param pkgJson - : path to a package.json file
+ */
+declare function getActionEntryFile(pkgJson: any): string;
+
+/**
+ * Zip a file/folder using archiver
+ */
+declare function zip(filePath: string, out: string, pathInZip: boolean): Promise;
 
 /**
  * returns key value pairs in an object from the key value array supplied. Used to create parameters object.
@@ -551,4 +668,20 @@ declare function getProjectHash(manifestContent: string, manifestPath: string): 
  * @returns the project hash, or '' if not found
  */
 declare function findProjectHashonServer(ow: any, projectName: string): Promise<string>;
+
+declare function _relApp(root: any, p: any): void;
+
+declare function _absApp(root: any, p: any): void;
+
+declare function checkOpenWhiskCredentials(config: any): void;
+
+declare function getActionUrls(config: any, isRemoteDev: any, isLocalDev: any): void;
+
+/**
+ * Joins url path parts
+ * @param args - url parts
+ */
+declare function urlJoin(...args: string[]): string;
+
+declare function removeProtocolFromURL(url: any): void;
 

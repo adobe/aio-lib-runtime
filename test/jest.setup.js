@@ -23,7 +23,6 @@ jest.mock('fs', () => require('jest-plugin-fs/mock'))
 process.env.CI = true
 
 jest.setTimeout(30000)
-jest.useFakeTimers()
 
 jest.setMock('cross-fetch', fetch)
 
