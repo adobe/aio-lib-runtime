@@ -36,7 +36,6 @@ const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...package
  * @returns {Promise<object>} deployedEntities
  */
 async function deployActions (config, deployConfig = {}, logFunc) {
-  // console.log(config)
   if (!config.app.hasBackend) throw new Error('cannot deploy actions, app has no backend')
   // TODO: Should we still support emitting events (start, progress, end ... )
 
@@ -64,19 +63,10 @@ async function deployActions (config, deployConfig = {}, logFunc) {
       }
     })
   }
-  // console.log(filterEntities)
-  const modifiedConfig = utils.replacePackagePlaceHolder(config)
 
   // 1. rewrite wskManifest config
+  const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const manifest = modifiedConfig.manifest.full
-  /* let manifestPackage = manifest.packages[config.manifest.packagePlaceholder]
-  const usingCustomPackageName = !manifestPackage
-  if (usingCustomPackageName) {
-    const packageNames = Object.keys(manifest.packages)
-    // manifestPackage = manifest.packages[packageNames[0]]
-    config.ow.package = packageNames[0]
-  } */
-
   const relDist = utils._relApp(config.root, config.actions.dist)
   for (const [pkgName, pkg] of Object.entries(manifest.packages)) {
     pkg.version = config.app.version
@@ -85,12 +75,6 @@ async function deployActions (config, deployConfig = {}, logFunc) {
       action.function = path.join(relDist, pkgName + '-' + name + '.zip')
     }
   }
-  /* manifestPackage.version = config.app.version
-  const relDist = utils._relApp(config.root, config.actions.dist)
-  await Promise.all(Object.entries(manifestPackage.actions).map(async ([name, action]) => {
-    // change path to built action
-    action.function = path.join(relDist, config.ow.package + '-' + name + '.zip')
-  })) */
 
   // 2. deploy manifest
   const deployedEntities = await deployWsk(
@@ -99,14 +83,13 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     log,
     filterEntities
   )
-  // console.log(deployedEntities)
+
   // enrich actions array with urls
   if (Array.isArray(deployedEntities.actions)) {
     const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
-    // console.log(actionUrlsFromManifest)
     deployedEntities.actions = deployedEntities.actions.map(action => {
       // in deployedEntities.actions, names are <package>/<action>
-      const url = actionUrlsFromManifest[action.name/* .split('/')[1] */]
+      const url = actionUrlsFromManifest[action.name]
       if (url) {
         action.url = url
       }
@@ -141,6 +124,7 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
   function _filterOutPackageEntity (pkgName, pkgEntity, filterItems, fullNameCheck) {
     filterItems = filterItems || []
     pkgEntity = pkgEntity || {}
+    // We check the full name (<packageName>/<actionName>) for actions and sequences
     return Object.keys(pkgEntity)
       .filter(name => fullNameCheck ? filterItems.includes(pkgName + '/' + name) : filterItems.includes(name))
       .reduce((obj, key) => { obj[key] = pkgEntity[key]; return obj }, {})

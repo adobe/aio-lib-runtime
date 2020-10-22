@@ -38,7 +38,6 @@ async function undeployActions (config, logFunc) {
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const manifest = modifiedConfig.manifest.full
   for (const [packageName, pkg] of Object.entries(manifest.packages)) {
-    // TODO: Do we still need this?
     pkg.version = config.app.version
     await undeployWsk(packageName, manifest, owOptions, log)
   }
@@ -81,7 +80,6 @@ async function undeployWsk (packageName, manifestContent, owOptions, logger) {
 
   // 4. add apis and rules to undeployment, apis and rules are not part of the managed whisk project as they don't support annotations and
   //    hence can't be retrieved with getProjectEntities + api delete is idempotent so no risk of 404s
-  // TODO: Get manifest entities from a single package. This is fine for now since undeploy does not have filter feature
   const manifestEntities = utils.processPackage(manifestContent.packages, {}, {}, {}, true)
   entities.apis = manifestEntities.apis
   entities.rules = manifestEntities.rules

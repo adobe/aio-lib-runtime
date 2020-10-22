@@ -1735,11 +1735,8 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   // set action urls
   // action urls {name: url}, if !LocalDev subdomain uses namespace
   const actionsAndSequences = {}
-  // console.log(appConfig)
   const config = replacePackagePlaceHolder(appConfig)
-  // console.log(config)
   Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
-    // const actualPkgName = pkgName.replace(config.manifest.packagePlaceholder, config.ow.package)
     Object.entries(pkg.actions).forEach(([actionName, action]) => {
       actionsAndSequences[pkgName + '/' + actionName] = action
     })
@@ -1747,8 +1744,6 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
       actionsAndSequences[pkgName + '/' + actionName] = action
     })
   })
-  // console.log(actionsAndSequences)
-  // return
   return Object.entries(actionsAndSequences).reduce((obj, [name, action]) => {
     const webArg = action['web-export'] || action.web
     const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
