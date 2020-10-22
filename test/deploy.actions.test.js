@@ -238,7 +238,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action 
 
   await deployActions(global.sampleAppConfig, {
     filterEntities: {
-      actions: ['action'],
+      actions: ['sample-app-1.0.0/action'],
       triggers: ['trigger1'],
       rules: ['rule1']
     }

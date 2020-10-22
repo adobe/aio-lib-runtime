@@ -438,6 +438,14 @@ test('use buildConfig.filterActions to build only action called `action-zip`', a
     n('/dist/actions/sample-app-1.0.0-action-zip.zip'))
 })
 
+test('use buildConfig.filterActions to build only action called `sample-app-1.0.0/action-zip`', async () => {
+  addSampleAppFiles()
+  await buildActions(global.sampleAppConfig, ['sample-app-1.0.0/action-zip'])
+  expect(utils.zip).toHaveBeenCalledTimes(1)
+  expect(utils.zip).toHaveBeenCalledWith(expect.stringContaining(n('/dist/actions/sample-app-1.0.0-action-zip-temp')),
+    n('/dist/actions/sample-app-1.0.0-action-zip.zip'))
+})
+
 test('No backend is present', async () => {
   addSampleAppFiles()
   // global.fakeFileSystem.removeKeys(['./manifest.yml'])

@@ -21,12 +21,9 @@ const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime
 const buildAction = async (packageName, actionName, action, root, dist) => {
   // const actionPath = path.isAbsolute(action.function) ? action.function : path.join(root, action.function)
   // note: it does not seem to be possible to get here with an absolute path ...
-/*   console.log(name)
-  console.log(action) */
   const actionPath = path.join(root, action.function)
 
   const outPath = path.join(dist, `${packageName}-${actionName}.zip`)
-  // console.log(outPath)
   const tempBuildDir = path.join(path.dirname(outPath), `${packageName}-${actionName}-temp`) // build all to tempDir first
   const actionFileStats = fs.lstatSync(actionPath)
 
@@ -123,19 +120,15 @@ const buildAction = async (packageName, actionName, action, root, dist) => {
 }
 
 const buildActions = async (config, filterActions) => {
-  // console.log(config)
   if (!config.app.hasBackend) {
     throw new Error('cannot build actions, app has no backend')
   }
+  if (filterActions) {
+    // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
+    filterActions = filterActions.map((actionName) => actionName.indexOf('/') === -1 ? config.ow.package + '/' + actionName : actionName)
+  }
   // clear out dist dir
   fs.emptyDirSync(config.actions.dist)
-  // console.log(config)
-  /* let packageToBuild = config.manifest.package
-  // which actions to build, check filter
-  if (!packageToBuild) {
-    const firstPkgName = Object.keys(config.manifest.full.packages)[0]
-    packageToBuild = config.manifest.full.packages[firstPkgName]
-  } */
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const builtList = []
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
@@ -143,7 +136,8 @@ const buildActions = async (config, filterActions) => {
 
     // build all sequentially (todo make bundler execution parallel)
     for (const [actionName, action] of actionsToBuild) {
-      if (Array.isArray(filterActions) && !filterActions.includes(actionName)) {
+      const actionFullName = pkgName + '/' + actionName
+      if (Array.isArray(filterActions) && !filterActions.includes(actionFullName)) {
         continue
       }
       // const out =  // todo: log output of each action as it is built
