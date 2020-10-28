@@ -1706,10 +1706,8 @@ describe('validateActionRuntime', () => {
   })
 
   test('all good', async () => {
-    const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:12' } })
-    expect(func).not.toThrow()
-    const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })
-    expect(func).not.toThrow()
+    expect(utils.validateActionRuntime({ exec: { kind: 'nodejs:12' } })).not.toThrow()
+    expect(utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })).not.toThrow()
   })
 
   test('invalid nodejs version', async () => {
