@@ -1708,12 +1708,14 @@ describe('validateActionRuntime', () => {
   test('all good', async () => {
     const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:12' } })
     expect(func).not.toThrow()
+    const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })
+    expect(func).not.toThrow()
   })
 
   test('invalid nodejs version', async () => {
     const supportedEngines = require('../package.json').engines
 
-    const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })
+    const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:16' } })
     expect(func).toThrowError(`Unsupported node version in action undefined. Supported versions are ${supportedEngines.node}`)
   })
 })
