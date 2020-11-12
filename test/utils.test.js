@@ -1537,9 +1537,9 @@ describe('getActionUrls', () => {
 
   test('local dev false', () => {
     const expected = {
-      action: 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
-      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
-      'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip'
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip'
     }
 
     const result = utils.getActionUrls(config, config.actions.devRemote, false)
@@ -1548,9 +1548,9 @@ describe('getActionUrls', () => {
 
   test('local dev true', () => {
     const expected = {
-      action: 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
-      'action-sequence': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-sequence',
-      'action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
+      'sample-app-1.0.0/action': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
     }
     const result = utils.getActionUrls(config, config.actions.devRemote, true)
     expect(result).toEqual(expect.objectContaining(expected))
@@ -1558,12 +1558,12 @@ describe('getActionUrls', () => {
 
   test('web false', () => {
     const expected = {
-      action: 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action',
-      'action-sequence': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
-      'action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
+      'sample-app-1.0.0/action': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
     }
-    config.manifest.package.actions.action.web = 'no'
-    config.manifest.package.sequences['action-sequence'].web = false
+    config.manifest.full.packages.__APP_PACKAGE__.actions.action.web = 'no'
+    config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = false
     const result = utils.getActionUrls(config, config.actions.devRemote, true)
     expect(result).toEqual(expect.objectContaining(expected))
   })
