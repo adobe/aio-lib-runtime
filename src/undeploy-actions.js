@@ -11,7 +11,6 @@ governing permissions and limitations under the License.
 */
 
 const utils = require('./utils')
-const cloneDeep = require('lodash.clonedeep')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:undeploy', { provider: 'debug' })
 const IORuntime = require('./RuntimeAPI')
 
@@ -28,29 +27,20 @@ async function undeployActions (config, logFunc) {
 
   // 0. check credentials
   utils.checkOpenWhiskCredentials(config)
-
-  // 1. rewrite wskManifest config
-  const manifest = cloneDeep(config.manifest.full)
-  // replace package name
-  let packageName = null
-  if (manifest.packages[config.manifest.packagePlaceholder]) {
-    manifest.packages[config.ow.package] = manifest.packages[config.manifest.packagePlaceholder]
-    delete manifest.packages[config.manifest.packagePlaceholder]
-    const manifestPackage = manifest.packages[config.ow.package]
-    manifestPackage.version = config.app.version
-    packageName = config.ow.package
-  } else {
-    packageName = Object.keys(manifest.packages)[0]
-  }
-
-  // 2. undeploy
   const owOptions = {
     apihost: config.ow.apihost,
     apiversion: config.ow.apiversion,
     api_key: config.ow.auth,
     namespace: config.ow.namespace
   }
-  await undeployWsk(packageName, manifest, owOptions, log)
+
+  // replace package name
+  const modifiedConfig = utils.replacePackagePlaceHolder(config)
+  const manifest = modifiedConfig.manifest.full
+  for (const [packageName, pkg] of Object.entries(manifest.packages)) {
+    pkg.version = config.app.version
+    await undeployWsk(packageName, manifest, owOptions, log)
+  }
 }
 
 /**

@@ -1731,25 +1731,35 @@ function checkOpenWhiskCredentials (config) {
  * @param isRemoteDev
  * @param isLocalDev
  */
-function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
+function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
   // set action urls
   // action urls {name: url}, if !LocalDev subdomain uses namespace
-  return Object.entries({ ...config.manifest.package.actions, ...(config.manifest.package.sequences || {}) }).reduce((obj, [name, action]) => {
+  const actionsAndSequences = {}
+  const config = replacePackagePlaceHolder(appConfig)
+  Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
+    Object.entries(pkg.actions).forEach(([actionName, action]) => {
+      actionsAndSequences[pkgName + '/' + actionName] = action
+    })
+    Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
+      actionsAndSequences[pkgName + '/' + actionName] = action
+    })
+  })
+  return Object.entries(actionsAndSequences).reduce((obj, [name, action]) => {
     const webArg = action['web-export'] || action.web
     const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
     if (isLocalDev) {
       // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
-      obj[name] = urlJoin(config.ow.apihost, 'api', config.ow.apiversion, webUri, config.ow.namespace, config.ow.package, name)
+      obj[name] = urlJoin(config.ow.apihost, 'api', config.ow.apiversion, webUri, config.ow.namespace, name)
     } else if (isRemoteDev || !webUri || !config.app.hasFrontend) {
       // - if remote dev we don't care about same domain as the UI runs on localhost
       // - if action is non web it cannot be called from the UI and we can point directly to ApiHost domain
       // - if action has no UI no need to use the CDN url
       // NOTE this will not work for apihosts that do not support <ns>.apihost url
       // https://<ns>.adobeioruntime.net/api/v1/web/<package>/<action>
-      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.ow.apihost), 'api', config.ow.apiversion, webUri, config.ow.package, name)
+      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.ow.apihost), 'api', config.ow.apiversion, webUri, name)
     } else {
       // https://<ns>.adobe-static.net/api/v1/web/<package>/<action>
-      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.app.hostname), 'api', config.ow.apiversion, webUri, config.ow.package, name)
+      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.app.hostname), 'api', config.ow.apiversion, webUri, name)
     }
     return obj
   }, {})
@@ -1774,6 +1784,22 @@ function urlJoin (...args) {
  */
 function removeProtocolFromURL (url) {
   return url.replace(/(^\w+:|^)\/\//, '')
+}
+
+function replacePackagePlaceHolder (config) {
+  const modifiedConfig = cloneDeep(config)
+  const packages = modifiedConfig.manifest.full.packages
+  const packagePlaceholder = modifiedConfig.manifest.packagePlaceholder
+  if (packages[packagePlaceholder]) {
+    packages[config.ow.package] = packages[packagePlaceholder]
+    delete packages[packagePlaceholder]
+  } else {
+    // Using custom package name.
+    // Set config.ow.package so that syncProject can use it as project name for annotations.
+    const packageNames = Object.keys(packages)
+    config.ow.package = packageNames[0]
+  }
+  return modifiedConfig
 }
 
 /**
@@ -1834,5 +1860,6 @@ module.exports = {
   urlJoin,
   removeProtocolFromURL,
   zip,
+  replacePackagePlaceHolder,
   validateActionRuntime
 }
