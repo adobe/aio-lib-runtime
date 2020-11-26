@@ -297,6 +297,7 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
   if (filterActions.length === 1 && !filterActions[0].endsWith('/')) {
     listOptions.name = filterActions[0]
   }
+  //console.log(listOptions)
   let activations = await runtime.activations.list(listOptions)
   let lastActivationTime = 0
   // Filter the activations
@@ -307,6 +308,8 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
       return annotationValue.includes(actionPath)
     }
     // For actions with full path (pkg/actionName) specified in filterActions
+    //console.log(annotationValue)
+    //console.log(actionPath)
     return annotationValue.endsWith(actionPath)
   }
   if (filterActions.length > 0) {
@@ -321,39 +324,74 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
     })
   }
 
-  // Getting and printing activation logs
-  for (let i = (activations.length - 1); i >= 0; i--) {
-    const activation = activations[i]
-    lastActivationTime = activation.start
-    if (lastActivationTime > startTime) {
-      const allResults = []
-      let results
-      try {
-        results = await runtime.activations.logs({ activationId: activation.activationId })
-      } catch (err) { // Happens in some cases such as trying to get logs of a trigger activation
-        // TODO: Trigger logs can be obtained from activation result but will need some formatting for the timestamp
-        // results = await runtime.activations.get({ activationId: activation.activationId })
-        continue
+  let isSequenceActivation = (activation) => {
+    if (activation.annotations && activation.annotations.length) {
+      if (activation.annotations.find((elem) => {
+          return (elem.key === 'kind')
+        }).value === 'sequence') {
+          return true
+      } else {
+        return false
       }
-      if (results.logs.length > 0) {
+    }  
+  }
+
+  const printActivationLogs = async (activation, runtime) => {
+    const results = []
+    let retValue
+    try {
+      //console.log('calling get logs')
+      retValue = await runtime.activations.logs({ activationId: activation.activationId })
+      //console.log(retValue)
+      if (retValue.logs.length > 0) {
         activation.annotations.forEach((annotation) => {
           if (annotation.key === 'path') {
             logFunc(annotation.value + ':' + activation.activationId)
           }
         })
-        results.logs.forEach(function (logMsg) {
+        retValue.logs.forEach(function (logMsg) {
           if (strip) {
-            allResults.push(stripLog(logMsg))
+            results.push(stripLog(logMsg))
           } else {
-            allResults.push(logMsg)
+            results.push(logMsg)
           }
         })
       }
-      allResults.sort()
-      allResults.forEach((logMsg) => {
-        logFunc(logMsg)
-        // logFunc()  // new line ?
-      })
+    } catch (err) { // Happens in some cases such as trying to get logs of a trigger activation
+      // TODO: Trigger logs can be obtained from activation result but will need some formatting for the timestamp
+      // retValue = await runtime.activations.get({ activationId: activation.activationId })
+      console.log(err)
+    }
+    results.sort()
+    results.forEach((logMsg) => {
+      logFunc(logMsg)
+      // logFunc()  // new line ?
+    })
+  }
+  
+  const printSequenceLogs = async (activation, runtime) => {
+    const seqActivation = await runtime.activations.get(activation.activationId)
+    //console.log(seqActivation)
+    for (const seqItemActivationId of seqActivation.logs) {
+      // console.log(seqItemActivationId)
+      let seqItemActivation = await runtime.activations.get(seqItemActivationId)
+      await printLogs(seqItemActivation, runtime)
+    }
+  }
+
+  const printLogs = async (activation, runtime) => {
+    if (isSequenceActivation(activation)) {
+      await printSequenceLogs(activation, runtime)
+    } else {
+     await printActivationLogs(activation, runtime)
+    }
+  }
+  // Getting and printing activation logs
+  for (let i = (activations.length - 1); i >= 0; i--) {
+    const activation = activations[i]
+    lastActivationTime = activation.start
+    if (lastActivationTime > startTime) {
+      await printLogs(activation, runtime)
     }
   }
   return { lastActivationTime }
