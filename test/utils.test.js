@@ -13,6 +13,7 @@ const ow = require('openwhisk')()
 const fs = require('fs-extra')
 const cloneDeep = require('lodash.clonedeep')
 const os = require('os')
+const path = require('path')
 
 const archiver = require('archiver')
 jest.mock('archiver')
@@ -1573,7 +1574,7 @@ describe('_absApp', () => {
     const expected = '/test.txt'
 
     const result = utils._absApp('/', 'test.txt')
-    expect(result).toEqual(n(expected))
+    expect(result).toEqual(path.normalize(expected))
   })
 
   test('absolute path', () => {

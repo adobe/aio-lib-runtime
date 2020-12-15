@@ -7,9 +7,5 @@
   },
   "rules": {
     "no-param-reassign": [ "warn", { "props": true }]
-  },
-  "globals": {
-    "n": "readonly",
-    "r": "readonly"
   }
 }
