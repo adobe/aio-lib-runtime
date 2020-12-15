@@ -109,8 +109,8 @@ describe('build by zipping js action folder', () => {
     global.fakeFileSystem.removeKeys(['/web-src/index.html'])
     // vol.unlinkSync('/web-src/index.html')
     await buildActions(config)
-    expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/sample-app-1.0.0-action-zip-temp'),
-      path.resolve('/dist/actions/sample-app-1.0.0-action-zip.zip'))
+    expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-1.0.0-action-zip-temp'),
+      path.normalize('/dist/actions/sample-app-1.0.0-action-zip.zip'))
   })
 
   /*
