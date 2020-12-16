@@ -25,34 +25,17 @@ const mockLogger = require('@adobe/aio-lib-core-logging')
 // zip implementation is complex to test => tested in utils.test.js
 utils.zip = jest.fn()
 
-// todo move webpack mock to __mocks__
-jest.mock('webpack')
+// // todo move webpack mock to __mocks__
+
 const webpack = require('webpack')
-const webpackMock = {
-  run: jest.fn()
-}
-webpack.DefinePlugin = jest.fn().mockImplementation(() => ({
-}))
-webpack.mockReturnValue(webpackMock)
-const webpackStatsMock = {
-  toJson: jest.fn(),
-  hasErrors: jest.fn(),
-  hasWarnings: jest.fn()
-}
+const cloneDeep = require('lodash.clonedeep')
+jest.mock('webpack')
 
 beforeEach(() => {
-  // global.cleanFs(vol)
-
-  webpack.mockClear()
-  webpackMock.run.mockReset()
-  webpackStatsMock.toJson.mockReset()
-  webpackStatsMock.hasErrors.mockReset()
-  webpackStatsMock.hasWarnings.mockReset()
-
-  webpackMock.run.mockImplementation(cb => cb(null, webpackStatsMock))
-
   execa.mockReset()
   utils.zip.mockReset()
+  webpack.webpackMock.mockReset()
+  mockLogger.mockReset()
 })
 
 describe('build by zipping js action folder', () => {
@@ -114,7 +97,7 @@ describe('build by zipping js action folder', () => {
   })
 
   /*
-  test('should not fail if no package.json if there is an index.js', async () => {
+  _test('should not fail if no package.json if there is an index.js', async () => {
     // delete package.json
     global.fakeFileSystem.removeKeys(['/actions/action-zip/package.json'])
     // vol.unlinkSync('/actions/action-zip/package.json')
@@ -181,7 +164,7 @@ describe('build by zipping js action folder', () => {
       'actions/action-zip/package.json': JSON.stringify(packagejson)
     })
     await buildActions(config)
-    expect(webpackMock.run).toHaveBeenCalledTimes(0) // no webpack bundling
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(0) // no webpack bundling
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-1.0.0-action-zip-temp'),
       path.normalize('/dist/actions/sample-app-1.0.0-action-zip.zip'))
   })
@@ -200,7 +183,7 @@ describe('build by zipping js action folder', () => {
     })
 
     await buildActions(config)
-    expect(webpackMock.run).toHaveBeenCalledTimes(0) // no webpack bundling
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(0) // no webpack bundling
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-1.0.0-action-zip-temp'),
       path.normalize('/dist/actions/sample-app-1.0.0-action-zip.zip'))
   })
@@ -210,13 +193,13 @@ describe('build by bundling js action file with webpack', () => {
   let config
   beforeEach(async () => {
     // mock webpack
-    webpackMock.run.mockImplementation(cb => {
+    webpack.webpackMock.run.mockImplementation(cb => {
       // fake the build files
       // vol.writeFileSync('/dist/actions/action.tmp.js', 'fake')
       global.fakeFileSystem.addJson({
         '/dist/actions/action.tmp.js': 'fake'
       })
-      cb(null, webpackStatsMock)
+      cb(null, webpack.webpackMock.webpackStatsMock)
     })
     // mock env, load files, load scripts
     global.fakeFileSystem.addJson({
@@ -249,7 +232,7 @@ describe('build by bundling js action file with webpack', () => {
     await expect(buildActions(config)).rejects.toEqual(expect.objectContaining({ message: expect.stringContaining('ENOENT') }))
   })
 
-  /* test('should fail if action js file is a symlink', async () => {
+  /* _test('should fail if action js file is a symlink', async () => {
     vol.unlinkSync('/actions/action.js')
     vol.symlinkSync('somefile', '/actions/action.js')
     await expect(buildActions(config)).rejects.toThrow('actions/action.js is not a valid file or directory')
@@ -257,7 +240,7 @@ describe('build by bundling js action file with webpack', () => {
 
   test('should fail for invalid file or directory', async () => {
     await buildActions(config)
-    expect(webpackMock.run).toHaveBeenCalledTimes(1)
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
       entry: [path.normalize('/actions/action.js')],
       output: expect.objectContaining({
@@ -271,7 +254,7 @@ describe('build by bundling js action file with webpack', () => {
 
   test('should bundle a single action file using webpack and zip it', async () => {
     await buildActions(config)
-    expect(webpackMock.run).toHaveBeenCalledTimes(1)
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
       entry: [path.normalize('/actions/action.js')],
       output: expect.objectContaining({
@@ -292,9 +275,10 @@ describe('build by bundling js action file with webpack', () => {
       'manifest.yml': global.fixtureFile('/sample-app-includes/manifest.yml'),
       'package.json': global.fixtureFile('/sample-app-includes/package.json')
     })
-    globby.mockReturnValue(['/includeme.txt'])
+    // first call to globby is for processing includes, second call is to get/find webpack config
+    globby.mockReturnValueOnce(['/includeme.txt'])
     await buildActions(global.sampleAppIncludesConfig)
-    expect(webpackMock.run).toHaveBeenCalledTimes(1)
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
       entry: [path.normalize('/actions/action.js')],
       output: expect.objectContaining({
@@ -305,6 +289,62 @@ describe('build by bundling js action file with webpack', () => {
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-include-1.0.0-action-temp'),
       path.normalize('/dist/actions/sample-app-include-1.0.0-action.zip'))
     expect(Object.keys(global.fakeFileSystem.files())).toEqual(expect.arrayContaining(['/includeme.txt']))
+  })
+
+  test('should bundle a single action file using webpack and zip it with includes using webpack.config.js', async () => {
+    // global.loadFs(vol, 'sample-app-includes')
+    global.fakeFileSystem.reset()
+    global.fakeFileSystem.addJson({
+      'actions/action.js': global.fixtureFile('/sample-app-includes/actions/action.js'),
+      'includeme.txt': global.fixtureFile('/sample-app-includes/includeme.txt'),
+      './actions/mock.config.js': global.fixtureFile('/sample-app-includes/actions/mock.config.js'),
+      'manifest.yml': global.fixtureFile('/sample-app-includes/manifest.yml'),
+      'package.json': global.fixtureFile('/sample-app-includes/package.json')
+    })
+    // first call to globby is for processing includes, second call is to get/find webpack config
+    globby.mockReturnValueOnce(['/includeme.txt'])
+    globby.mockReturnValueOnce(['actions/mock.config.js'])
+
+    jest.mock('actions/mock.config.js', () => {
+      return { mode: 'none' }
+    }, { virtual: true })
+
+    await buildActions(global.sampleAppIncludesConfig)
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
+    expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
+      entry: [path.normalize('/actions/action.js')],
+      output: expect.objectContaining({
+        path: path.normalize('/dist/actions/sample-app-include-1.0.0-action-temp'),
+        filename: 'index.js'
+      })
+    }))
+    expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-include-1.0.0-action-temp'),
+      path.normalize('/dist/actions/sample-app-include-1.0.0-action.zip'))
+    expect(Object.keys(global.fakeFileSystem.files())).toEqual(expect.arrayContaining(['/includeme.txt']))
+  })
+
+  test('should bundle a single action file using webpack and zip it with includes using webpack.config.js in actions root folder', async () => {
+    global.fakeFileSystem.reset()
+    global.fakeFileSystem.addJson({
+      'actions/actionname/action.js': global.fixtureFile('/custom-webpack/actions/actionname/action.js'),
+      'manifest.yml': global.fixtureFile('/custom-webpack/manifest.yml')
+    })
+    // first call to globby is for processing includes, second call is to get/find webpack config
+    globby.mockReturnValueOnce([])
+    globby.mockReturnValueOnce([]) // call is to actions/actionname/*.config.js
+    globby.mockReturnValueOnce(['actions/mock2.config.js'])
+
+    jest.mock('actions/mock2.config.js', () => {
+      return { mode: 'nope' }
+    }, { virtual: true })
+
+    const clonedConfig = cloneDeep(global.sampleAppIncludesConfig)
+    clonedConfig.manifest.full.packages.__APP_PACKAGE__.actions.action.function = 'actions/actionname/action.js'
+    await buildActions(clonedConfig)
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
+    expect(webpack).toHaveBeenLastCalledWith(expect.objectContaining({ mode: 'nope' }))
+    expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-include-1.0.0-action-temp'),
+      path.normalize('/dist/actions/sample-app-include-1.0.0-action.zip'))
   })
 
   test('should bundle a single action file using webpack and zip it with manifest named package', async () => {
@@ -322,7 +362,7 @@ describe('build by bundling js action file with webpack', () => {
     // mockAIOConfig.get.mockReturnValue(global.fakeConfig.tvm)
 
     await buildActions(global.namedPackageConfig)
-    expect(webpackMock.run).toHaveBeenCalledTimes(1)
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
       entry: [path.normalize('/actions/action.js')],
       output: expect.objectContaining({
@@ -337,7 +377,7 @@ describe('build by bundling js action file with webpack', () => {
   test('should still bundle a single action file when there is no ui', async () => {
     global.fakeFileSystem.removeKeys(['/web-src/index.html'])
     await buildActions(config)
-    expect(webpackMock.run).toHaveBeenCalledTimes(1)
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
       entry: [path.normalize('/actions/action.js')],
       output: expect.objectContaining({
@@ -351,36 +391,36 @@ describe('build by bundling js action file with webpack', () => {
 
   test('should fail if webpack throws an error', async () => {
     // eslint-disable-next-line standard/no-callback-literal
-    webpackMock.run.mockImplementation(cb => cb(new Error('fake webpack error')))
+    webpack.webpackMock.run.mockImplementation(cb => cb(new Error('fake webpack error')))
     await expect(buildActions(config)).rejects.toThrow('fake webpack error')
   })
 
   test('should write a debug message if webpack returns a warning', async () => {
-    webpackStatsMock.hasWarnings.mockReturnValue(true)
-    webpackStatsMock.toJson.mockReturnValue({
+    webpack.webpackMock.webpackStatsMock.hasWarnings.mockReturnValue(true)
+    webpack.webpackMock.webpackStatsMock.toJson.mockReturnValue({
       warnings: 'fake warnings'
     })
     await buildActions(config)
-    expect(mockLogger.debug).toHaveBeenCalledWith('webpack compilation warnings:\nfake warnings')
+    expect(mockLogger.warn).toHaveBeenCalledWith('webpack compilation warnings:\nfake warnings')
   })
 
   test('should throw if webpack returns an error ', async () => {
-    webpackStatsMock.hasErrors.mockReturnValue(true)
-    webpackStatsMock.toJson.mockReturnValue({
+    webpack.webpackMock.webpackStatsMock.hasErrors.mockReturnValue(true)
+    webpack.webpackMock.webpackStatsMock.toJson.mockReturnValue({
       errors: 'fake errors'
     })
     await expect(buildActions(config)).rejects.toThrow('action build failed, webpack compilation errors:\nfake errors')
   })
 
   test('should both write a debug message and fail if webpack returns a warning and an error', async () => {
-    webpackStatsMock.hasErrors.mockReturnValue(true)
-    webpackStatsMock.hasWarnings.mockReturnValue(true)
-    webpackStatsMock.toJson.mockReturnValue({
+    webpack.webpackMock.webpackStatsMock.hasErrors.mockReturnValue(true)
+    webpack.webpackMock.webpackStatsMock.hasWarnings.mockReturnValue(true)
+    webpack.webpackMock.webpackStatsMock.toJson.mockReturnValue({
       errors: 'fake errors',
       warnings: 'fake warnings'
     })
     await expect(buildActions(config)).rejects.toThrow('action build failed, webpack compilation errors:\nfake errors')
-    expect(mockLogger.debug).toHaveBeenCalledWith('webpack compilation warnings:\nfake warnings')
+    expect(mockLogger.warn).toHaveBeenLastCalledWith('webpack compilation warnings:\nfake warnings')
   })
 })
 
@@ -388,18 +428,18 @@ test('should build 1 zip action and 1 bundled action in one go', async () => {
   // global.loadFs(vol, 'sample-app')
   addSampleAppFiles()
   // mockAIOConfig.get.mockReturnValue(global.fakeConfig.tvm)
-  webpackMock.run.mockImplementation(cb => {
+  webpack.webpackMock.run.mockImplementation(cb => {
     // fake the build files
     // vol.writeFileSync('/dist/actions/action.tmp.js', 'fake')
     global.fakeFileSystem.addJson({
       'dist/actions/action.tmp.js': 'fake'
     })
-    cb(null, webpackStatsMock)
+    cb(null, webpack.webpackMock.webpackStatsMock)
   })
 
   await buildActions(global.sampleAppConfig)
 
-  expect(webpackMock.run).toHaveBeenCalledTimes(1)
+  expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
   expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
     entry: [path.normalize('/actions/action.js')],
     output: expect.objectContaining({
@@ -416,17 +456,17 @@ test('should build 1 zip action and 1 bundled action in one go', async () => {
 
 test('use buildConfig.filterActions to build only action called `action`', async () => {
   addSampleAppFiles()
-  webpackMock.run.mockImplementation(cb => {
+  webpack.webpackMock.run.mockImplementation(cb => {
     // fake the build files
     global.fakeFileSystem.addJson({
       'dist/actions/action.tmp.js': 'fake'
     })
-    cb(null, webpackStatsMock)
+    cb(null, webpack.webpackMock.webpackStatsMock)
   })
 
   await buildActions(global.sampleAppConfig, ['action'])
 
-  expect(webpackMock.run).toHaveBeenCalledTimes(1)
+  expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
   expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
     entry: [path.normalize('/actions/action.js')],
     output: expect.objectContaining({
