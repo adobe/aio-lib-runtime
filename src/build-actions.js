@@ -24,7 +24,7 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
 
   do {
     const paths = await globby([path.join(parentDir, '*config.js')])
-    if (paths.length > 0) {
+    if (paths && paths.length > 0) {
       configPath = paths[0]
     }
     parentDir = path.dirname(parentDir)
@@ -106,23 +106,25 @@ const buildAction = async (packageName, actionName, action, root, dist) => {
   } else {
     const outBuildFilename = 'index.js'
     // if not directory => package and minify to single file
-    const compiler = webpack(await getWebpackConfig(actionPath, root, tempBuildDir, outBuildFilename))
-
+    const webpackConfig = await getWebpackConfig(actionPath, root, tempBuildDir, outBuildFilename)
+    const compiler = webpack(webpackConfig)
     // run the compiler and wait for a result
-    await new Promise((resolve, reject) => compiler.run((err, stats) => {
-      if (err) {
-        reject(err)
-      }
-      // stats must be defined at this point
-      const info = stats.toJson()
-      if (stats.hasWarnings()) {
-        aioLogger.warn(`webpack compilation warnings:\n${info.warnings}`)
-      }
-      if (stats.hasErrors()) {
-        reject(new Error(`action build failed, webpack compilation errors:\n${info.errors}`))
-      }
-      return resolve(stats)
-    }))
+    await new Promise((resolve, reject) => {
+      compiler.run((err, stats) => {
+        if (err) {
+          reject(err)
+        }
+        // stats must be defined at this point
+        const info = stats.toJson()
+        if (stats.hasWarnings()) {
+          aioLogger.warn(`webpack compilation warnings:\n${info.warnings}`)
+        }
+        if (stats.hasErrors()) {
+          reject(new Error(`action build failed, webpack compilation errors:\n${info.errors}`))
+        }
+        return resolve(stats)
+      })
+    })
   }
 
   // zip the dir
@@ -139,9 +141,10 @@ const buildActions = async (config, filterActions) => {
   if (!config.app.hasBackend) {
     throw new Error('cannot build actions, app has no backend')
   }
+  let _filterActions = null
   if (filterActions) {
     // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
-    filterActions = filterActions.map((actionName) => actionName.indexOf('/') === -1 ? config.ow.package + '/' + actionName : actionName)
+    _filterActions = filterActions.map((actionName) => actionName.indexOf('/') === -1 ? config.ow.package + '/' + actionName : actionName)
   }
   // clear out dist dir
   fs.emptyDirSync(config.actions.dist)
@@ -149,17 +152,16 @@ const buildActions = async (config, filterActions) => {
   const builtList = []
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
     const actionsToBuild = Object.entries(pkg.actions)
-
     // build all sequentially (todo make bundler execution parallel)
     for (const [actionName, action] of actionsToBuild) {
       const actionFullName = pkgName + '/' + actionName
-      if (Array.isArray(filterActions) && !filterActions.includes(actionFullName)) {
-        continue
+
+      if (!_filterActions || _filterActions.includes(actionFullName)) {
+        // const out =  // todo: log output of each action as it is built
+        // need config.root
+        // config.actions.dist
+        builtList.push(await buildAction(pkgName, actionName, action, config.root, config.actions.dist))
       }
-      // const out =  // todo: log output of each action as it is built
-      // need config.root
-      // config.actions.dist
-      builtList.push(await buildAction(pkgName, actionName, action, config.root, config.actions.dist))
     }
   }
   return builtList
