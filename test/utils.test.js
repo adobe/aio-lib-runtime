@@ -1534,36 +1534,110 @@ describe('getActionUrls', () => {
     config = cloneDeep(global.sampleAppConfig)
   })
 
-  test('local dev false', () => {
+  test('some non web actions, with ui, no dev, no custom apihost, no custom hostname', () => {
     const expected = {
-      'sample-app-1.0.0/action': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
-      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
-      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip'
+      action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
+      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip'
     }
 
-    const result = utils.getActionUrls(config, config.actions.devRemote, false)
+    config.manifest.package.actions.action.web = false
+    const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expect.objectContaining(expected))
   })
 
-  test('local dev true', () => {
+  test('some non web actions, with ui, no dev, no custom apihost, custom hostname', () => {
     const expected = {
-      'sample-app-1.0.0/action': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
-      'sample-app-1.0.0/action-sequence': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-sequence',
-      'sample-app-1.0.0/action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
+      action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
+      'action-sequence': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip'
     }
-    const result = utils.getActionUrls(config, config.actions.devRemote, true)
+    config.app.hostname = 'custom.net'
+    config.app.hostnameIsCustom = true
+    config.manifest.package.actions.action.web = 'no'
+    const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expect.objectContaining(expected))
   })
 
-  test('web false', () => {
+  test('some non web actions, with ui, no dev, custom apihost, custom hostname', () => {
     const expected = {
-      'sample-app-1.0.0/action': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action',
-      'sample-app-1.0.0/action-sequence': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
-      'sample-app-1.0.0/action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
+      action: 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action',
+      'action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip'
     }
-    config.manifest.full.packages.__APP_PACKAGE__.actions.action.web = 'no'
-    config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = false
-    const result = utils.getActionUrls(config, config.actions.devRemote, true)
+    config.ow.apihost = 'ow-custom.net'
+    config.ow.apihostIsCustom = true
+    config.app.hostname = 'custom.net'
+    config.app.hostnameIsCustom = true
+    config.manifest.package.sequences['action-sequence'].web = 'no'
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expect.objectContaining(expected))
+  })
+
+  test('some non web actions, with ui, no dev, custom apihost, no custom hostname', () => {
+    const expected = {
+      action: 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
+      'action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
+    }
+    config.ow.apihost = 'ow-custom.net'
+    config.ow.apihostIsCustom = true
+    config.manifest.package.sequences['action-sequence'].web = false
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expect.objectContaining(expected))
+  })
+
+  test('some non web actions, with ui, local dev, custom apihost (localhost), no custom hostname', () => {
+    const expected = {
+      action: 'https://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action',
+      'action-sequence': 'https://localhost:3030/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
+    }
+    config.ow.apihost = 'localhost:3030'
+    config.ow.apihostIsCustom = true
+    delete config.manifest.package.sequences['action-sequence'].web
+    const result = utils.getActionUrls(config, false, true)
+    expect(result).toEqual(expect.objectContaining(expected))
+  })
+
+  test('some non web actions, with ui, remote dev, no custom apihost, no custom hostname', () => {
+    const expected = {
+      action: 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action',
+      'action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-zip'
+    }
+    config.ow.apihostIsCustom = false
+    delete config.manifest.package.actions['action-zip'].web
+    const result = utils.getActionUrls(config, true, false)
+    expect(result).toEqual(expect.objectContaining(expected))
+  })
+
+  test('some non web actions, no ui, no dev, no custom apihost, no custom hostname', () => {
+    const expected = {
+      action: 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action',
+      'action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-zip'
+    }
+    config.ow.apihostIsCustom = false
+    config.manifest.package.actions['action-zip'].web = false
+    config.app.hasFrontend = false
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expect.objectContaining(expected))
+  })
+
+  test('some non web actions, no ui, no dev, custom apihost, custom hostname', () => {
+    const expected = {
+      action: 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
+      'action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
+    }
+    config.ow.apihost = 'ow-custom.net'
+    config.ow.apihostIsCustom = true
+    config.app.hostname = 'custom.net'
+    config.app.hostnameIsCustom = true
+    config.manifest.package.sequences['action-sequence'].web = 'no'
+    config.app.hasFrontend = false
+    const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expect.objectContaining(expected))
   })
 })
