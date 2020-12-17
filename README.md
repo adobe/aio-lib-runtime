@@ -12,7 +12,7 @@ governing permissions and limitations under the License.
 
 [![Version](https://img.shields.io/npm/v/@adobe/aio-lib-runtime.svg)](https://npmjs.org/package/@adobe/aio-lib-runtime)
 [![Downloads/week](https://img.shields.io/npm/dw/@adobe/aio-lib-runtime.svg)](https://npmjs.org/package/@adobe/aio-lib-runtime)
-[![Build Status](https://travis-ci.com/adobe/aio-lib-runtime.svg?branch=master)](https://travis-ci.com/adobe/aio-lib-runtime)
+![Node.js CI](https://github.com/adobe/aio-lib-runtime/workflows/Node.js%20CI/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Greenkeeper badge](https://badges.greenkeeper.io/adobe/aio-lib-runtime.svg)](https://greenkeeper.io/)
 [![Codecov Coverage](https://img.shields.io/codecov/c/github/adobe/aio-lib-runtime/master.svg?style=flat-square)](https://codecov.io/gh/adobe/aio-lib-runtime/)
 
@@ -72,11 +72,36 @@ with valid options argument</p>
 ## Functions
 
 <dl>
+<dt><a href="#deployActions">deployActions([config], [deployConfig], eventEmitter, logFunc)</a> ⇒ <code>Promise.&lt;object&gt;</code></dt>
+<dd><p>runs the command</p>
+</dd>
+<dt><a href="#deployWsk">deployWsk(scriptConfig, manifestContent, logFunc, filterEntities)</a></dt>
+<dd></dd>
 <dt><a href="#init">init(options)</a> ⇒ <code><a href="#OpenwhiskClient">Promise.&lt;OpenwhiskClient&gt;</a></code></dt>
 <dd><p>Returns a Promise that resolves with a new RuntimeAPI object.</p>
 </dd>
+<dt><a href="#printActionLogs">printActionLogs(config, logger, limit, filterActions, strip, tail, fetchLogsInterval, startTime)</a></dt>
+<dd><p>Prints action logs.</p>
+</dd>
+<dt><a href="#undeployActions">undeployActions(config, logFunc)</a></dt>
+<dd></dd>
+<dt><a href="#undeployWsk">undeployWsk(packageName, manifestContent, owOptions, logger)</a></dt>
+<dd></dd>
+<dt><a href="#getIncludesForAction">getIncludesForAction(action)</a> ⇒ <code>Array(IncludeEntry)</code></dt>
+<dd><p>Gets the list of files matching the patterns defined by action.include</p>
+</dd>
 <dt><a href="#printLogs">printLogs(activation, strip, logger)</a></dt>
 <dd><p>Prints activation logs messages.</p>
+</dd>
+<dt><a href="#printFilteredActionLogs">printFilteredActionLogs(runtime, logger, limit, filterActions, strip, startTime)</a></dt>
+<dd><p>Filters and prints action logs.</p>
+</dd>
+<dt><a href="#getActionEntryFile">getActionEntryFile(pkgJson)</a> ⇒ <code>string</code></dt>
+<dd><p>returns path to main function as defined in package.json OR default of index.js
+note: file MUST exist, caller&#39;s responsibility, this method will throw if it does not exist</p>
+</dd>
+<dt><a href="#zip">zip(filePath, out, pathInZip)</a> ⇒ <code>Promise</code></dt>
+<dd><p>Zip a file/folder using archiver</p>
 </dd>
 <dt><a href="#createKeyValueObjectFromArray">createKeyValueObjectFromArray(inputsArray)</a> ⇒ <code>object</code></dt>
 <dd><p>returns key value pairs in an object from the key value array supplied. Used to create parameters object.</p>
@@ -193,6 +218,19 @@ for syncing managed projects.</p>
 <dt><a href="#findProjectHashonServer">findProjectHashonServer(ow, projectName)</a> ⇒ <code>Promise.&lt;string&gt;</code></dt>
 <dd><p>Retrieve the project hash from a deployed managed project.</p>
 </dd>
+<dt><a href="#_relApp">_relApp(root, p)</a></dt>
+<dd></dd>
+<dt><a href="#_absApp">_absApp(root, p)</a></dt>
+<dd></dd>
+<dt><a href="#checkOpenWhiskCredentials">checkOpenWhiskCredentials(config)</a></dt>
+<dd></dd>
+<dt><a href="#getActionUrls">getActionUrls(config, isRemoteDev, isLocalDev)</a></dt>
+<dd></dd>
+<dt><a href="#urlJoin">urlJoin(...args)</a> ⇒ <code>string</code></dt>
+<dd><p>Joins url path parts</p>
+</dd>
+<dt><a href="#removeProtocolFromURL">removeProtocolFromURL(url)</a></dt>
+<dd></dd>
 </dl>
 
 ## Typedefs
@@ -212,6 +250,10 @@ for syncing managed projects.</p>
 <dt><a href="#ManifestAction">ManifestAction</a> : <code>object</code></dt>
 <dd><p>The manifest action definition</p>
 </dd>
+<dt><a href="#ManifestAction">ManifestAction</a> : <code>object</code></dt>
+<dd></dd>
+<dt><a href="#IncludeEntry">IncludeEntry</a> : <code>object</code></dt>
+<dd></dd>
 <dt><a href="#ManifestSequence">ManifestSequence</a> : <code>object</code></dt>
 <dd><p>The manifest sequence definition
 TODO: see <a href="https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md">https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md</a></p>
@@ -335,6 +377,50 @@ Deletes a trigger and associated feeds
 | --- | --- | --- |
 | options | <code>object</code> | options with the `name` of the trigger |
 
+<a name="deployActions"></a>
+
+## deployActions([config], [deployConfig], eventEmitter, logFunc) ⇒ <code>Promise.&lt;object&gt;</code>
+runs the command
+
+**Kind**: global function  
+**Returns**: <code>Promise.&lt;object&gt;</code> - deployedEntities  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| [config] | <code>object</code> | <code>{}</code> |  |
+| [deployConfig] | <code>object</code> | <code>{}</code> |  |
+| [deployConfig.filterEntities] | <code>object</code> |  | add filters to deploy only specified OpenWhisk entities |
+| [deployConfig.filterEntities.actions] | <code>Array</code> |  | filter list of actions to deploy, e.g. ['name1', ..] |
+| [deployConfig.filterEntities.sequences] | <code>Array</code> |  | filter list of sequences to deploy, e.g. ['name1', ..] |
+| [deployConfig.filterEntities.triggers] | <code>Array</code> |  | filter list of triggers to deploy, e.g. ['name1', ..] |
+| [deployConfig.filterEntities.rules] | <code>Array</code> |  | filter list of rules to deploy, e.g. ['name1', ..] |
+| [deployConfig.filterEntities.apis] | <code>Array</code> |  | filter list of apis to deploy, e.g. ['name1', ..] |
+| eventEmitter |  |  |  |
+| logFunc |  |  |  |
+| [deployConfig.filterEntities.dependencies] | <code>Array</code> |  | filter list of package dependencies to deploy, e.g. ['name1', ..] |
+
+<a name="deployWsk"></a>
+
+## deployWsk(scriptConfig, manifestContent, logFunc, filterEntities)
+**Kind**: global function  
+
+| Param |
+| --- |
+| scriptConfig | 
+| manifestContent | 
+| logFunc | 
+| filterEntities | 
+
+<a name="deployWsk.._filterOutPackageEntity"></a>
+
+### deployWsk~\_filterOutPackageEntity(pkgEntity, filter)
+**Kind**: inner method of [<code>deployWsk</code>](#deployWsk)  
+
+| Param |
+| --- |
+| pkgEntity | 
+| filter | 
+
 <a name="init"></a>
 
 ## init(options) ⇒ [<code>Promise.&lt;OpenwhiskClient&gt;</code>](#OpenwhiskClient)
@@ -346,6 +432,57 @@ Returns a Promise that resolves with a new RuntimeAPI object.
 | Param | Type | Description |
 | --- | --- | --- |
 | options | [<code>OpenwhiskOptions</code>](#OpenwhiskOptions) | options for initialization |
+
+<a name="printActionLogs"></a>
+
+## printActionLogs(config, logger, limit, filterActions, strip, tail, fetchLogsInterval, startTime)
+Prints action logs.
+
+**Kind**: global function  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| config | <code>object</code> |  | openwhisk config |
+| logger | <code>object</code> |  | an instance of a logger to emit messages to |
+| limit | <code>number</code> |  | maximum number of activations to fetch logs from |
+| filterActions | <code>Array</code> |  | array of actions to fetch logs from    examples:-    ['pkg1/'] = logs of all deployed actions under package pkg1    ['pkg1/action'] = logs of action 'action' under package 'pkg1'    [] = logs of all actions in the namespace |
+| strip | <code>boolean</code> |  | if true, strips the timestamp which prefixes every log line |
+| tail | <code>boolean</code> | <code>false</code> | if true, logs are fetched continuously |
+| fetchLogsInterval | <code>number</code> | <code>10000</code> | number of seconds to wait before fetching logs again when tail is set to true |
+| startTime | <code>number</code> |  | time in milliseconds. Only logs after this time will be fetched |
+
+<a name="undeployActions"></a>
+
+## undeployActions(config, logFunc)
+**Kind**: global function  
+
+| Param |
+| --- |
+| config | 
+| logFunc | 
+
+<a name="undeployWsk"></a>
+
+## undeployWsk(packageName, manifestContent, owOptions, logger)
+**Kind**: global function  
+
+| Param |
+| --- |
+| packageName | 
+| manifestContent | 
+| owOptions | 
+| logger | 
+
+<a name="getIncludesForAction"></a>
+
+## getIncludesForAction(action) ⇒ <code>Array(IncludeEntry)</code>
+Gets the list of files matching the patterns defined by action.include
+
+**Kind**: global function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| action | [<code>ManifestAction</code>](#ManifestAction) | action object from manifest which defines includes |
 
 <a name="printLogs"></a>
 
@@ -359,6 +496,47 @@ Prints activation logs messages.
 | activation | <code>object</code> | the activation |
 | strip | <code>boolean</code> | if true, strips the timestamp which prefixes every log line |
 | logger | <code>object</code> | an instance of a logger to emit messages to |
+
+<a name="printFilteredActionLogs"></a>
+
+## printFilteredActionLogs(runtime, logger, limit, filterActions, strip, startTime)
+Filters and prints action logs.
+
+**Kind**: global function  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| runtime | <code>object</code> |  | runtime (openwhisk) object |
+| logger | <code>object</code> |  | an instance of a logger to emit messages to |
+| limit | <code>number</code> |  | maximum number of activations to fetch logs from |
+| filterActions | <code>Array</code> |  | array of actions to fetch logs from    ['pkg1/'] = logs of all deployed actions under package pkg1    ['pkg1/action'] = logs of action 'action' under package 'pkg1'    [] = logs of all actions in the namespace |
+| strip | <code>boolean</code> | <code>false</code> | if true, strips the timestamp which prefixes every log line |
+| startTime | <code>number</code> | <code>0</code> | time in milliseconds. Only logs after this time will be fetched |
+
+<a name="getActionEntryFile"></a>
+
+## getActionEntryFile(pkgJson) ⇒ <code>string</code>
+returns path to main function as defined in package.json OR default of index.js
+note: file MUST exist, caller's responsibility, this method will throw if it does not exist
+
+**Kind**: global function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| pkgJson | <code>\*</code> | : path to a package.json file |
+
+<a name="zip"></a>
+
+## zip(filePath, out, pathInZip) ⇒ <code>Promise</code>
+Zip a file/folder using archiver
+
+**Kind**: global function  
+
+| Param | Type | Default |
+| --- | --- | --- |
+| filePath | <code>string</code> |  | 
+| out | <code>string</code> |  | 
+| pathInZip | <code>boolean</code> | <code>false</code> | 
 
 <a name="createKeyValueObjectFromArray"></a>
 
@@ -791,6 +969,66 @@ Retrieve the project hash from a deployed managed project.
 | ow | <code>object</code> | the OpenWhisk client object |
 | projectName | <code>string</code> | the project name |
 
+<a name="_relApp"></a>
+
+## \_relApp(root, p)
+**Kind**: global function  
+
+| Param |
+| --- |
+| root | 
+| p | 
+
+<a name="_absApp"></a>
+
+## \_absApp(root, p)
+**Kind**: global function  
+
+| Param |
+| --- |
+| root | 
+| p | 
+
+<a name="checkOpenWhiskCredentials"></a>
+
+## checkOpenWhiskCredentials(config)
+**Kind**: global function  
+
+| Param |
+| --- |
+| config | 
+
+<a name="getActionUrls"></a>
+
+## getActionUrls(config, isRemoteDev, isLocalDev)
+**Kind**: global function  
+
+| Param | Default |
+| --- | --- |
+| config |  | 
+| isRemoteDev | <code>false</code> | 
+| isLocalDev | <code>false</code> | 
+
+<a name="urlJoin"></a>
+
+## urlJoin(...args) ⇒ <code>string</code>
+Joins url path parts
+
+**Kind**: global function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ...args | <code>string</code> | url parts |
+
+<a name="removeProtocolFromURL"></a>
+
+## removeProtocolFromURL(url)
+**Kind**: global function  
+
+| Param |
+| --- |
+| url | 
+
 <a name="OpenwhiskOptions"></a>
 
 ## OpenwhiskOptions : <code>object</code>
@@ -870,6 +1108,27 @@ The manifest action definition
 | [raw-http] | <code>boolean</code> | indicate if an action should be exported as raw web action, this                     option is only valid if `web` or `web-export` is set to true |
 | [docker] | <code>string</code> | the docker container to run the action into |
 | [annotations] | [<code>ManifestActionAnnotations</code>](#ManifestActionAnnotations) | the manifest action annotations |
+
+<a name="ManifestAction"></a>
+
+## ManifestAction : <code>object</code>
+**Kind**: global typedef  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| include | <code>Array</code> | array of include glob patterns |
+
+<a name="IncludeEntry"></a>
+
+## IncludeEntry : <code>object</code>
+**Kind**: global typedef  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| dest | <code>string</code> | destination for included files |
+| sources | <code>Array</code> | list of files that matched pattern |
 
 <a name="ManifestSequence"></a>
 

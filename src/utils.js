@@ -20,6 +20,8 @@ const fetch = require('cross-fetch')
 const globby = require('globby')
 const path = require('path')
 const archiver = require('archiver')
+const semver = require('semver')
+const supportedEngines = require('../package.json').engines
 
 /**
  *
@@ -115,7 +117,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md
  *
  * @typedef {object} ManifestSequence
- * @property
  */
 
 /**
@@ -123,7 +124,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_triggers.md
  *
  * @typedef {object} ManifestTrigger
- * @property
  */
 
 /**
@@ -131,7 +131,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_rules.md
  *
  * @typedef {object} ManifestRule
- * @property
  */
 
 /**
@@ -139,7 +138,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_apis.md
  *
  * @typedef {object} ManifestApi
- * @property
  */
 
 /**
@@ -147,7 +145,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} ManifestDependency
- * @property
  */
 
 /**
@@ -155,7 +152,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#valid-limit-keys.md
  *
  * @typedef {object} ManifestActionLimits
- * @property
  */
 
 /**
@@ -163,7 +159,6 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#action-annotations
  *
  * @typedef {object} ManifestActionAnnotations
- * @property
  */
 
 /**
@@ -198,7 +193,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesAction
- * @property
  */
 
 /**
@@ -206,7 +200,7 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesRule
- * @property
+
  */
 
 /**
@@ -214,7 +208,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesTrigger
- * @property
  */
 
 /**
@@ -222,7 +215,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesPackage
- * @property
  */
 
 /**
@@ -240,7 +232,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} DeploymentTrigger
- * @property
  */
 
 /**
@@ -283,6 +274,89 @@ function printLogs (activation, strip, logger) {
       }
     })
   }
+}
+
+/**
+ * Filters and prints action logs.
+ *
+ * @param {object} runtime runtime (openwhisk) object
+ * @param {object} logger an instance of a logger to emit messages to
+ * @param {number} limit maximum number of activations to fetch logs from
+ * @param {Array} filterActions array of actions to fetch logs from
+ *    ['pkg1/'] = logs of all deployed actions under package pkg1
+ *    ['pkg1/action'] = logs of action 'action' under package 'pkg1'
+ *    [] = logs of all actions in the namespace
+ * @param {boolean} strip if true, strips the timestamp which prefixes every log line
+ * @param {number} startTime time in milliseconds. Only logs after this time will be fetched
+ */
+async function printFilteredActionLogs (runtime, logger, limit, filterActions = [], strip = false, startTime = 0) {
+  // Get activations
+  const listOptions = { limit: limit, skip: 0 }
+  const logFunc = logger || console.log
+  // This will narrow down the activation list to specific action
+  if (filterActions.length === 1 && !filterActions[0].endsWith('/')) {
+    listOptions.name = filterActions[0]
+  }
+  let activations = await runtime.activations.list(listOptions)
+  let lastActivationTime = 0
+  // Filter the activations
+  const actionFilterFunc = (actionPath, annotationValue) => {
+    // For logs of all deployed actions under a package
+    if (actionPath.endsWith('/')) {
+      actionPath = actionPath.startsWith('/') ? actionPath : '/' + actionPath
+      return annotationValue.includes(actionPath)
+    }
+    // For actions with full path (pkg/actionName) specified in filterActions
+    return annotationValue.endsWith(actionPath)
+  }
+  if (filterActions.length > 0) {
+    activations = activations.filter((activation) => {
+      let includeActivation = false
+      activation.annotations.forEach((annotation) => {
+        if (annotation.key === 'path' && filterActions.some(actionPath => actionFilterFunc(actionPath, annotation.value))) {
+          includeActivation = true
+        }
+      })
+      return includeActivation
+    })
+  }
+
+  // Getting and printing activation logs
+  for (let i = (activations.length - 1); i >= 0; i--) {
+    const activation = activations[i]
+    lastActivationTime = activation.start
+    if (lastActivationTime > startTime) {
+      const allResults = []
+      let results
+      try {
+        results = await runtime.activations.logs({ activationId: activation.activationId })
+      } catch (err) { // Happens in some cases such as trying to get logs of a trigger activation
+        // TODO: Trigger logs can be obtained from activation result but will need some formatting for the timestamp
+        // results = await runtime.activations.get({ activationId: activation.activationId })
+        continue
+      }
+      if (results.logs.length > 0) {
+        activation.annotations.forEach((annotation) => {
+          if (annotation.key === 'path') {
+            logFunc(annotation.value + ':' + activation.activationId)
+          }
+        })
+        results.logs.forEach(function (logMsg) {
+          if (strip) {
+            allResults.push(stripLog(logMsg))
+          } else {
+            allResults.push(logMsg)
+          }
+        })
+      }
+      allResults.sort()
+      allResults.forEach((logMsg) => {
+        logFunc(logMsg)
+        // logFunc()  // new line ?
+      })
+    }
+  }
+  return { lastActivationTime }
 }
 
 /**
@@ -1313,6 +1387,7 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
     logger(`Info: package [${pkg.name}] has been successfully deployed.\n`)
   }
   for (const action of entities.actions) {
+    validateActionRuntime(action)
     if (action.exec && action.exec.kind === 'sequence') {
       action.exec.components = action.exec.components.map(sequence => {
         /*
@@ -1652,17 +1727,18 @@ function checkOpenWhiskCredentials (config) {
 }
 
 /**
- * @param config
+ * @param appCconfig
  * @param isRemoteDev
  * @param isLocalDev
  */
-function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
+function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
   // sets action urls [{ name: url }]
+  const config = replacePackagePlaceHolder(appConfig)
   const apihostIsCustom = !!config.ow.apihostIsCustom
   const hostnameIsCustom = !!config.app.hostnameIsCustom
 
   /** @private */
-  function getActionUrl (actionName, action) {
+  function getActionUrl (pkgAndActionName, action) {
     const webArg = action['web-export'] || action.web
     const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
     // - if local dev runtime actions are served locally so CDN cannot point to them
@@ -1681,8 +1757,7 @@ function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, 
         'api',
         config.ow.apiversion,
         webUri,
-        config.ow.package,
-        actionName
+        pkgAndActionName
       )
     } else if (
       isLocalDev ||
@@ -1698,8 +1773,7 @@ function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, 
         config.ow.apiversion,
         webUri,
         config.ow.namespace,
-        config.ow.package,
-        actionName
+        pkgAndActionName
       )
     } else {
       // if (!actionIsBehindCdn && !apihostIsCustom)
@@ -1709,20 +1783,24 @@ function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, 
         'api',
         config.ow.apiversion,
         webUri,
-        config.ow.package,
-        actionName
+        pkgAndActionName
       )
     }
   }
 
   // populate urls
-  const actionsAndSequences = {
-    ...config.manifest.package.actions,
-    ...(config.manifest.package.sequences || {})
-  }
+  const actionsAndSequences = {}
+  Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
+    Object.entries(pkg.actions).forEach(([actionName, action]) => {
+      actionsAndSequences[pkgName + '/' + actionName] = action
+    })
+    Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
+      actionsAndSequences[pkgName + '/' + actionName] = action
+    })
+  })
   const urls = {}
-  Object.entries(actionsAndSequences).forEach(([actionName, action]) => {
-    urls[actionName] = getActionUrl(actionName, action)
+  Object.entries(actionsAndSequences).forEach(([pkgAndActionName, action]) => {
+    urls[pkgAndActionName] = getActionUrl(pkgAndActionName, action)
   })
   return urls
 }
@@ -1746,6 +1824,36 @@ function urlJoin (...args) {
  */
 function removeProtocolFromURL (url) {
   return url.replace(/(^\w+:|^)\/\//, '')
+}
+
+function replacePackagePlaceHolder (config) {
+  const modifiedConfig = cloneDeep(config)
+  const packages = modifiedConfig.manifest.full.packages
+  const packagePlaceholder = modifiedConfig.manifest.packagePlaceholder
+  if (packages[packagePlaceholder]) {
+    packages[config.ow.package] = packages[packagePlaceholder]
+    delete packages[packagePlaceholder]
+  } else {
+    // Using custom package name.
+    // Set config.ow.package so that syncProject can use it as project name for annotations.
+    const packageNames = Object.keys(packages)
+    config.ow.package = packageNames[0]
+  }
+  return modifiedConfig
+}
+
+/**
+ * Checks the validity of nodejs version in action definition and throws an error if invalid.
+ *
+ * @param {object} action action object
+ */
+function validateActionRuntime (action) {
+  if (action.exec && action.exec.kind && action.exec.kind.toLowerCase().startsWith('nodejs:')) {
+    const nodeVer = semver.coerce(action.exec.kind.split(':')[1])
+    if (!semver.satisfies(nodeVer, supportedEngines.node)) {
+      throw new Error(`Unsupported node version in action ${action.name}. Supported versions are ${supportedEngines.node}`)
+    }
+  }
 }
 
 module.exports = {
@@ -1784,10 +1892,14 @@ module.exports = {
   getProjectHash,
   addManagedProjectAnnotations,
   printLogs,
+  stripLog,
+  printFilteredActionLogs,
   _relApp,
   _absApp,
   getActionUrls,
   urlJoin,
   removeProtocolFromURL,
-  zip
+  zip,
+  replacePackagePlaceHolder,
+  validateActionRuntime
 }

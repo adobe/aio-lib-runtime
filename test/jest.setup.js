@@ -23,14 +23,8 @@ jest.mock('fs', () => require('jest-plugin-fs/mock'))
 process.env.CI = true
 
 jest.setTimeout(30000)
-jest.useFakeTimers()
 
 jest.setMock('cross-fetch', fetch)
-
-// quick normalization to test windows paths
-const path = require('path')
-global.n = p => path.normalize(p)
-global.r = p => path.resolve(p)
 
 // trap console log
 beforeEach(() => { stdout.start() })
