@@ -169,6 +169,7 @@ global.sampleAppConfig = {
     hasBackend: true,
     version: '1.0.0',
     name: 'sample-app',
+    hostnameIsCustom: false,
     hostname: 'adobeio-static.net',
     htmlCacheDuration: '60',
     jsCacheDuration: '604800',
@@ -178,6 +179,7 @@ global.sampleAppConfig = {
   ow: {
     namespace: 'fake_ns',
     auth: 'fake:auth',
+    apihostIsCustom: false,
     apihost: 'https://adobeioruntime.net',
     apiversion: 'v1',
     package: 'sample-app-1.0.0'
