@@ -1727,15 +1727,15 @@ function checkOpenWhiskCredentials (config) {
 }
 
 /**
- * @param appCconfig
+ * @param appConfig
  * @param isRemoteDev
  * @param isLocalDev
  */
 function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
   // sets action urls [{ name: url }]
   const config = replacePackagePlaceHolder(appConfig)
-  const apihostIsCustom = !!config.ow.apihostIsCustom
-  const hostnameIsCustom = !!config.app.hostnameIsCustom
+  const apihostIsCustom = config.ow.apihost !== config.ow.defaultApihost
+  const hostnameIsCustom = config.app.hostname !== config.app.defaultHostname
 
   /** @private */
   function getActionUrl (pkgAndActionName, action) {

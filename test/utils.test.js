@@ -1568,7 +1568,6 @@ describe('getActionUrls', () => {
       'pkg2/thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thatsequence'
     }
     config.app.hostname = 'custom.net'
-    config.app.hostnameIsCustom = true
     config.manifest.full.packages.__APP_PACKAGE__.actions.action.web = 'no'
     delete config.manifest.full.packages.pkg2.sequences.thatsequence.web
     const result = utils.getActionUrls(config, false, false)
@@ -1584,9 +1583,7 @@ describe('getActionUrls', () => {
       'pkg2/thatsequence': 'https://ow-custom.net/api/v1/fake_ns/pkg2/thatsequence'
     }
     config.ow.apihost = 'ow-custom.net'
-    config.ow.apihostIsCustom = true
     config.app.hostname = 'custom.net'
-    config.app.hostnameIsCustom = true
     config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = 'no'
     delete config.manifest.full.packages.pkg2.sequences.thatsequence.web
     const result = utils.getActionUrls(config, false, false)
@@ -1602,7 +1599,6 @@ describe('getActionUrls', () => {
       'pkg2/thatsequence': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thatsequence'
     }
     config.ow.apihost = 'ow-custom.net'
-    config.ow.apihostIsCustom = true
     config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = false
     const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expected)
@@ -1617,7 +1613,6 @@ describe('getActionUrls', () => {
       'pkg2/thatsequence': 'https://localhost:3030/api/v1/web/fake_ns/pkg2/thatsequence'
     }
     config.ow.apihost = 'localhost:3030'
-    config.ow.apihostIsCustom = true
     delete config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web
     const result = utils.getActionUrls(config, false, true)
     expect(result).toEqual(expected)
@@ -1631,7 +1626,6 @@ describe('getActionUrls', () => {
       'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thataction',
       'pkg2/thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thatsequence'
     }
-    config.ow.apihostIsCustom = false
     delete config.manifest.full.packages.__APP_PACKAGE__.actions['action-zip'].web
     const result = utils.getActionUrls(config, true, false)
     expect(result).toEqual(expected)
@@ -1645,7 +1639,6 @@ describe('getActionUrls', () => {
       'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thataction',
       'pkg2/thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thatsequence'
     }
-    config.ow.apihostIsCustom = false
     config.manifest.full.packages.__APP_PACKAGE__.actions['action-zip'].web = false
     config.app.hasFrontend = false
     const result = utils.getActionUrls(config, false, false)
@@ -1661,9 +1654,7 @@ describe('getActionUrls', () => {
       'pkg2/thatsequence': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thatsequence'
     }
     config.ow.apihost = 'ow-custom.net'
-    config.ow.apihostIsCustom = true
     config.app.hostname = 'custom.net'
-    config.app.hostnameIsCustom = true
     config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = 'no'
     config.app.hasFrontend = false
     const result = utils.getActionUrls(config, false, false)
