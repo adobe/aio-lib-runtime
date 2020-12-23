@@ -89,7 +89,8 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
     deployedEntities.actions = deployedEntities.actions.map(action => {
       // in deployedEntities.actions, names are <package>/<action>
-      const url = actionUrlsFromManifest[action.name]
+      // in actionUrlsFromManifest, names are <package>-<action> to be consistent with build zip file name
+      const url = actionUrlsFromManifest[action.name.replace('/', '-')]
       if (url) {
         action.url = url
       }

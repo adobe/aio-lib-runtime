@@ -1731,7 +1731,7 @@ function checkOpenWhiskCredentials (config) {
  * @param isRemoteDev
  * @param isLocalDev
  */
-function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
+function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false, includeWithoutPkgName = false) {
   // set action urls
   // action urls {name: url}, if !LocalDev subdomain uses namespace
   const actionsAndSequences = {}
@@ -1739,27 +1739,39 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
     Object.entries(pkg.actions).forEach(([actionName, action]) => {
       actionsAndSequences[pkgName + '/' + actionName] = action
+      if (pkgName === config.ow.package && includeWithoutPkgName) {
+        actionsAndSequences[actionName] = action
+      }
     })
     Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
       actionsAndSequences[pkgName + '/' + actionName] = action
+      if (pkgName === config.ow.package && includeWithoutPkgName) {
+        actionsAndSequences[actionName] = action
+      }
     })
   })
   return Object.entries(actionsAndSequences).reduce((obj, [name, action]) => {
     const webArg = action['web-export'] || action.web
     const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
+    const actionKey = name.replace('/', '-') // For writing to config.json while being consistent with build zip file name
+    let fullName = name
+    if (name.indexOf('/') === -1) {
+      // Package name not included. Add it.
+      fullName = config.ow.package + '/' + name
+    }
     if (isLocalDev) {
       // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
-      obj[name] = urlJoin(config.ow.apihost, 'api', config.ow.apiversion, webUri, config.ow.namespace, name)
+      obj[actionKey] = urlJoin(config.ow.apihost, 'api', config.ow.apiversion, webUri, config.ow.namespace, fullName)
     } else if (isRemoteDev || !webUri || !config.app.hasFrontend) {
       // - if remote dev we don't care about same domain as the UI runs on localhost
       // - if action is non web it cannot be called from the UI and we can point directly to ApiHost domain
       // - if action has no UI no need to use the CDN url
       // NOTE this will not work for apihosts that do not support <ns>.apihost url
       // https://<ns>.adobeioruntime.net/api/v1/web/<package>/<action>
-      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.ow.apihost), 'api', config.ow.apiversion, webUri, name)
+      obj[actionKey] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.ow.apihost), 'api', config.ow.apiversion, webUri, fullName)
     } else {
       // https://<ns>.adobe-static.net/api/v1/web/<package>/<action>
-      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.app.hostname), 'api', config.ow.apiversion, webUri, name)
+      obj[actionKey] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.app.hostname), 'api', config.ow.apiversion, webUri, fullName)
     }
     return obj
   }, {})

@@ -1537,9 +1537,9 @@ describe('getActionUrls', () => {
 
   test('local dev false', () => {
     const expected = {
-      'sample-app-1.0.0/action': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
-      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
-      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip'
+      'sample-app-1.0.0-action': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
+      'sample-app-1.0.0-action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0-action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip'
     }
 
     const result = utils.getActionUrls(config, config.actions.devRemote, false)
@@ -1548,9 +1548,9 @@ describe('getActionUrls', () => {
 
   test('local dev true', () => {
     const expected = {
-      'sample-app-1.0.0/action': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
-      'sample-app-1.0.0/action-sequence': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-sequence',
-      'sample-app-1.0.0/action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
+      'sample-app-1.0.0-action': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
+      'sample-app-1.0.0-action-sequence': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0-action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
     }
     const result = utils.getActionUrls(config, config.actions.devRemote, true)
     expect(result).toEqual(expect.objectContaining(expected))
@@ -1558,13 +1558,33 @@ describe('getActionUrls', () => {
 
   test('web false', () => {
     const expected = {
-      'sample-app-1.0.0/action': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action',
-      'sample-app-1.0.0/action-sequence': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
-      'sample-app-1.0.0/action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
+      'sample-app-1.0.0-action': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action',
+      'sample-app-1.0.0-action-sequence': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0-action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
     }
     config.manifest.full.packages.__APP_PACKAGE__.actions.action.web = 'no'
     config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = false
     const result = utils.getActionUrls(config, config.actions.devRemote, true)
+    expect(result).toEqual(expect.objectContaining(expected))
+  })
+
+  test('multiple packages with includeWithoutPkgName = true', () => {
+    const multiConfig = cloneDeep(config)
+    multiConfig.manifest.full.packages.pkg2 = multiConfig.manifest.full.packages.__APP_PACKAGE__
+    const expected = {
+      'sample-app-1.0.0-action': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action',
+      'sample-app-1.0.0-action-sequence': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0-action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip',
+      action: 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action',
+      'action-sequence': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip',
+      'pkg2-action': 'https://adobeioruntime.net/api/v1/fake_ns/pkg2/action',
+      'pkg2-action-sequence': 'https://adobeioruntime.net/api/v1/fake_ns/pkg2/action-sequence',
+      'pkg2-action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/pkg2/action-zip'
+    }
+    multiConfig.manifest.full.packages.__APP_PACKAGE__.actions.action.web = 'no'
+    multiConfig.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = false
+    const result = utils.getActionUrls(multiConfig, config.actions.devRemote, true, true)
     expect(result).toEqual(expect.objectContaining(expected))
   })
 })
