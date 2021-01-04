@@ -72,13 +72,14 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     pkg.version = config.app.version
     for (const [name, action] of Object.entries(pkg.actions)) {
       // change path to built action
-      action.function = path.join(relDist, pkgName + '-' + name + '.zip')
+      const zipFileName = (modifiedConfig.ow.package === pkgName ? name : pkgName + '-' + name) + '.zip'
+      action.function = path.join(relDist, zipFileName)
     }
   }
 
   // 2. deploy manifest
   const deployedEntities = await deployWsk(
-    config,
+    modifiedConfig,
     manifest,
     log,
     filterEntities
@@ -171,7 +172,6 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
     })
   }
   /* END temporary workaround */
-
   // do the deployment, manifestPath and manifestContent needed for creating a project hash
   await utils.syncProject(packageName, manifestPath, manifestContent, entities, ow, logFunc, scriptConfig.imsOrgId, deleteOldEntities)
   return entities

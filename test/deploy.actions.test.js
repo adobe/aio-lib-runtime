@@ -43,12 +43,12 @@ const expectedDistManifest = {
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         },
         'action-zip': {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action-zip.zip'),
+          function: path.normalize('dist/actions/action-zip.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -146,6 +146,32 @@ test('deploy full manifest with package name specified', async () => {
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('bobby-mcgee', global.sampleAppConfig.manifest.src, { packages: expectedNamedPackage }, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
 })
 
+test('deploy full manifest with extra package present', async () => {
+  addSampleAppFiles()
+  runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
+
+  const buildDir = global.sampleAppConfig.actions.dist
+  // fake a previous build
+  const fakeFiles = {}
+  fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
+  fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
+  global.fakeFileSystem.addJson(fakeFiles)
+
+  const multiPackageConfig = deepCopy(global.sampleAppConfig)
+  multiPackageConfig.manifest.full.packages.extrapkg = deepCopy(multiPackageConfig.manifest.full.packages.__APP_PACKAGE__)
+  const expectedMultiDistManifest = deepCopy(expectedDistManifest)
+  expectedMultiDistManifest.packages.extrapkg = deepCopy(expectedMultiDistManifest.packages['sample-app-1.0.0'])
+  expectedMultiDistManifest.packages.extrapkg.actions.action.function = path.normalize('dist/actions/extrapkg-action.zip')
+  expectedMultiDistManifest.packages.extrapkg.actions['action-zip'].function = path.normalize('dist/actions/extrapkg-action-zip.zip')
+  await deployActions(multiPackageConfig)
+
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
+
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedMultiDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
+})
+
 test('use deployConfig.filterEntities to deploy only one action', async () => {
   addSampleAppFiles()
   runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
@@ -169,7 +195,7 @@ test('use deployConfig.filterEntities to deploy only one action', async () => {
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -208,7 +234,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action'
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -250,7 +276,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action 
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -298,7 +324,7 @@ test('use deployConfig.filterEntities to deploy only one action and one api', as
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -348,12 +374,12 @@ test('use deployConfig.filterEntities to deploy only two actions and one sequenc
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         },
         'action-zip': {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action-zip.zip'),
+          function: path.normalize('dist/actions/action-zip.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -432,7 +458,7 @@ test('use deployConfig.filterEntities on non existing pkgEntity should work', as
         version: '1.0.0',
         actions: {
           action: {
-            function: path.normalize('dist/actions/sample-app-reduced-1.0.0-action.zip'),
+            function: path.normalize('dist/actions/action.zip'),
             runtime: 'nodejs:12',
             web: 'yes'
           }
