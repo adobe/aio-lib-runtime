@@ -1632,7 +1632,7 @@ describe('getActionUrls', () => {
     expect(result).toEqual(expect.objectContaining(expected))
   })
 
-  test('some non web actions, same apihost without protocal, same hostname without protocol', () => {
+  test('some non web actions, same apihost without protocol, same hostname without protocol', () => {
     const expected = {
       action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
       'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
