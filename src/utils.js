@@ -1733,8 +1733,8 @@ function checkOpenWhiskCredentials (config) {
  */
 function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
   // sets action urls [{ name: url }]
-  const apihostIsCustom = !!config.ow.apihostIsCustom
-  const hostnameIsCustom = !!config.app.hostnameIsCustom
+  const apihostIsCustom = config.ow.apihost !== config.ow.defaultApihost
+  const hostnameIsCustom = config.app.hostname !== config.app.defaultHostname
 
   /** @private */
   function getActionUrl (actionName, action) {

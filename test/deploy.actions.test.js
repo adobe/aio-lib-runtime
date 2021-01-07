@@ -507,13 +507,13 @@ test('if actions are deployed and part of the manifest it should return their ur
   })
 
   // additional check for custom apihost urls
-  const returnedEntitiesCustomApihost = await deployActions({ ...global.sampleAppReducedConfig, ow: { ...global.sampleAppReducedConfig.ow, apihostIsCustom: true } })
+  const returnedEntitiesCustomApihost = await deployActions({ ...global.sampleAppReducedConfig, ow: { ...global.sampleAppReducedConfig.ow, apihost: 'custom.net' } })
   expect(returnedEntitiesCustomApihost).toEqual({
     actions: [
       {
         name: 'pkg/action',
         // with custom apihost there is no namespace sub domain
-        url: 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-reduced-1.0.0/action'
+        url: 'https://custom.net/api/v1/web/fake_ns/sample-app-reduced-1.0.0/action'
       },
       { name: 'pkg/actionNotInManifest' }
     ]
