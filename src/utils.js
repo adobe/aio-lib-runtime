@@ -1823,22 +1823,6 @@ function removeProtocolFromURL (url) {
   return url.replace(/(^\w+:|^)\/\//, '')
 }
 
-function replacePackagePlaceHolder (config) {
-  const modifiedConfig = cloneDeep(config)
-  const packages = modifiedConfig.manifest.full.packages
-  const packagePlaceholder = modifiedConfig.manifest.packagePlaceholder
-  if (packages[packagePlaceholder]) {
-    packages[config.ow.package] = packages[packagePlaceholder]
-    delete packages[packagePlaceholder]
-  } else {
-    // Using custom package name.
-    // Set config.ow.package so that syncProject can use it as project name for annotations.
-    const packageNames = Object.keys(packages)
-    config.ow.package = packageNames[0]
-  }
-  return modifiedConfig
-}
-
 /**
  * Checks the validity of nodejs version in action definition and throws an error if invalid.
  *
@@ -1897,6 +1881,5 @@ module.exports = {
   urlJoin,
   removeProtocolFromURL,
   zip,
-  replacePackagePlaceHolder,
   validateActionRuntime
 }

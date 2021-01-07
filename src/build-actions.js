@@ -18,13 +18,13 @@ const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime
 
 // need config.root
 // config.actions.dist
-const buildAction = async (packageName, actionName, action, root, dist) => {
+const buildAction = async (name, action, root, dist) => {
   // const actionPath = path.isAbsolute(action.function) ? action.function : path.join(root, action.function)
   // note: it does not seem to be possible to get here with an absolute path ...
   const actionPath = path.join(root, action.function)
 
-  const outPath = path.join(dist, `${packageName}-${actionName}.zip`)
-  const tempBuildDir = path.join(path.dirname(outPath), `${packageName}-${actionName}-temp`) // build all to tempDir first
+  const outPath = path.join(dist, `${name}.zip`)
+  const tempBuildDir = path.join(path.dirname(outPath), `${name}-temp`) // build all to tempDir first
   const actionFileStats = fs.lstatSync(actionPath)
 
   // make sure temp/ exists
@@ -123,28 +123,28 @@ const buildActions = async (config, filterActions) => {
   if (!config.app.hasBackend) {
     throw new Error('cannot build actions, app has no backend')
   }
-  if (filterActions) {
-    // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
-    filterActions = filterActions.map((actionName) => actionName.indexOf('/') === -1 ? config.ow.package + '/' + actionName : actionName)
-  }
   // clear out dist dir
   fs.emptyDirSync(config.actions.dist)
-  const modifiedConfig = utils.replacePackagePlaceHolder(config)
-  const builtList = []
-  for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
-    const actionsToBuild = Object.entries(pkg.actions)
 
-    // build all sequentially (todo make bundler execution parallel)
-    for (const [actionName, action] of actionsToBuild) {
-      const actionFullName = pkgName + '/' + actionName
-      if (Array.isArray(filterActions) && !filterActions.includes(actionFullName)) {
-        continue
-      }
-      // const out =  // todo: log output of each action as it is built
-      // need config.root
-      // config.actions.dist
-      builtList.push(await buildAction(pkgName, actionName, action, config.root, config.actions.dist))
-    }
+  let packageToBuild = config.manifest.package
+  // which actions to build, check filter
+  if (!packageToBuild) {
+    const firstPkgName = Object.keys(config.manifest.full.packages)[0]
+    packageToBuild = config.manifest.full.packages[firstPkgName]
+  }
+  // todo: build ALL actions of ALL packages
+  let actionsToBuild = Object.entries(packageToBuild.actions)
+  if (Array.isArray(filterActions)) {
+    actionsToBuild = actionsToBuild.filter(([name, value]) => filterActions.includes(name))
+  }
+
+  const builtList = []
+  // build all sequentially (todo make bundler execution parallel)
+  for (const [name, action] of actionsToBuild) {
+    // const out =  // todo: log output of each action as it is built
+    // need config.root
+    // config.actions.dist
+    builtList.push(await buildAction(name, action, config.root, config.actions.dist))
   }
   return builtList
 }

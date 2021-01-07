@@ -16,8 +16,6 @@ const path = require('path')
 const deepCopy = require('lodash.clonedeep')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:deploy', { provider: 'debug' })
 const IOruntime = require('./RuntimeAPI')
-const packageItems = ['actions', 'sequences']
-const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...packageItems]
 
 /**
  * runs the command
@@ -54,26 +52,28 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     throw new Error(`missing files in ${utils._relApp(config.root, dist)}, maybe you forgot to build your actions ?`)
   }
 
-  const filterEntities = deployConfig.filterEntities
-  if (deployConfig.filterEntities) {
-    // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
-    packageItems.forEach((k) => {
-      if (deployConfig.filterEntities[k]) {
-        filterEntities[k] = deployConfig.filterEntities[k].map((actionName) => actionName.indexOf('/') === -1 ? config.ow.package + '/' + actionName : actionName)
-      }
-    })
+  // 1. rewrite wskManifest config
+  const manifest = deepCopy(config.manifest.full)
+  let manifestPackage = manifest.packages[config.manifest.packagePlaceholder]
+  const usingCustomPackageName = !manifestPackage
+  if (usingCustomPackageName) {
+    const packageNames = Object.keys(manifest.packages)
+    manifestPackage = manifest.packages[packageNames[0]]
+    config.ow.package = packageNames[0]
+    // this is needed for getActionUrls not to fail
+    config.manifest.package = config.manifest.full.packages[packageNames[0]]
   }
 
-  // 1. rewrite wskManifest config
-  const modifiedConfig = utils.replacePackagePlaceHolder(config)
-  const manifest = modifiedConfig.manifest.full
+  manifestPackage.version = config.app.version
   const relDist = utils._relApp(config.root, config.actions.dist)
-  for (const [pkgName, pkg] of Object.entries(manifest.packages)) {
-    pkg.version = config.app.version
-    for (const [name, action] of Object.entries(pkg.actions)) {
-      // change path to built action
-      action.function = path.join(relDist, pkgName + '-' + name + '.zip')
-    }
+  await Promise.all(Object.entries(manifestPackage.actions).map(async ([name, action]) => {
+    // change path to built action
+    action.function = path.join(relDist, name + '.zip')
+  }))
+  if (!usingCustomPackageName) {
+    // replace package name
+    manifest.packages[config.ow.package] = manifest.packages[config.manifest.packagePlaceholder]
+    delete manifest.packages[config.manifest.packagePlaceholder]
   }
 
   // 2. deploy manifest
@@ -81,7 +81,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     config,
     manifest,
     log,
-    filterEntities
+    deployConfig.filterEntities
   )
 
   // enrich actions array with urls
@@ -89,7 +89,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
     deployedEntities.actions = deployedEntities.actions.map(action => {
       // in deployedEntities.actions, names are <package>/<action>
-      const url = actionUrlsFromManifest[action.name]
+      const url = actionUrlsFromManifest[action.name.split('/')[1]]
       if (url) {
         action.url = url
       }
@@ -121,12 +121,11 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
    * @param pkgEntity
    * @param filter
    */
-  function _filterOutPackageEntity (pkgName, pkgEntity, filterItems, fullNameCheck) {
-    filterItems = filterItems || []
+  function _filterOutPackageEntity (pkgEntity, filter) {
+    filter = filter || []
     pkgEntity = pkgEntity || {}
-    // We check the full name (<packageName>/<actionName>) for actions and sequences
     return Object.keys(pkgEntity)
-      .filter(name => fullNameCheck ? filterItems.includes(pkgName + '/' + name) : filterItems.includes(name))
+      .filter(name => filter.includes(name))
       .reduce((obj, key) => { obj[key] = pkgEntity[key]; return obj }, {})
   }
 
@@ -140,13 +139,13 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
   if (typeof filterEntities === 'object') {
     deleteOldEntities = false // don't delete any deployed entity
 
-    filterableItems.forEach(k => {
-      Object.entries(packages).forEach(([pkgName, pkg]) => {
-        pkg[k] = _filterOutPackageEntity(pkgName, pkg[k], filterEntities[k], packageItems.includes(k))
-        // cleanup empty entities
-        if (Object.keys(pkg[k]).length === 0) delete pkg[k]
-      })
+    const keys = ['actions', 'apis', 'triggers', 'rules', 'sequences', 'dependencies']
+    keys.forEach(k => {
+      packages[packageName][k] = _filterOutPackageEntity(packages[packageName][k], filterEntities[k])
+      // cleanup empty entities
+      if (Object.keys(packages[packageName][k]).length === 0) delete packages[packageName][k]
     })
+
     // todo filter out packages, like auth package
   }
 

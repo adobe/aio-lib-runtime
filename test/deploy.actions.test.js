@@ -43,12 +43,12 @@ const expectedDistManifest = {
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         },
         'action-zip': {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action-zip.zip'),
+          function: path.normalize('dist/actions/action-zip.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -124,10 +124,7 @@ test('deploy full manifest with package name specified', async () => {
   runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
 
   const expectedNamedPackage = {
-    'bobby-mcgee': deepCopy(expectedDistManifest.packages['sample-app-1.0.0'])
-  }
-  for (const actionTuple of Object.entries(expectedNamedPackage['bobby-mcgee'].actions)) {
-    actionTuple[1].function = actionTuple[1].function.replace(/sample-app-1.0.0/g, 'bobby-mcgee')
+    'bobby-mcgee': expectedDistManifest.packages['sample-app-1.0.0']
   }
 
   const buildDir = global.namedPackageConfig.actions.dist
@@ -169,7 +166,7 @@ test('use deployConfig.filterEntities to deploy only one action', async () => {
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -208,7 +205,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action'
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -238,7 +235,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action 
 
   await deployActions(global.sampleAppConfig, {
     filterEntities: {
-      actions: ['sample-app-1.0.0/action'],
+      actions: ['action'],
       triggers: ['trigger1'],
       rules: ['rule1']
     }
@@ -250,7 +247,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action 
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -298,7 +295,7 @@ test('use deployConfig.filterEntities to deploy only one action and one api', as
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -348,12 +345,12 @@ test('use deployConfig.filterEntities to deploy only two actions and one sequenc
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action.zip'),
+          function: path.normalize('dist/actions/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         },
         'action-zip': {
-          function: path.normalize('dist/actions/sample-app-1.0.0-action-zip.zip'),
+          function: path.normalize('dist/actions/action-zip.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -432,7 +429,7 @@ test('use deployConfig.filterEntities on non existing pkgEntity should work', as
         version: '1.0.0',
         actions: {
           action: {
-            function: path.normalize('dist/actions/sample-app-reduced-1.0.0-action.zip'),
+            function: path.normalize('dist/actions/action.zip'),
             runtime: 'nodejs:12',
             web: 'yes'
           }
@@ -484,8 +481,8 @@ test('if actions are deployed and part of the manifest it should return their ur
   // mock deployed entities
   runtimeLibUtils.processPackage.mockReturnValue({
     actions: [
-      { name: 'sample-app-reduced-1.0.0/action' }, // must be referenced in fixture manifest file
-      { name: 'sample-app-reduced-1.0.0/actionNotInManifest' }
+      { name: 'pkg/action' }, // must be referenced in fixture manifest file
+      { name: 'pkg/actionNotInManifest' }
     ]
   })
 
@@ -502,7 +499,7 @@ test('if actions are deployed and part of the manifest it should return their ur
         // no UI in sample-app-reduced so url is pointing to adobeioruntime instead of cdn
         url: 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-reduced-1.0.0/action'
       },
-      { name: 'sample-app-reduced-1.0.0/actionNotInManifest' }
+      { name: 'pkg/actionNotInManifest' }
     ]
   })
 
@@ -526,8 +523,8 @@ test('if actions are deployed with custom package and part of the manifest it sh
   // mock deployed entities
   runtimeLibUtils.processPackage.mockReturnValue({
     actions: [
-      { name: 'bobby-mcgee/action' }, // must be referenced in fixture manifest file
-      { name: 'bobby-mcgee/actionNotInManifest' }
+      { name: 'pkg/action' }, // must be referenced in fixture manifest file
+      { name: 'pkg/actionNotInManifest' }
     ]
   })
 
@@ -540,10 +537,10 @@ test('if actions are deployed with custom package and part of the manifest it sh
   expect(returnedEntities).toEqual({
     actions: [
       {
-        name: 'bobby-mcgee/action',
+        name: 'pkg/action',
         url: 'https://fake_ns.adobeio-static.net/api/v1/web/bobby-mcgee/action'
       },
-      { name: 'bobby-mcgee/actionNotInManifest' }
+      { name: 'pkg/actionNotInManifest' }
     ]
   })
 })
