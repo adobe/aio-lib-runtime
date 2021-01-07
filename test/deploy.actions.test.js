@@ -499,21 +499,8 @@ test('if actions are deployed and part of the manifest it should return their ur
     actions: [
       {
         name: 'sample-app-reduced-1.0.0/action',
-        // no UI in sample-app-reduced so url is pointing to adobeioruntime instead of cdn
+        // no UI in sample-app reduced so url is pointing to adobeioruntime instead of cdn
         url: 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-reduced-1.0.0/action'
-      },
-      { name: 'sample-app-reduced-1.0.0/actionNotInManifest' }
-    ]
-  })
-
-  // additional check for custom apihost urls
-  const returnedEntitiesCustomApihost = await deployActions({ ...global.sampleAppReducedConfig, ow: { ...global.sampleAppReducedConfig.ow, apihost: 'custom.net' } })
-  expect(returnedEntitiesCustomApihost).toEqual({
-    actions: [
-      {
-        name: 'sample-app-reduced-1.0.0/action',
-        // with custom apihost there is no namespace sub domain
-        url: 'https://custom.net/api/v1/web/fake_ns/sample-app-reduced-1.0.0/action'
       },
       { name: 'sample-app-reduced-1.0.0/actionNotInManifest' }
     ]

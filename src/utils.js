@@ -1727,69 +1727,15 @@ function checkOpenWhiskCredentials (config) {
 }
 
 /**
- * @param appConfig
+ * @param config
  * @param isRemoteDev
  * @param isLocalDev
  */
 function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
-  // sets action urls [{ name: url }]
-  const config = replacePackagePlaceHolder(appConfig)
-  const apihostIsCustom = config.ow.apihost !== config.ow.defaultApihost
-  const hostnameIsCustom = config.app.hostname !== config.app.defaultHostname
-
-  /** @private */
-  function getActionUrl (pkgAndActionName, action) {
-    const webArg = action['web-export'] || action.web
-    const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
-    // - if local dev runtime actions are served locally so CDN cannot point to them
-    // - if remote dev the UI runs on localhost so the action should not be served behind the CDN
-    // - if action is non web it cannot be called from the UI and we can point directly to ApiHost domain
-    // - if action has no UI no need to use the CDN url
-    const actionIsBehindCdn = !isLocalDev && !isRemoteDev && webUri && config.app.hasFrontend
-    // if the apihost is custom but no custom hostname is provided then CDN should not be used
-    const customApihostButNoCustomHostname = apihostIsCustom && !hostnameIsCustom
-
-    if (actionIsBehindCdn && !customApihostButNoCustomHostname) {
-      // https://<ns>.adobe-static.net/api/v1/web/<package>/<action></action>
-      // or https://<ns>.custom-hostname.xyz/api/v1/web/<package>/<action></action>
-      return urlJoin(
-        'https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.app.hostname),
-        'api',
-        config.ow.apiversion,
-        webUri,
-        pkgAndActionName
-      )
-    } else if (
-      isLocalDev ||
-      (!actionIsBehindCdn && apihostIsCustom) ||
-      (actionIsBehindCdn && customApihostButNoCustomHostname)
-    ) {
-      // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
-      // or http://custom-ow-host.xyz/api/v1/web/<ns>/<package>/<action>
-      return urlJoin(
-        'https://',
-        removeProtocolFromURL(config.ow.apihost),
-        'api',
-        config.ow.apiversion,
-        webUri,
-        config.ow.namespace,
-        pkgAndActionName
-      )
-    } else {
-      // if (!actionIsBehindCdn && !apihostIsCustom)
-      // https://<ns>.adobeioruntime.net/api/v1/web/<package>/<action>
-      return urlJoin(
-        'https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.ow.apihost),
-        'api',
-        config.ow.apiversion,
-        webUri,
-        pkgAndActionName
-      )
-    }
-  }
-
-  // populate urls
+  // set action urls
+  // action urls {name: url}, if !LocalDev subdomain uses namespace
   const actionsAndSequences = {}
+  const config = replacePackagePlaceHolder(appConfig)
   Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
     Object.entries(pkg.actions).forEach(([actionName, action]) => {
       actionsAndSequences[pkgName + '/' + actionName] = action
@@ -1798,11 +1744,25 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
       actionsAndSequences[pkgName + '/' + actionName] = action
     })
   })
-  const urls = {}
-  Object.entries(actionsAndSequences).forEach(([pkgAndActionName, action]) => {
-    urls[pkgAndActionName] = getActionUrl(pkgAndActionName, action)
-  })
-  return urls
+  return Object.entries(actionsAndSequences).reduce((obj, [name, action]) => {
+    const webArg = action['web-export'] || action.web
+    const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
+    if (isLocalDev) {
+      // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
+      obj[name] = urlJoin(config.ow.apihost, 'api', config.ow.apiversion, webUri, config.ow.namespace, name)
+    } else if (isRemoteDev || !webUri || !config.app.hasFrontend) {
+      // - if remote dev we don't care about same domain as the UI runs on localhost
+      // - if action is non web it cannot be called from the UI and we can point directly to ApiHost domain
+      // - if action has no UI no need to use the CDN url
+      // NOTE this will not work for apihosts that do not support <ns>.apihost url
+      // https://<ns>.adobeioruntime.net/api/v1/web/<package>/<action>
+      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.ow.apihost), 'api', config.ow.apiversion, webUri, name)
+    } else {
+      // https://<ns>.adobe-static.net/api/v1/web/<package>/<action>
+      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.app.hostname), 'api', config.ow.apiversion, webUri, name)
+    }
+    return obj
+  }, {})
 }
 
 /**

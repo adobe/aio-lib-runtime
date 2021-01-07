@@ -118,15 +118,12 @@ global.fakeS3Bucket = 'fake-bucket'
 global.fakeConfig = {
   tvm: {
     runtime: {
-      defaultApihost: 'https://adobeioruntime.net',
-      apihost: 'https://adobeioruntime.net',
       namespace: 'fake_ns',
       auth: 'fake:auth'
     }
   },
   local: {
     runtime: {
-      defaultApihost: 'https://adobeioruntime.net',
       // those must match the once set by dev cmd
       apihost: 'http://localhost:3233',
       namespace: 'guest',
@@ -135,14 +132,10 @@ global.fakeConfig = {
   },
   creds: {
     runtime: {
-      defaultApihost: 'https://adobeioruntime.net',
-      apihost: 'https://adobeioruntime.net',
       namespace: 'fake_ns',
       auth: 'fake:auth'
     },
     cna: {
-      defaultHostname: 'adobeio-static.net',
-      hostname: 'adobeio-static.net',
       s3bucket: 'customBucket',
       awsaccesskeyid: 'fakeAwsKeyId',
       awssecretaccesskey: 'fakeAwsSecretKey'
@@ -170,7 +163,6 @@ global.sampleAppConfig = {
     hasBackend: true,
     version: '1.0.0',
     name: 'sample-app',
-    defaultHostname: 'adobeio-static.net',
     hostname: 'adobeio-static.net',
     htmlCacheDuration: '60',
     jsCacheDuration: '604800',
@@ -180,7 +172,6 @@ global.sampleAppConfig = {
   ow: {
     namespace: 'fake_ns',
     auth: 'fake:auth',
-    defaultApihost: 'https://adobeioruntime.net',
     apihost: 'https://adobeioruntime.net',
     apiversion: 'v1',
     package: 'sample-app-1.0.0'
@@ -269,7 +260,6 @@ global.sampleAppIncludesConfig = {
     hasBackend: true,
     version: '1.0.0',
     name: 'sample-app-include',
-    defaultHostname: 'adobeio-static.net',
     hostname: 'adobeio-static.net',
     htmlCacheDuration: '60',
     jsCacheDuration: '604800',
@@ -280,7 +270,6 @@ global.sampleAppIncludesConfig = {
     namespace: 'fake_ns',
     auth: 'fake:auth',
     apihost: 'https://adobeioruntime.net',
-    defaultApihost: 'https://adobeioruntime.net',
     apiversion: 'v1',
     package: 'sample-app-include-1.0.0'
   },
@@ -334,7 +323,6 @@ global.namedPackageConfig = {
     hasBackend: true,
     version: '1.0.0',
     name: 'sample-app',
-    defaultHostname: 'adobeio-static.net',
     hostname: 'adobeio-static.net',
     htmlCacheDuration: '60',
     jsCacheDuration: '604800',
@@ -345,7 +333,6 @@ global.namedPackageConfig = {
     namespace: 'fake_ns',
     auth: 'fake:auth',
     apihost: 'https://adobeioruntime.net',
-    defaultApihost: 'https://adobeioruntime.net',
     apiversion: 'v1',
     package: 'sample-app-1.0.0'
   },
@@ -407,7 +394,6 @@ global.sampleAppReducedConfig = {
     hasBackend: true,
     version: '1.0.0',
     name: 'sample-app-reduced',
-    defaultHostname: 'adobeio-static.net',
     hostname: 'adobeio-static.net',
     htmlCacheDuration: '60',
     jsCacheDuration: '604800',
@@ -418,7 +404,6 @@ global.sampleAppReducedConfig = {
     namespace: 'fake_ns',
     auth: 'fake:auth',
     apihost: 'https://adobeioruntime.net',
-    defaultApihost: 'https://adobeioruntime.net',
     apiversion: 'v1',
     package: 'sample-app-reduced-1.0.0'
   },
