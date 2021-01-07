@@ -1553,7 +1553,6 @@ describe('getActionUrls', () => {
       'action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip'
     }
     config.app.hostname = 'custom.net'
-    config.app.hostnameIsCustom = true
     config.manifest.package.actions.action.web = 'no'
     const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expect.objectContaining(expected))
@@ -1566,9 +1565,7 @@ describe('getActionUrls', () => {
       'action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip'
     }
     config.ow.apihost = 'ow-custom.net'
-    config.ow.apihostIsCustom = true
     config.app.hostname = 'custom.net'
-    config.app.hostnameIsCustom = true
     config.manifest.package.sequences['action-sequence'].web = 'no'
     const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expect.objectContaining(expected))
@@ -1581,7 +1578,6 @@ describe('getActionUrls', () => {
       'action-zip': 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
     }
     config.ow.apihost = 'ow-custom.net'
-    config.ow.apihostIsCustom = true
     config.manifest.package.sequences['action-sequence'].web = false
     const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expect.objectContaining(expected))
@@ -1594,7 +1590,6 @@ describe('getActionUrls', () => {
       'action-zip': 'https://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
     }
     config.ow.apihost = 'localhost:3030'
-    config.ow.apihostIsCustom = true
     delete config.manifest.package.sequences['action-sequence'].web
     const result = utils.getActionUrls(config, false, true)
     expect(result).toEqual(expect.objectContaining(expected))
@@ -1606,7 +1601,6 @@ describe('getActionUrls', () => {
       'action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action-sequence',
       'action-zip': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-zip'
     }
-    config.ow.apihostIsCustom = false
     delete config.manifest.package.actions['action-zip'].web
     const result = utils.getActionUrls(config, true, false)
     expect(result).toEqual(expect.objectContaining(expected))
@@ -1618,7 +1612,6 @@ describe('getActionUrls', () => {
       'action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action-sequence',
       'action-zip': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-zip'
     }
-    config.ow.apihostIsCustom = false
     config.manifest.package.actions['action-zip'].web = false
     config.app.hasFrontend = false
     const result = utils.getActionUrls(config, false, false)
@@ -1632,11 +1625,22 @@ describe('getActionUrls', () => {
       'action-zip': 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
     }
     config.ow.apihost = 'ow-custom.net'
-    config.ow.apihostIsCustom = true
     config.app.hostname = 'custom.net'
-    config.app.hostnameIsCustom = true
     config.manifest.package.sequences['action-sequence'].web = 'no'
     config.app.hasFrontend = false
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expect.objectContaining(expected))
+  })
+
+  test('some non web actions, same apihost without protocal, same hostname without protocol', () => {
+    const expected = {
+      action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
+      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip'
+    }
+    config.ow.apihost = 'adobeioruntime.net'
+    config.app.hostname = 'adobeio-static.net'
+    config.manifest.package.actions.action.web = false
     const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expect.objectContaining(expected))
   })

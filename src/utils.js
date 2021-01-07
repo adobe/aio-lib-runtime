@@ -1733,8 +1733,10 @@ function checkOpenWhiskCredentials (config) {
  */
 function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
   // sets action urls [{ name: url }]
-  const apihostIsCustom = config.ow.apihost !== config.ow.defaultApihost
-  const hostnameIsCustom = config.app.hostname !== config.app.defaultHostname
+  const cleanApihost = removeProtocolFromURL(config.ow.apihost)
+  const cleanHostname = removeProtocolFromURL(config.app.hostname)
+  const apihostIsCustom = cleanApihost !== removeProtocolFromURL(config.ow.defaultApihost)
+  const hostnameIsCustom = cleanHostname !== removeProtocolFromURL(config.app.defaultHostname)
 
   /** @private */
   function getActionUrl (actionName, action) {
@@ -1752,7 +1754,7 @@ function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, 
       // https://<ns>.adobe-static.net/api/v1/web/<package>/<action></action>
       // or https://<ns>.custom-hostname.xyz/api/v1/web/<package>/<action></action>
       return urlJoin(
-        'https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.app.hostname),
+        'https://' + config.ow.namespace + '.' + cleanHostname,
         'api',
         config.ow.apiversion,
         webUri,
@@ -1768,7 +1770,7 @@ function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, 
       // or http://custom-ow-host.xyz/api/v1/web/<ns>/<package>/<action>
       return urlJoin(
         'https://',
-        removeProtocolFromURL(config.ow.apihost),
+        cleanApihost,
         'api',
         config.ow.apiversion,
         webUri,
@@ -1780,7 +1782,7 @@ function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, 
       // if (!actionIsBehindCdn && !apihostIsCustom)
       // https://<ns>.adobeioruntime.net/api/v1/web/<package>/<action>
       return urlJoin(
-        'https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.ow.apihost),
+        'https://' + config.ow.namespace + '.' + cleanApihost,
         'api',
         config.ow.apiversion,
         webUri,
