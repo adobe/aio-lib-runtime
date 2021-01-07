@@ -1738,6 +1738,13 @@ function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, 
   const apihostIsCustom = cleanApihost !== removeProtocolFromURL(config.ow.defaultApihost)
   const hostnameIsCustom = cleanHostname !== removeProtocolFromURL(config.app.defaultHostname)
 
+  let pkg = config.manifest.package
+  if (!pkg) {
+    // package is custom named
+    const packageNames = Object.keys(config.manifest.full.packages)
+    pkg = config.manifest.full.packages[packageNames[0]]
+  }
+
   /** @private */
   function getActionUrl (actionName, action) {
     const webArg = action['web-export'] || action.web
@@ -1794,8 +1801,8 @@ function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, 
 
   // populate urls
   const actionsAndSequences = {
-    ...config.manifest.package.actions,
-    ...(config.manifest.package.sequences || {})
+    ...pkg.actions,
+    ...(pkg.sequences || {})
   }
   const urls = {}
   Object.entries(actionsAndSequences).forEach(([actionName, action]) => {
