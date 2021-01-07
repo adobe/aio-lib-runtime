@@ -1660,6 +1660,22 @@ describe('getActionUrls', () => {
     const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expected)
   })
+
+  test('some non web actions, same apihost without protocal, same hostname without protocol', () => {
+    const expected = {
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'adobeioruntime.net'
+    config.app.hostname = 'adobeio-static.net'
+    config.manifest.full.packages.__APP_PACKAGE__.actions.action.web = false
+    config.manifest.full.packages.pkg2.actions.thataction.web = 'no'
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expect.objectContaining(expected))
+  })
 })
 
 describe('_absApp', () => {
