@@ -91,7 +91,12 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     deployedEntities.actions = deployedEntities.actions.map(action => {
       // in deployedEntities.actions, names are <package>/<action>
       // in actionUrlsFromManifest, names are <package>-<action> to be consistent with build zip file name
-      const url = actionUrlsFromManifest[action.name.replace('/', '-')]
+      let actionKey = action.name.replace('/', '-')
+
+      // Also, the key in actionUrlsFromManifest would not have pkg name for actions in default package
+      actionKey = actionKey.replace(modifiedConfig.ow.package + '-', '')
+
+      const url = actionUrlsFromManifest[actionKey]
       if (url) {
         action.url = url
       }
