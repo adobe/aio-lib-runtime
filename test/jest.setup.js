@@ -354,7 +354,7 @@ global.namedPackageConfig = {
     apihost: 'https://adobeioruntime.net',
     defaultApihost: 'https://adobeioruntime.net',
     apiversion: 'v1',
-    package: 'sample-app-1.0.0'
+    package: undefined
   },
   s3: {
     credsCacheFile: '/.aws.tmp.creds.json',

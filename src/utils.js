@@ -1739,10 +1739,12 @@ function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, 
   const hostnameIsCustom = cleanHostname !== removeProtocolFromURL(config.app.defaultHostname)
 
   let pkg = config.manifest.package
+  let pkgName = config.ow.package
   if (!pkg) {
     // package is custom named
     const packageNames = Object.keys(config.manifest.full.packages)
-    pkg = config.manifest.full.packages[packageNames[0]]
+    pkgName = packageNames[0]
+    pkg = config.manifest.full.packages[pkgName]
   }
 
   /** @private */
@@ -1765,7 +1767,7 @@ function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, 
         'api',
         config.ow.apiversion,
         webUri,
-        config.ow.package,
+        pkgName,
         actionName
       )
     } else if (
@@ -1782,7 +1784,7 @@ function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, 
         config.ow.apiversion,
         webUri,
         config.ow.namespace,
-        config.ow.package,
+        pkgName,
         actionName
       )
     } else {
@@ -1793,7 +1795,7 @@ function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, 
         'api',
         config.ow.apiversion,
         webUri,
-        config.ow.package,
+        pkgName,
         actionName
       )
     }

@@ -1645,13 +1645,13 @@ describe('getActionUrls', () => {
     expect(result).toEqual(expect.objectContaining(expected))
   })
 
-  test('config.manifest.package is not defined, should take the first package in the full manifest', () => {
+  test('package name is custom, should take the first package in the full manifest', () => {
     const expected = {
-      action: 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
-      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
-      'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip'
+      action: 'https://fake_ns.adobeio-static.net/api/v1/web/bobby-mcgee/action',
+      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/bobby-mcgee/action-sequence',
+      'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/bobby-mcgee/action-zip'
     }
-    config.manifest.package = undefined
+    config = cloneDeep(global.namedPackageConfig)
     const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expect.objectContaining(expected))
   })
