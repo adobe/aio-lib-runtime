@@ -1776,9 +1776,9 @@ function getActionUrls (config, /* istanbul ignore next */ isRemoteDev = false, 
       (actionIsBehindCdn && customApihostButNoCustomHostname)
     ) {
       // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
-      // or http://custom-ow-host.xyz/api/v1/web/<ns>/<package>/<action>
+      // or https://custom-ow-host.xyz/api/v1/web/<ns>/<package>/<action>
       return urlJoin(
-        'https://',
+        isLocalDev ? 'http://' : 'https://',
         cleanApihost,
         'api',
         config.ow.apiversion,
