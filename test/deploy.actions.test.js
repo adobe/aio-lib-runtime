@@ -161,8 +161,8 @@ test('deploy full manifest with extra package present', async () => {
   multiPackageConfig.manifest.full.packages.extrapkg = deepCopy(multiPackageConfig.manifest.full.packages.__APP_PACKAGE__)
   const expectedMultiDistManifest = deepCopy(expectedDistManifest)
   expectedMultiDistManifest.packages.extrapkg = deepCopy(expectedMultiDistManifest.packages['sample-app-1.0.0'])
-  expectedMultiDistManifest.packages.extrapkg.actions.action.function = path.normalize('dist/actions/extrapkg-action.zip')
-  expectedMultiDistManifest.packages.extrapkg.actions['action-zip'].function = path.normalize('dist/actions/extrapkg-action-zip.zip')
+  expectedMultiDistManifest.packages.extrapkg.actions.action.function = path.normalize('dist/actions/extrapkg/action.zip')
+  expectedMultiDistManifest.packages.extrapkg.actions['action-zip'].function = path.normalize('dist/actions/extrapkg/action-zip.zip')
   await deployActions(multiPackageConfig)
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)

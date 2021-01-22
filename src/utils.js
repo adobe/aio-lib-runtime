@@ -1802,30 +1802,21 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   const actionsAndSequences = {}
   Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
     Object.entries(pkg.actions).forEach(([actionName, action]) => {
-      if (pkgName === config.ow.package) {
-        actionsAndSequences[actionName] = action
-      } else {
-        actionsAndSequences[pkgName + '/' + actionName] = action
-      }
+      actionsAndSequences[getActionZipFileName(pkgName, actionName, pkgName === config.ow.package)] = action
     })
     Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
-      if (pkgName === config.ow.package) {
-        actionsAndSequences[actionName] = action
-      } else {
-        actionsAndSequences[pkgName + '/' + actionName] = action
-      }
+      actionsAndSequences[getActionZipFileName(pkgName, actionName, pkgName === config.ow.package)] = action
     })
   })
   const urls = {}
   Object.entries(actionsAndSequences).forEach(([pkgAndActionName, action]) => {
-    const actionKey = pkgAndActionName.replace('/', '-') // For writing to config.json while being consistent with build zip file name
     let fullNameInURL = pkgAndActionName
     if (pkgAndActionName.indexOf('/') === -1) {
-      // pkg not included in pkgAndActionName since this is the extra key to be added in config.json.
+      // pkg not included in pkgAndActionName since this is from the default package
       // But the pkg name is required to construct the URL
       fullNameInURL = config.ow.package + '/' + pkgAndActionName
     }
-    urls[actionKey] = getActionUrl(fullNameInURL, action)
+    urls[pkgAndActionName] = getActionUrl(fullNameInURL, action)
   })
   return urls
 }
@@ -1881,6 +1872,17 @@ function validateActionRuntime (action) {
   }
 }
 
+/**
+ * Returns the action's build file name without the .zip extension
+ *
+ * @param {string} pkgName name of the package
+ * @param {string} actionName name of the action
+ * @param {boolean} defaultPkg true if pkgName is the default/first package
+ */
+function getActionZipFileName (pkgName, actionName, defaultPkg) {
+  return defaultPkg ? actionName : pkgName + '/' + actionName
+}
+
 module.exports = {
   checkOpenWhiskCredentials,
   getActionEntryFile,
@@ -1926,5 +1928,6 @@ module.exports = {
   removeProtocolFromURL,
   zip,
   replacePackagePlaceHolder,
-  validateActionRuntime
+  validateActionRuntime,
+  getActionZipFileName
 }

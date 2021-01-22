@@ -460,10 +460,10 @@ test('non default package present in manifest', async () => {
   const config = deepClone(global.sampleAppConfig)
   config.manifest.full.packages.extrapkg = deepClone(config.manifest.full.packages.__APP_PACKAGE__)
   await buildActions(config)
-  expect(utils.zip).toHaveBeenNthCalledWith(1, expect.stringContaining(path.normalize('/dist/actions/extrapkg-action-temp')),
-    path.normalize('/dist/actions/extrapkg-action.zip'))
-  expect(utils.zip).toHaveBeenNthCalledWith(2, expect.stringContaining(path.normalize('/dist/actions/extrapkg-action-zip-temp')),
-    path.normalize('/dist/actions/extrapkg-action-zip.zip'))
+  expect(utils.zip).toHaveBeenNthCalledWith(1, expect.stringContaining(path.normalize('/dist/actions/extrapkg/action-temp')),
+    path.normalize('/dist/actions/extrapkg/action.zip'))
+  expect(utils.zip).toHaveBeenNthCalledWith(2, expect.stringContaining(path.normalize('/dist/actions/extrapkg/action-zip-temp')),
+    path.normalize('/dist/actions/extrapkg/action-zip.zip'))
   expect(utils.zip).toHaveBeenNthCalledWith(3, expect.stringContaining(path.normalize('/dist/actions/action-temp')),
     path.normalize('/dist/actions/action.zip'))
   expect(utils.zip).toHaveBeenNthCalledWith(4, expect.stringContaining(path.normalize('/dist/actions/action-zip-temp')),
