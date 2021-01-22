@@ -145,7 +145,7 @@ const buildActions = async (config, filterActions) => {
       // config.actions.dist
       // zipFileName would be <actionName>.zip for default package and
       // <pkgName>/<actionName>.zip for non default packages for backward compatibility
-      const zipFileName = modifiedConfig.ow.package === pkgName ? actionName : pkgName + '-' + actionName
+      const zipFileName = utils.getActionZipFileName(pkgName, actionName, modifiedConfig.ow.package === pkgName)
       builtList.push(await buildAction(zipFileName, action, config.root, config.actions.dist))
     }
   }

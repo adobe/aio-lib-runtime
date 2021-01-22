@@ -1549,8 +1549,8 @@ describe('getActionUrls', () => {
       action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
       'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
       'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
-      'pkg2-thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
-      'pkg2-thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
     }
 
     config.manifest.full.packages.pkg2.actions.thataction.web = 'no'
@@ -1564,8 +1564,8 @@ describe('getActionUrls', () => {
       action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
       'action-sequence': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-sequence',
       'action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip',
-      'pkg2-thataction': 'https://fake_ns.custom.net/api/v1/web/pkg2/thataction',
-      'pkg2-thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thatsequence'
+      'pkg2/thataction': 'https://fake_ns.custom.net/api/v1/web/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thatsequence'
     }
     config.app.hostname = 'custom.net'
     config.manifest.full.packages.__APP_PACKAGE__.actions.action.web = 'no'
@@ -1579,8 +1579,8 @@ describe('getActionUrls', () => {
       action: 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action',
       'action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
       'action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip',
-      'pkg2-thataction': 'https://fake_ns.custom.net/api/v1/web/pkg2/thataction',
-      'pkg2-thatsequence': 'https://ow-custom.net/api/v1/fake_ns/pkg2/thatsequence'
+      'pkg2/thataction': 'https://fake_ns.custom.net/api/v1/web/pkg2/thataction',
+      'pkg2/thatsequence': 'https://ow-custom.net/api/v1/fake_ns/pkg2/thatsequence'
     }
     config.ow.apihost = 'ow-custom.net'
     config.app.hostname = 'custom.net'
@@ -1595,8 +1595,8 @@ describe('getActionUrls', () => {
       action: 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
       'action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
       'action-zip': 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip',
-      'pkg2-thataction': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thataction',
-      'pkg2-thatsequence': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thatsequence'
+      'pkg2/thataction': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thataction',
+      'pkg2/thatsequence': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thatsequence'
     }
     config.ow.apihost = 'ow-custom.net'
     config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = false
@@ -1609,8 +1609,8 @@ describe('getActionUrls', () => {
       action: 'http://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action',
       'action-sequence': 'http://localhost:3030/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
       'action-zip': 'http://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action-zip',
-      'pkg2-thataction': 'http://localhost:3030/api/v1/web/fake_ns/pkg2/thataction',
-      'pkg2-thatsequence': 'http://localhost:3030/api/v1/web/fake_ns/pkg2/thatsequence'
+      'pkg2/thataction': 'http://localhost:3030/api/v1/web/fake_ns/pkg2/thataction',
+      'pkg2/thatsequence': 'http://localhost:3030/api/v1/web/fake_ns/pkg2/thatsequence'
     }
     config.ow.apihost = 'localhost:3030'
     delete config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web
@@ -1623,8 +1623,8 @@ describe('getActionUrls', () => {
       action: 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action',
       'action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action-sequence',
       'action-zip': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-zip',
-      'pkg2-thataction': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thataction',
-      'pkg2-thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thatsequence'
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thatsequence'
     }
     delete config.manifest.full.packages.__APP_PACKAGE__.actions['action-zip'].web
     const result = utils.getActionUrls(config, true, false)
@@ -1636,8 +1636,8 @@ describe('getActionUrls', () => {
       action: 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action',
       'action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action-sequence',
       'action-zip': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-zip',
-      'pkg2-thataction': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thataction',
-      'pkg2-thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thatsequence'
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thatsequence'
     }
     config.manifest.full.packages.__APP_PACKAGE__.actions['action-zip'].web = false
     config.app.hasFrontend = false
@@ -1650,8 +1650,8 @@ describe('getActionUrls', () => {
       action: 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
       'action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
       'action-zip': 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip',
-      'pkg2-thataction': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thataction',
-      'pkg2-thatsequence': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thatsequence'
+      'pkg2/thataction': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thataction',
+      'pkg2/thatsequence': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thatsequence'
     }
     config.ow.apihost = 'ow-custom.net'
     config.app.hostname = 'custom.net'
@@ -1666,8 +1666,8 @@ describe('getActionUrls', () => {
       action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
       'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
       'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
-      'pkg2-thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
-      'pkg2-thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
     }
     config.ow.apihost = 'adobeioruntime.net'
     config.app.hostname = 'adobeio-static.net'

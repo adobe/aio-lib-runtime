@@ -72,7 +72,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     pkg.version = config.app.version
     for (const [name, action] of Object.entries(pkg.actions)) {
       // change path to built action
-      const zipFileName = (modifiedConfig.ow.package === pkgName ? name : pkgName + '-' + name) + '.zip'
+      const zipFileName = utils.getActionZipFileName(pkgName, name, modifiedConfig.ow.package === pkgName) + '.zip'
       action.function = path.join(relDist, zipFileName)
     }
   }
@@ -89,13 +89,8 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   if (Array.isArray(deployedEntities.actions)) {
     const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
     deployedEntities.actions = deployedEntities.actions.map(action => {
-      // in deployedEntities.actions, names are <package>/<action>
-      // in actionUrlsFromManifest, names are <package>-<action> to be consistent with build zip file name
-      let actionKey = action.name.replace('/', '-')
-
-      // Also, the key in actionUrlsFromManifest would not have pkg name for actions in default package
-      actionKey = actionKey.replace(modifiedConfig.ow.package + '-', '')
-
+      // the key in actionUrlsFromManifest would not have pkg name for actions in default package
+      const actionKey = action.name.replace(modifiedConfig.ow.package + '/', '')
       const url = actionUrlsFromManifest[actionKey]
       if (url) {
         action.url = url
