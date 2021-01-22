@@ -1743,11 +1743,19 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   function getActionUrl (pkgAndActionName, action) {
     const webArg = action['web-export'] || action.web
     const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
-    // - if local dev runtime actions are served locally so CDN cannot point to them
-    // - if remote dev the UI runs on localhost so the action should not be served behind the CDN
-    // - if action is non web it cannot be called from the UI and we can point directly to ApiHost domain
-    // - if action has no UI no need to use the CDN url
-    const actionIsBehindCdn = !isLocalDev && !isRemoteDev && webUri && config.app.hasFrontend
+
+    const actionIsBehindCdn =
+    // if local dev runtime actions are served locally actions can't be reached via CDN
+    // if action is non web it cannot share cookies, and need to be called with auth, use ApiHost directly
+    !isLocalDev && webUri && (
+      // By default:
+      // - if remote dev the UI runs on localhost so the actions can be served directly from the ApiHost domain
+      // - if action has no UI no need to use the CDN url
+      (!isRemoteDev && config.app.hasFrontend) ||
+      // UNLESS: the user has specified a custom hostname, in which case we have to use it
+      hostnameIsCustom
+    )
+
     // if the apihost is custom but no custom hostname is provided then CDN should not be used
     const customApihostButNoCustomHostname = apihostIsCustom && !hostnameIsCustom
 
@@ -1767,9 +1775,9 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
       (actionIsBehindCdn && customApihostButNoCustomHostname)
     ) {
       // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
-      // or http://custom-ow-host.xyz/api/v1/web/<ns>/<package>/<action>
+      // or https://custom-ow-host.xyz/api/v1/web/<ns>/<package>/<action>
       return urlJoin(
-        'https://',
+        isLocalDev ? 'http://' : 'https://',
         cleanApihost,
         'api',
         config.ow.apiversion,
@@ -1794,15 +1802,21 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   const actionsAndSequences = {}
   Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
     Object.entries(pkg.actions).forEach(([actionName, action]) => {
-      actionsAndSequences[pkgName + '/' + actionName] = action
+      actionsAndSequences[getActionZipFileName(pkgName, actionName, pkgName === config.ow.package)] = action
     })
     Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
-      actionsAndSequences[pkgName + '/' + actionName] = action
+      actionsAndSequences[getActionZipFileName(pkgName, actionName, pkgName === config.ow.package)] = action
     })
   })
   const urls = {}
   Object.entries(actionsAndSequences).forEach(([pkgAndActionName, action]) => {
-    urls[pkgAndActionName] = getActionUrl(pkgAndActionName, action)
+    let fullNameInURL = pkgAndActionName
+    if (pkgAndActionName.indexOf('/') === -1) {
+      // pkg not included in pkgAndActionName since this is from the default package
+      // But the pkg name is required to construct the URL
+      fullNameInURL = config.ow.package + '/' + pkgAndActionName
+    }
+    urls[pkgAndActionName] = getActionUrl(fullNameInURL, action)
   })
   return urls
 }
@@ -1839,7 +1853,7 @@ function replacePackagePlaceHolder (config) {
     // Using custom package name.
     // Set config.ow.package so that syncProject can use it as project name for annotations.
     const packageNames = Object.keys(packages)
-    config.ow.package = packageNames[0]
+    modifiedConfig.ow.package = packageNames[0]
   }
   return modifiedConfig
 }
@@ -1856,6 +1870,17 @@ function validateActionRuntime (action) {
       throw new Error(`Unsupported node version in action ${action.name}. Supported versions are ${supportedEngines.node}`)
     }
   }
+}
+
+/**
+ * Returns the action's build file name without the .zip extension
+ *
+ * @param {string} pkgName name of the package
+ * @param {string} actionName name of the action
+ * @param {boolean} defaultPkg true if pkgName is the default/first package
+ */
+function getActionZipFileName (pkgName, actionName, defaultPkg) {
+  return defaultPkg ? actionName : pkgName + '/' + actionName
 }
 
 module.exports = {
@@ -1903,5 +1928,6 @@ module.exports = {
   removeProtocolFromURL,
   zip,
   replacePackagePlaceHolder,
-  validateActionRuntime
+  validateActionRuntime,
+  getActionZipFileName
 }

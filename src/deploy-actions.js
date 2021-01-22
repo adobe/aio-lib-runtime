@@ -72,13 +72,14 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     pkg.version = config.app.version
     for (const [name, action] of Object.entries(pkg.actions)) {
       // change path to built action
-      action.function = path.join(relDist, pkgName + '-' + name + '.zip')
+      const zipFileName = utils.getActionZipFileName(pkgName, name, modifiedConfig.ow.package === pkgName) + '.zip'
+      action.function = path.join(relDist, zipFileName)
     }
   }
 
   // 2. deploy manifest
   const deployedEntities = await deployWsk(
-    config,
+    modifiedConfig,
     manifest,
     log,
     filterEntities
@@ -88,8 +89,9 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   if (Array.isArray(deployedEntities.actions)) {
     const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
     deployedEntities.actions = deployedEntities.actions.map(action => {
-      // in deployedEntities.actions, names are <package>/<action>
-      const url = actionUrlsFromManifest[action.name]
+      // the key in actionUrlsFromManifest would not have pkg name for actions in default package
+      const actionKey = action.name.replace(modifiedConfig.ow.package + '/', '')
+      const url = actionUrlsFromManifest[actionKey]
       if (url) {
         action.url = url
       }
@@ -170,7 +172,6 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
     })
   }
   /* END temporary workaround */
-
   // do the deployment, manifestPath and manifestContent needed for creating a project hash
   await utils.syncProject(packageName, manifestPath, manifestContent, entities, ow, logFunc, scriptConfig.imsOrgId, deleteOldEntities)
   return entities
