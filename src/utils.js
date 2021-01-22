@@ -1743,11 +1743,19 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   function getActionUrl (pkgAndActionName, action) {
     const webArg = action['web-export'] || action.web
     const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
-    // - if local dev runtime actions are served locally so CDN cannot point to them
-    // - if remote dev the UI runs on localhost so the action should not be served behind the CDN
-    // - if action is non web it cannot be called from the UI and we can point directly to ApiHost domain
-    // - if action has no UI no need to use the CDN url
-    const actionIsBehindCdn = !isLocalDev && !isRemoteDev && webUri && config.app.hasFrontend
+
+    const actionIsBehindCdn =
+    // if local dev runtime actions are served locally actions can't be reached via CDN
+    // if action is non web it cannot share cookies, and need to be called with auth, use ApiHost directly
+    !isLocalDev && webUri && (
+      // By default:
+      // - if remote dev the UI runs on localhost so the actions can be served directly from the ApiHost domain
+      // - if action has no UI no need to use the CDN url
+      (!isRemoteDev && config.app.hasFrontend) ||
+      // UNLESS: the user has specified a custom hostname, in which case we have to use it
+      hostnameIsCustom
+    )
+
     // if the apihost is custom but no custom hostname is provided then CDN should not be used
     const customApihostButNoCustomHostname = apihostIsCustom && !hostnameIsCustom
 

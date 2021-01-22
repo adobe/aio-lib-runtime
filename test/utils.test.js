@@ -1559,7 +1559,7 @@ describe('getActionUrls', () => {
     expect(result).toEqual(expected)
   })
 
-  test('some non web actions, with ui, no dev, no custom apihost, custom hostname', () => {
+  test('some non web actions, with ui, no dev, no custom apihost, custom hostname => use custom hostname everywhere', () => {
     const expected = {
       action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
       'action-sequence': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-sequence',
@@ -1574,7 +1574,7 @@ describe('getActionUrls', () => {
     expect(result).toEqual(expected)
   })
 
-  test('some non web actions, with ui, no dev, custom apihost, custom hostname', () => {
+  test('some non web actions, with ui, no dev, custom apihost, custom hostname => use custom hostname everywhere', () => {
     const expected = {
       action: 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action',
       'action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
@@ -1645,13 +1645,13 @@ describe('getActionUrls', () => {
     expect(result).toEqual(expected)
   })
 
-  test('some non web actions, no ui, no dev, custom apihost, custom hostname', () => {
+  test('some non web actions, no ui, no dev, custom apihost, custom hostname => use custom hostname', () => {
     const expected = {
-      action: 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
+      action: 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action',
       'action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
-      'action-zip': 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip',
-      'pkg2-thataction': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thataction',
-      'pkg2-thatsequence': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thatsequence'
+      'action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2-thataction': 'https://fake_ns.custom.net/api/v1/web/pkg2/thataction',
+      'pkg2-thatsequence': 'https://fake_ns.custom.net/api/v1/web/pkg2/thatsequence'
     }
     config.ow.apihost = 'ow-custom.net'
     config.app.hostname = 'custom.net'
