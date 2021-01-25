@@ -594,10 +594,10 @@ test('custom package and action filter', async () => {
     'bobby-mcgee': expect.objectContaining({
       actions: {
         action: {
-          function: 'dist/actions/action.zip', runtime: 'nodejs:12', web: 'yes'
+          function: path.normalize('dist/actions/action.zip'), runtime: 'nodejs:12', web: 'yes'
         },
         'action-zip': {
-          function: 'dist/actions/action-zip.zip', runtime: 'nodejs:12', web: 'yes'
+          function: path.normalize('dist/actions/action-zip.zip'), runtime: 'nodejs:12', web: 'yes'
         }
       }
     })
