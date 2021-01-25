@@ -123,13 +123,17 @@ const buildActions = async (config, filterActions) => {
   if (!config.app.hasBackend) {
     throw new Error('cannot build actions, app has no backend')
   }
+
+  // rewrite config
+  const modifiedConfig = utils.replacePackagePlaceHolder(config)
+
   if (filterActions) {
     // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
-    filterActions = filterActions.map((actionName) => actionName.indexOf('/') === -1 ? config.ow.package + '/' + actionName : actionName)
+    filterActions = filterActions.map((actionName) => actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
   }
+
   // clear out dist dir
   fs.emptyDirSync(config.actions.dist)
-  const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const builtList = []
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
     const actionsToBuild = Object.entries(pkg.actions)
