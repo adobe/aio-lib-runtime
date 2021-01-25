@@ -574,6 +574,36 @@ test('if actions are deployed with custom package and part of the manifest it sh
   })
 })
 
+test('custom package and action filter', async () => {
+  addNamedPackageFiles()
+
+  // mock deployed entities
+  runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
+
+  const filterEntities = {
+    actions: ['bobby-mcgee/action-zip', 'action'] // make sure filter works with pkg/action or just action-name
+  }
+
+  const buildDir = global.namedPackageConfig.actions.dist
+  // fake a previous build
+  addFakeFiles(buildDir)
+
+  await deployActions(global.namedPackageConfig, { filterEntities })
+
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith({
+    'bobby-mcgee': expect.objectContaining({
+      actions: {
+        action: {
+          function: 'dist/actions/action.zip', runtime: 'nodejs:12', web: 'yes'
+        },
+        'action-zip': {
+          function: 'dist/actions/action-zip.zip', runtime: 'nodejs:12', web: 'yes'
+        }
+      }
+    })
+  }, {}, {}, {}, false, expect.any(Object))
+})
+
 test('if actions are deployed with the headless validator and there is a UI it should rewrite the sequence with the app-registry validator', async () => {
   addSampleAppFiles()
 

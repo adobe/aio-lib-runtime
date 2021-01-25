@@ -54,16 +54,6 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     throw new Error(`missing files in ${utils._relApp(config.root, dist)}, maybe you forgot to build your actions ?`)
   }
 
-  const filterEntities = deployConfig.filterEntities
-  if (deployConfig.filterEntities) {
-    // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
-    packageItems.forEach((k) => {
-      if (deployConfig.filterEntities[k]) {
-        filterEntities[k] = deployConfig.filterEntities[k].map((actionName) => actionName.indexOf('/') === -1 ? config.ow.package + '/' + actionName : actionName)
-      }
-    })
-  }
-
   // 1. rewrite wskManifest config
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const manifest = modifiedConfig.manifest.full
@@ -75,6 +65,17 @@ async function deployActions (config, deployConfig = {}, logFunc) {
       const zipFileName = utils.getActionZipFileName(pkgName, name, modifiedConfig.ow.package === pkgName) + '.zip'
       action.function = path.join(relDist, zipFileName)
     }
+  }
+
+  const filterEntities = deployConfig.filterEntities
+  if (deployConfig.filterEntities) {
+    // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
+    packageItems.forEach((k) => {
+      if (deployConfig.filterEntities[k]) {
+        filterEntities[k] = deployConfig.filterEntities[k].map((actionName) =>
+          actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
+      }
+    })
   }
 
   // 2. deploy manifest
