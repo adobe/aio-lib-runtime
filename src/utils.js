@@ -280,7 +280,7 @@ function printLogs (activation, strip, logger) {
  * Filters and prints action logs.
  *
  * @param {object} runtime runtime (openwhisk) object
- * @param {object} logger an instance of a logger to emit messages to
+ * @param {object} logger an instance of a logger to emit messages to (may optionally provide logFunc and bannerFunc to customize logging)
  * @param {number} limit maximum number of activations to fetch logs from
  * @param {Array} filterActions array of actions to fetch logs from
  *    ['pkg1/'] = logs of all deployed actions under package pkg1
@@ -292,7 +292,7 @@ function printLogs (activation, strip, logger) {
 async function printFilteredActionLogs (runtime, logger, limit, filterActions = [], strip = false, startTime = 0) {
   // Get activations
   const listOptions = { limit: limit, skip: 0 }
-  const logFunc = logger || console.log
+  const logFunc = logger ? logger.logFunc || logger : console.log
   // This will narrow down the activation list to specific action
   if (filterActions.length === 1 && !filterActions[0].endsWith('/')) {
     listOptions.name = filterActions[0]
@@ -360,13 +360,16 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
       } else {
         activationsLogged.push(activation.activationId)
       }
+
       retValue = await runtime.activations.logs({ activationId: activation.activationId })
+      // allow banners to be customized
+      if (logger && logger.bannerFunc) {
+        logger.bannerFunc(activation, retValue.logs)
+      } else {
+        activationLogBanner(logFunc, activation, retValue.logs)
+      }
+
       if (retValue.logs.length > 0) {
-        activation.annotations.forEach((annotation) => {
-          if (annotation.key === 'path') {
-            logFunc(annotation.value + ':' + activation.activationId)
-          }
-        })
         retValue.logs.forEach(function (logMsg) {
           if (strip) {
             results.push(stripLog(logMsg))
@@ -1978,6 +1981,23 @@ function validateActionRuntime (action) {
  */
 function getActionZipFileName (pkgName, actionName, defaultPkg) {
   return defaultPkg ? actionName : pkgName + '/' + actionName
+}
+
+/**
+ * Creates an info banner for an activation.
+ *
+ * @param {Logger} a logger
+ * @param {Activation} activation metadata
+ * @param {Array<string>} activationLogs the logs of the activation (may selectively suppress banner if there are no log lines)
+ */
+function activationLogBanner (logFunc, activation, activationLogs) {
+  if (activationLogs.length > 0) {
+    activation.annotations.forEach((annotation) => {
+      if (annotation.key === 'path') {
+        logFunc(annotation.value + ':' + activation.activationId)
+      }
+    })
+  }
 }
 
 module.exports = {
