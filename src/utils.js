@@ -348,8 +348,8 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
 
   /**
    * Print activation logs
-   * @param {*} activation 
-   * @param {*} runtime 
+   * @param {*} activation
+   * @param {*} runtime
    */
   async function printActivationLogs (activation, runtime) {
     const results = []
@@ -384,8 +384,8 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
 
   /**
    * Print sequence logs
-   * @param {*} activation 
-   * @param {*} runtime 
+   * @param {*} activation
+   * @param {*} runtime
    */
   async function printSequenceLogs (activation, runtime) {
     const seqActivation = await runtime.activations.get(activation.activationId)
