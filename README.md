@@ -224,13 +224,19 @@ for syncing managed projects.</p>
 <dd></dd>
 <dt><a href="#checkOpenWhiskCredentials">checkOpenWhiskCredentials(config)</a></dt>
 <dd></dd>
-<dt><a href="#getActionUrls">getActionUrls(config, isRemoteDev, isLocalDev)</a></dt>
+<dt><a href="#getActionUrls">getActionUrls(appConfig, isRemoteDev, isLocalDev)</a></dt>
 <dd></dd>
 <dt><a href="#urlJoin">urlJoin(...args)</a> ⇒ <code>string</code></dt>
 <dd><p>Joins url path parts</p>
 </dd>
 <dt><a href="#removeProtocolFromURL">removeProtocolFromURL(url)</a></dt>
 <dd></dd>
+<dt><a href="#validateActionRuntime">validateActionRuntime(action)</a></dt>
+<dd><p>Checks the validity of nodejs version in action definition and throws an error if invalid.</p>
+</dd>
+<dt><a href="#getActionZipFileName">getActionZipFileName(pkgName, actionName, defaultPkg)</a></dt>
+<dd><p>Returns the action&#39;s build file name without the .zip extension</p>
+</dd>
 </dl>
 
 ## Typedefs
@@ -1000,12 +1006,12 @@ Retrieve the project hash from a deployed managed project.
 
 <a name="getActionUrls"></a>
 
-## getActionUrls(config, isRemoteDev, isLocalDev)
+## getActionUrls(appConfig, isRemoteDev, isLocalDev)
 **Kind**: global function  
 
 | Param | Default |
 | --- | --- |
-| config |  | 
+| appConfig |  | 
 | isRemoteDev | <code>false</code> | 
 | isLocalDev | <code>false</code> | 
 
@@ -1028,6 +1034,30 @@ Joins url path parts
 | Param |
 | --- |
 | url | 
+
+<a name="validateActionRuntime"></a>
+
+## validateActionRuntime(action)
+Checks the validity of nodejs version in action definition and throws an error if invalid.
+
+**Kind**: global function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| action | <code>object</code> | action object |
+
+<a name="getActionZipFileName"></a>
+
+## getActionZipFileName(pkgName, actionName, defaultPkg)
+Returns the action's build file name without the .zip extension
+
+**Kind**: global function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| pkgName | <code>string</code> | name of the package |
+| actionName | <code>string</code> | name of the action |
+| defaultPkg | <code>boolean</code> | true if pkgName is the default/first package |
 
 <a name="OpenwhiskOptions"></a>
 

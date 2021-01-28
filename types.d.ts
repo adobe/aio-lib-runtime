@@ -675,7 +675,7 @@ declare function _absApp(root: any, p: any): void;
 
 declare function checkOpenWhiskCredentials(config: any): void;
 
-declare function getActionUrls(config: any, isRemoteDev: any, isLocalDev: any): void;
+declare function getActionUrls(appConfig: any, isRemoteDev: any, isLocalDev: any): void;
 
 /**
  * Joins url path parts
@@ -684,4 +684,18 @@ declare function getActionUrls(config: any, isRemoteDev: any, isLocalDev: any): 
 declare function urlJoin(...args: string[]): string;
 
 declare function removeProtocolFromURL(url: any): void;
+
+/**
+ * Checks the validity of nodejs version in action definition and throws an error if invalid.
+ * @param action - action object
+ */
+declare function validateActionRuntime(action: any): void;
+
+/**
+ * Returns the action's build file name without the .zip extension
+ * @param pkgName - name of the package
+ * @param actionName - name of the action
+ * @param defaultPkg - true if pkgName is the default/first package
+ */
+declare function getActionZipFileName(pkgName: string, actionName: string, defaultPkg: boolean): void;
 
