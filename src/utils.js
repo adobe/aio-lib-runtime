@@ -1802,42 +1802,98 @@ function checkOpenWhiskCredentials (config) {
 }
 
 /**
- * @param config
+ * @param appConfig
  * @param isRemoteDev
  * @param isLocalDev
  */
 function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
-  // set action urls
-  // action urls {name: url}, if !LocalDev subdomain uses namespace
-  const actionsAndSequences = {}
+  // sets action urls [{ name: url }]
   const config = replacePackagePlaceHolder(appConfig)
-  Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
-    Object.entries(pkg.actions).forEach(([actionName, action]) => {
-      actionsAndSequences[pkgName + '/' + actionName] = action
-    })
-    Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
-      actionsAndSequences[pkgName + '/' + actionName] = action
-    })
-  })
-  return Object.entries(actionsAndSequences).reduce((obj, [name, action]) => {
+  const cleanApihost = removeProtocolFromURL(config.ow.apihost)
+  const cleanHostname = removeProtocolFromURL(config.app.hostname)
+  const apihostIsCustom = cleanApihost !== removeProtocolFromURL(config.ow.defaultApihost)
+  const hostnameIsCustom = cleanHostname !== removeProtocolFromURL(config.app.defaultHostname)
+
+  /** @private */
+  function getActionUrl (pkgAndActionName, action) {
     const webArg = action['web-export'] || action.web
     const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
-    if (isLocalDev) {
-      // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
-      obj[name] = urlJoin(config.ow.apihost, 'api', config.ow.apiversion, webUri, config.ow.namespace, name)
-    } else if (isRemoteDev || !webUri || !config.app.hasFrontend) {
-      // - if remote dev we don't care about same domain as the UI runs on localhost
-      // - if action is non web it cannot be called from the UI and we can point directly to ApiHost domain
+
+    const actionIsBehindCdn =
+    // if local dev runtime actions are served locally actions can't be reached via CDN
+    // if action is non web it cannot share cookies, and need to be called with auth, use ApiHost directly
+    !isLocalDev && webUri && (
+      // By default:
+      // - if remote dev the UI runs on localhost so the actions can be served directly from the ApiHost domain
       // - if action has no UI no need to use the CDN url
-      // NOTE this will not work for apihosts that do not support <ns>.apihost url
-      // https://<ns>.adobeioruntime.net/api/v1/web/<package>/<action>
-      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.ow.apihost), 'api', config.ow.apiversion, webUri, name)
+      (!isRemoteDev && config.app.hasFrontend) ||
+      // UNLESS: the user has specified a custom hostname, in which case we have to use it
+      hostnameIsCustom
+    )
+
+    // if the apihost is custom but no custom hostname is provided then CDN should not be used
+    const customApihostButNoCustomHostname = apihostIsCustom && !hostnameIsCustom
+
+    if (actionIsBehindCdn && !customApihostButNoCustomHostname) {
+      // https://<ns>.adobe-static.net/api/v1/web/<package>/<action></action>
+      // or https://<ns>.custom-hostname.xyz/api/v1/web/<package>/<action></action>
+      return urlJoin(
+        'https://' + config.ow.namespace + '.' + cleanHostname,
+        'api',
+        config.ow.apiversion,
+        webUri,
+        pkgAndActionName
+      )
+    } else if (
+      isLocalDev ||
+      (!actionIsBehindCdn && apihostIsCustom) ||
+      (actionIsBehindCdn && customApihostButNoCustomHostname)
+    ) {
+      // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
+      // or https://custom-ow-host.xyz/api/v1/web/<ns>/<package>/<action>
+      return urlJoin(
+        isLocalDev ? 'http://' : 'https://',
+        cleanApihost,
+        'api',
+        config.ow.apiversion,
+        webUri,
+        config.ow.namespace,
+        pkgAndActionName
+      )
     } else {
-      // https://<ns>.adobe-static.net/api/v1/web/<package>/<action>
-      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.app.hostname), 'api', config.ow.apiversion, webUri, name)
+      // if (!actionIsBehindCdn && !apihostIsCustom)
+      // https://<ns>.adobeioruntime.net/api/v1/web/<package>/<action>
+      return urlJoin(
+        'https://' + config.ow.namespace + '.' + cleanApihost,
+        'api',
+        config.ow.apiversion,
+        webUri,
+        pkgAndActionName
+      )
     }
-    return obj
-  }, {})
+  }
+
+  // populate urls
+  const actionsAndSequences = {}
+  Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
+    Object.entries(pkg.actions).forEach(([actionName, action]) => {
+      actionsAndSequences[getActionZipFileName(pkgName, actionName, pkgName === config.ow.package)] = action
+    })
+    Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
+      actionsAndSequences[getActionZipFileName(pkgName, actionName, pkgName === config.ow.package)] = action
+    })
+  })
+  const urls = {}
+  Object.entries(actionsAndSequences).forEach(([pkgAndActionName, action]) => {
+    let fullNameInURL = pkgAndActionName
+    if (pkgAndActionName.indexOf('/') === -1) {
+      // pkg not included in pkgAndActionName since this is from the default package
+      // But the pkg name is required to construct the URL
+      fullNameInURL = config.ow.package + '/' + pkgAndActionName
+    }
+    urls[pkgAndActionName] = getActionUrl(fullNameInURL, action)
+  })
+  return urls
 }
 
 /**
@@ -1872,7 +1928,7 @@ function replacePackagePlaceHolder (config) {
     // Using custom package name.
     // Set config.ow.package so that syncProject can use it as project name for annotations.
     const packageNames = Object.keys(packages)
-    config.ow.package = packageNames[0]
+    modifiedConfig.ow.package = packageNames[0]
   }
   return modifiedConfig
 }
@@ -1889,6 +1945,17 @@ function validateActionRuntime (action) {
       throw new Error(`Unsupported node version in action ${action.name}. Supported versions are ${supportedEngines.node}`)
     }
   }
+}
+
+/**
+ * Returns the action's build file name without the .zip extension
+ *
+ * @param {string} pkgName name of the package
+ * @param {string} actionName name of the action
+ * @param {boolean} defaultPkg true if pkgName is the default/first package
+ */
+function getActionZipFileName (pkgName, actionName, defaultPkg) {
+  return defaultPkg ? actionName : pkgName + '/' + actionName
 }
 
 module.exports = {
@@ -1938,5 +2005,6 @@ module.exports = {
   removeProtocolFromURL,
   zip,
   replacePackagePlaceHolder,
-  validateActionRuntime
+  validateActionRuntime,
+  getActionZipFileName
 }
