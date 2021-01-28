@@ -645,6 +645,7 @@ function createComponentsFromSequence (sequenceAction) {
   return objSequence
 }
 
+/* istanbul ignore next */
 /**
  * @alias createComponentsFromSequence
  * @deprecated use `createComponentsFromSequence`
@@ -652,7 +653,6 @@ function createComponentsFromSequence (sequenceAction) {
  * @returns {object} the object representation of the sequence
  */
 function createComponentsfromSequence (sequenceAction) {
-  /* istanbul ignore next */
   return createComponentsFromSequence(sequenceAction)
 }
 
@@ -1744,6 +1744,7 @@ async function findProjectHashOnServer (ow, projectName) {
   return projectHash
 }
 
+/* istanbul ignore next */
 /**
  * Retrieve the project hash from a deployed managed project.
  *
@@ -1754,7 +1755,6 @@ async function findProjectHashOnServer (ow, projectName) {
  * @returns {Promise<string>} the project hash, or '' if not found
  */
 async function findProjectHashonServer (ow, projectName) {
-  /* istanbul ignore next */
   return findProjectHashOnServer(ow, projectName)
 }
 
