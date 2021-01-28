@@ -64,7 +64,7 @@ describe('utils has the right functions', () => {
     expect(typeof utils.createKeyValueObjectFromArray).toEqual('function')
     expect(typeof utils.createKeyValueArrayFromObject).toEqual('function')
     expect(typeof utils.parsePackageName).toEqual('function')
-    expect(typeof utils.createComponentsfromSequence).toEqual('function')
+    expect(typeof utils.createComponentsFromSequence).toEqual('function')
     expect(typeof utils.processInputs).toEqual('function')
 
     expect(typeof utils.createKeyValueInput).toEqual('function')
@@ -83,7 +83,7 @@ describe('utils has the right functions', () => {
     expect(typeof utils.setPaths).toEqual('function')
     expect(typeof utils.getProjectEntities).toEqual('function')
     expect(typeof utils.syncProject).toEqual('function')
-    expect(typeof utils.findProjectHashonServer).toEqual('function')
+    expect(typeof utils.findProjectHashOnServer).toEqual('function')
     expect(typeof utils.getProjectHash).toEqual('function')
     expect(typeof utils.addManagedProjectAnnotations).toEqual('function')
     expect(typeof utils.printLogs).toEqual('function')
@@ -125,9 +125,9 @@ describe('parsePackageName', () => {
   })
 })
 
-describe('createComponentsfromSequence', () => {
+describe('createComponentsFromSequence', () => {
   test('sequence components', () => {
-    const res = utils.createComponentsfromSequence(['a', 'p/b', '/ns/p/c', '/ns2/p/d', '/ns3/e'])
+    const res = utils.createComponentsFromSequence(['a', 'p/b', '/ns/p/c', '/ns2/p/d', '/ns3/e'])
     expect(res).toMatchObject({
       kind: 'sequence',
       components: ['/_/a', '/_/p/b', '/ns/p/c', '/ns2/p/d', '/ns3/e']
@@ -948,7 +948,7 @@ describe('syncProject', () => {
         }
       ]
     }
-    ow.mockResolved('packages.list', [resultObject]) // for findProjectHashonServer
+    ow.mockResolved('packages.list', [resultObject]) // for findProjectHashOnServer
     fs.statSync = jest.fn(() => ({ size: () => 1 }))
     global.fakeFileSystem.addJson({ [manifestPath]: newProjectHash }) // for getProjectHash
 
@@ -1389,7 +1389,7 @@ describe('getProjectHash', () => {
   })
 })
 
-describe('findProjectHashonServer', () => {
+describe('findProjectHashOnServer', () => {
   test('default projectHash (no packages, actions, triggers, rules found)', async () => {
     const testProjectName = 'ThisIsTheNameOfTheProject'
     // const resultObject = [{ annotations: [{ key: 'whisk-managed', value: { projectName: testProjectName, projectHash: 'projectHash' } }] }]
@@ -1397,7 +1397,7 @@ describe('findProjectHashonServer', () => {
     const actList = ow.mockResolved('actions.list', '')
     const trgList = ow.mockResolved('triggers.list', '')
     const rlzList = ow.mockResolved('rules.list', '')
-    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).toHaveBeenCalled()
     expect(trgList).toHaveBeenCalled()
@@ -1412,7 +1412,7 @@ describe('findProjectHashonServer', () => {
     const actList = ow.mockResolved('actions.list', [{ annotations: [] }])
     const trgList = ow.mockResolved('triggers.list', [{ annotations: [] }])
     const rlzList = ow.mockResolved('rules.list', [{ annotations: [] }])
-    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).toHaveBeenCalled()
     expect(trgList).toHaveBeenCalled()
@@ -1427,7 +1427,7 @@ describe('findProjectHashonServer', () => {
     const actList = ow.mockResolved('actions.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
     const trgList = ow.mockResolved('triggers.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
     const rlzList = ow.mockResolved('rules.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
-    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).toHaveBeenCalled()
     expect(trgList).toHaveBeenCalled()
@@ -1442,7 +1442,7 @@ describe('findProjectHashonServer', () => {
     const actList = ow.mockResolved('actions.list', '')
     const trgList = ow.mockResolved('triggers.list', '')
     const rlzList = ow.mockResolved('rules.list', '')
-    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).not.toHaveBeenCalled()
     expect(trgList).not.toHaveBeenCalled()
@@ -1457,7 +1457,7 @@ describe('findProjectHashonServer', () => {
     const actList = ow.mockResolved('actions.list', resultObject)
     const trgList = ow.mockResolved('triggers.list', '')
     const rlzList = ow.mockResolved('rules.list', '')
-    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).toHaveBeenCalled()
     expect(trgList).not.toHaveBeenCalled()
@@ -1472,7 +1472,7 @@ describe('findProjectHashonServer', () => {
     const actList = ow.mockResolved('actions.list', '')
     const trgList = ow.mockResolved('triggers.list', resultObject)
     const rlzList = ow.mockResolved('rules.list', '')
-    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).toHaveBeenCalled()
     expect(trgList).toHaveBeenCalled()
@@ -1487,7 +1487,7 @@ describe('findProjectHashonServer', () => {
     const actList = ow.mockResolved('actions.list', '')
     const trgList = ow.mockResolved('triggers.list', '')
     const rlzList = ow.mockResolved('rules.list', resultObject)
-    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).toHaveBeenCalled()
     expect(trgList).toHaveBeenCalled()

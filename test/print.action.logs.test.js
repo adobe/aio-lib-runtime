@@ -13,10 +13,12 @@ jest.mock('../src/RuntimeAPI')
 const ioruntime = require('../src/RuntimeAPI')
 const owListActivationMock = jest.fn()
 const owLogsActivationMock = jest.fn()
+const owGetActivationMock = jest.fn()
 const owMock = {
   activations: {
     list: owListActivationMock,
-    logs: owLogsActivationMock
+    logs: owLogsActivationMock,
+    get: owGetActivationMock
   }
 }
 ioruntime.mockImplementation(() => {
@@ -43,6 +45,7 @@ describe('printActionLogs', () => {
     ioruntime.mockClear()
     owListActivationMock.mockReset()
     owLogsActivationMock.mockReset()
+    owGetActivationMock.mockReset()
     // runtimeLibUtils.printFilteredActionLogs.mockReset()
   })
 
@@ -78,6 +81,51 @@ describe('printActionLogs', () => {
     expect(owLogsActivationMock).toHaveBeenNthCalledWith(1, { activationId: 100 })
     expect(owLogsActivationMock).toHaveBeenNthCalledWith(2, { activationId: 456 })
     expect(owLogsActivationMock).toHaveBeenNthCalledWith(3, { activationId: 123 })
+    expect(logger).not.toHaveBeenCalled()
+  })
+
+  test('(config, limit=3, logger) and sequence and no logs', async () => {
+    owListActivationMock.mockResolvedValue([
+      {
+        activationId: 123,
+        start: 555555,
+        name: 'one',
+        annotations: [{ key: 'kind', value: 'sequence' }],
+        logs: [
+          321
+        ]
+      }
+    ])
+    owGetActivationMock.mockImplementation(activationId => {
+      if (activationId === 123) {
+        // Sub sequence activation
+        return {
+          activationId: 123,
+          start: 555555,
+          name: 'one',
+          annotations: [{ key: 'kind', value: 'sequence' }],
+          logs: [
+            321
+          ]
+        }
+      } else {
+        // Stub action activation
+        return {
+          activationId: 321,
+          start: 555555,
+          name: 'one',
+          logs: []
+        }
+      }
+    })
+
+    owLogsActivationMock.mockResolvedValue({ logs: [] })
+    await printActionLogs(fakeConfig, logger, 3)
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 3, skip: 0 })
+    expect(owGetActivationMock).toHaveBeenCalledTimes(2)
+    expect(owLogsActivationMock).toHaveBeenCalledTimes(1)
+    // reverse order
+    expect(owLogsActivationMock).toHaveBeenNthCalledWith(1, { activationId: 321 })
     expect(logger).not.toHaveBeenCalled()
   })
 
@@ -141,7 +189,7 @@ describe('printActionLogs', () => {
 
   test('(config, limit=45, no logger) and 1 activation and 1 log', async () => {
     const spy = jest.spyOn(console, 'log')
-    spy.mockImplementation(() => {})
+    spy.mockImplementation(() => { })
 
     owListActivationMock.mockResolvedValue([
       { activationId: 123, start: 555555, name: 'one', annotations: [] }
@@ -164,6 +212,7 @@ describe('printActionLogs', () => {
 
     spy.mockRestore()
   })
+
   test('with filterActions (specific actions)', async () => {
     owListActivationMock.mockResolvedValue([
       { activationId: 123, start: 555555, name: 'one', annotations: [{ key: 'path', value: 'ns/pkg1/one' }] },

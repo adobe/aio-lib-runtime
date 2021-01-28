@@ -297,7 +297,6 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
   if (filterActions.length === 1 && !filterActions[0].endsWith('/')) {
     listOptions.name = filterActions[0]
   }
-  //console.log(listOptions)
   let activations = await runtime.activations.list(listOptions)
   let lastActivationTime = 0
   // Filter the activations
@@ -308,8 +307,8 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
       return annotationValue.includes(actionPath)
     }
     // For actions with full path (pkg/actionName) specified in filterActions
-    //console.log(annotationValue)
-    //console.log(actionPath)
+    // console.log(annotationValue)
+    // console.log(actionPath)
     return annotationValue.endsWith(actionPath)
   }
   if (filterActions.length > 0) {
@@ -324,25 +323,39 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
     })
   }
 
-  let isSequenceActivation = (activation) => {
+  // Getting and printing activation logs
+  for (let i = (activations.length - 1); i >= 0; i--) {
+    const activation = activations[i]
+    lastActivationTime = activation.start
+    if (lastActivationTime > startTime) {
+      await printLogs(activation, runtime)
+    }
+  }
+  return { lastActivationTime }
+
+  /**
+   * Check if an activation entry is for a sequence.
+   *
+   * @param {*} activation activation log entry
+   * @returns {boolean} isSequenceActivation
+   */
+  function isSequenceActivation (activation) {
     if (activation.annotations && activation.annotations.length) {
-      if (activation.annotations.find((elem) => {
-          return (elem.key === 'kind')
-        }).value === 'sequence') {
-          return true
-      } else {
-        return false
-      }
-    }  
+      return activation.annotations.some(item => (item.key === 'kind' && item.value === 'sequence'))
+    }
+    return false
   }
 
-  const printActivationLogs = async (activation, runtime) => {
+  /**
+   * Print activation logs
+   * @param {*} activation 
+   * @param {*} runtime 
+   */
+  async function printActivationLogs (activation, runtime) {
     const results = []
     let retValue
     try {
-      //console.log('calling get logs')
       retValue = await runtime.activations.logs({ activationId: activation.activationId })
-      //console.log(retValue)
       if (retValue.logs.length > 0) {
         activation.annotations.forEach((annotation) => {
           if (annotation.key === 'path') {
@@ -368,33 +381,32 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
       // logFunc()  // new line ?
     })
   }
-  
-  const printSequenceLogs = async (activation, runtime) => {
+
+  /**
+   * Print sequence logs
+   * @param {*} activation 
+   * @param {*} runtime 
+   */
+  async function printSequenceLogs (activation, runtime) {
     const seqActivation = await runtime.activations.get(activation.activationId)
-    //console.log(seqActivation)
     for (const seqItemActivationId of seqActivation.logs) {
-      // console.log(seqItemActivationId)
-      let seqItemActivation = await runtime.activations.get(seqItemActivationId)
+      const seqItemActivation = await runtime.activations.get(seqItemActivationId)
       await printLogs(seqItemActivation, runtime)
     }
   }
 
-  const printLogs = async (activation, runtime) => {
+  /**
+   * Print logs
+   * @param {*} activation
+   * @param {*} runtime
+   */
+  async function printLogs (activation, runtime) {
     if (isSequenceActivation(activation)) {
       await printSequenceLogs(activation, runtime)
     } else {
-     await printActivationLogs(activation, runtime)
+      await printActivationLogs(activation, runtime)
     }
   }
-  // Getting and printing activation logs
-  for (let i = (activations.length - 1); i >= 0; i--) {
-    const activation = activations[i]
-    lastActivationTime = activation.start
-    if (lastActivationTime > startTime) {
-      await printLogs(activation, runtime)
-    }
-  }
-  return { lastActivationTime }
 }
 
 /**
@@ -622,7 +634,7 @@ function createKeyValueObjectFromFile (file) {
  * @param {Array} sequenceAction the sequence action array
  * @returns {object} the object representation of the sequence
  */
-function createComponentsfromSequence (sequenceAction) {
+function createComponentsFromSequence (sequenceAction) {
   const fqn = require('openwhisk-fqn')
   const objSequence = {}
   objSequence.kind = 'sequence'
@@ -631,6 +643,17 @@ function createComponentsfromSequence (sequenceAction) {
     return fqn(component)
   })
   return objSequence
+}
+
+/**
+ * @alias createComponentsFromSequence
+ * @deprecated use `createComponentsFromSequence`
+ * @param {Array} sequenceAction the sequence action array
+ * @returns {object} the object representation of the sequence
+ */
+function createComponentsfromSequence (sequenceAction) {
+  /* istanbul ignore next */
+  return createComponentsFromSequence(sequenceAction)
 }
 
 /**
@@ -1525,7 +1548,7 @@ async function undeployPackage (entities, ow, logger) {
  */
 async function syncProject (projectName, manifestPath, manifestContent, entities, ow, logger, imsOrgId, deleteEntities = true) {
   // find project hash from server based on entities in the manifest file
-  const hashProjectSynced = await findProjectHashonServer(ow, projectName)
+  const hashProjectSynced = await findProjectHashOnServer(ow, projectName)
 
   // compute the project hash from the manifest file
   const projectHash = getProjectHash(manifestContent, manifestPath)
@@ -1668,7 +1691,7 @@ function getProjectHash (manifestContent, manifestPath) {
  * @param {string} projectName the project name
  * @returns {Promise<string>} the project hash, or '' if not found
  */
-async function findProjectHashonServer (ow, projectName) {
+async function findProjectHashOnServer (ow, projectName) {
   let projectHash = ''
   const options = {}
   // check for package with the projectName in manifest File and if found -> return the projectHash on the server
@@ -1719,6 +1742,20 @@ async function findProjectHashonServer (ow, projectName) {
     }
   }
   return projectHash
+}
+
+/**
+ * Retrieve the project hash from a deployed managed project.
+ *
+ * @deprecated use `findProjectHashOnServer`
+ * @alias findProjectHashOnServer
+ * @param {object} ow the OpenWhisk client object
+ * @param {string} projectName the project name
+ * @returns {Promise<string>} the project hash, or '' if not found
+ */
+async function findProjectHashonServer (ow, projectName) {
+  /* istanbul ignore next */
+  return findProjectHashOnServer(ow, projectName)
 }
 
 /**
@@ -1868,6 +1905,7 @@ module.exports = {
   getKeyValueObjectFromMergedParameters,
   parsePathPattern,
   parsePackageName,
+  createComponentsFromSequence,
   createComponentsfromSequence,
   processInputs,
   createKeyValueInput, /* internal */
@@ -1886,6 +1924,7 @@ module.exports = {
   setPaths,
   getProjectEntities,
   syncProject,
+  findProjectHashOnServer,
   findProjectHashonServer,
   getProjectHash,
   addManagedProjectAnnotations,
