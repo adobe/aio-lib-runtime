@@ -84,7 +84,7 @@ describe('printActionLogs', () => {
     expect(logger).not.toHaveBeenCalled()
   })
 
-  test('(config, limit=3, logger) and sequence and no logs', async () => {
+  test('with sequence action', async () => {
     owListActivationMock.mockResolvedValue([
       {
         activationId: 123,
