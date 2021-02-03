@@ -19,7 +19,7 @@ const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime
 
 const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename) => {
   let parentDir = path.dirname(actionPath)
-  const rootParent = path.dirname(root)
+  const rootParent = path.normalize(path.dirname(root))
   let configPath = null
 
   do {
