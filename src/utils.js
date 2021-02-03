@@ -307,8 +307,6 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
       return annotationValue.includes(actionPath)
     }
     // For actions with full path (pkg/actionName) specified in filterActions
-    // console.log(annotationValue)
-    // console.log(actionPath)
     return annotationValue.endsWith(actionPath)
   }
   if (filterActions.length > 0) {
@@ -323,6 +321,7 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
     })
   }
 
+  const activationsLogged = []
   // Getting and printing activation logs
   for (let i = (activations.length - 1); i >= 0; i--) {
     const activation = activations[i]
@@ -355,6 +354,12 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
     const results = []
     let retValue
     try {
+      if (activationsLogged.includes(activation.activationId)) {
+        // Happens when this activation is already covered through a sequence
+        return
+      } else {
+        activationsLogged.push(activation.activationId)
+      }
       retValue = await runtime.activations.logs({ activationId: activation.activationId })
       if (retValue.logs.length > 0) {
         activation.annotations.forEach((annotation) => {
@@ -373,7 +378,7 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
     } catch (err) { // Happens in some cases such as trying to get logs of a trigger activation
       // TODO: Trigger logs can be obtained from activation result but will need some formatting for the timestamp
       // retValue = await runtime.activations.get({ activationId: activation.activationId })
-      console.log(err)
+      return
     }
     results.sort()
     results.forEach((logMsg) => {
@@ -388,10 +393,15 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
    * @param {*} runtime
    */
   async function printSequenceLogs (activation, runtime) {
-    const seqActivation = await runtime.activations.get(activation.activationId)
-    for (const seqItemActivationId of seqActivation.logs) {
-      const seqItemActivation = await runtime.activations.get(seqItemActivationId)
-      await printLogs(seqItemActivation, runtime)
+    try {
+      const seqActivation = await runtime.activations.get(activation.activationId)
+      for (const seqItemActivationId of seqActivation.logs) {
+        const seqItemActivation = await runtime.activations.get(seqItemActivationId)
+        await printLogs(seqItemActivation, runtime)
+      }
+    } catch (err) {
+      // Happens when either the sequence or one of the actions in the sequence fails with 'application error'
+      // Ignore
     }
   }
 

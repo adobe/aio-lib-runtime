@@ -129,6 +129,79 @@ describe('printActionLogs', () => {
     expect(logger).not.toHaveBeenCalled()
   })
 
+  test('with sequence action - error', async () => {
+    owListActivationMock.mockResolvedValue([
+      {
+        activationId: 123,
+        start: 555555,
+        name: 'one',
+        annotations: [{ key: 'kind', value: 'sequence' }],
+        logs: [
+          321
+        ]
+      }
+    ])
+    owGetActivationMock.mockImplementation(activationId => {
+      throw new Error()
+    })
+
+    // owLogsActivationMock.mockResolvedValue({ logs: [] })
+    await printActionLogs(fakeConfig, logger, 3)
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 3, skip: 0 })
+    expect(owGetActivationMock).toHaveBeenCalledTimes(1)
+  })
+
+  test('with an action and a sequence that uses the same action - should not log twice', async () => {
+    owListActivationMock.mockResolvedValue([
+      {
+        activationId: 123,
+        start: 555555,
+        name: 'oneseq',
+        annotations: [{ key: 'kind', value: 'sequence' }],
+        logs: [
+          '124'
+        ]
+      },
+      {
+        activationId: 124,
+        start: 555555,
+        name: 'oneaction',
+        annotations: [{ key: 'path', value: 'action1' }],
+        logs: [
+          'dummy'
+        ]
+      }
+    ])
+    owGetActivationMock.mockImplementation(activationId => {
+      if (activationId === 123) {
+        // Sub sequence activation
+        return {
+          activationId: 123,
+          start: 555555,
+          name: 'oneseq',
+          annotations: [{ key: 'kind', value: 'sequence' }],
+          logs: [
+            124
+          ]
+        }
+      } else {
+        // Stub action activation
+        return {
+          activationId: 124,
+          start: 555555,
+          name: 'oneaction',
+          logs: []
+        }
+      }
+    })
+
+    owLogsActivationMock.mockResolvedValue({ logs: [] })
+    await printActionLogs(fakeConfig, logger, 3)
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 3, skip: 0 })
+    expect(owGetActivationMock).toHaveBeenCalledTimes(2)
+    expect(owLogsActivationMock).toHaveBeenCalledTimes(1) // Only once
+  })
+
   test('(config, limit=45, logger) and 3 activations and logs for 2 of them', async () => {
     owListActivationMock.mockResolvedValue([
       { activationId: 123, start: 555555, name: 'one', annotations: [] },
