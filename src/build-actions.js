@@ -165,7 +165,7 @@ const buildActions = async (config, filterActions) => {
         // const out =  // todo: log output of each action as it is built
         // need config.root
         // config.actions.dist
-        builtList.push(await buildAction(pkgName, actionName, action, config.root, config.actions.dist))
+        builtList.push(await buildAction(actionFullName, action, config.root, config.actions.dist))
       }
       // const out =  // todo: log output of each action as it is built
       // need config.root

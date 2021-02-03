@@ -164,7 +164,7 @@ describe('build by zipping js action folder', () => {
       'actions/action-zip/package.json': JSON.stringify(packagejson)
     })
     await buildActions(config)
-    expect(webpackMock.run).toHaveBeenCalledTimes(0) // no webpack bundling
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(0) // no webpack bundling
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/action-zip-temp'),
       path.normalize('/dist/actions/action-zip.zip'))
 
@@ -184,7 +184,7 @@ describe('build by zipping js action folder', () => {
     })
 
     await buildActions(config)
-    expect(webpackMock.run).toHaveBeenCalledTimes(0) // no webpack bundling
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(0) // no webpack bundling
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/action-zip-temp'),
       path.normalize('/dist/actions/action-zip.zip'))
   })
@@ -241,7 +241,7 @@ describe('build by bundling js action file with webpack', () => {
 
   test('should fail for invalid file or directory', async () => {
     await buildActions(config)
-    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(2)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
       entry: [path.normalize('/actions/action.js')],
       output: expect.objectContaining({
@@ -255,7 +255,7 @@ describe('build by bundling js action file with webpack', () => {
 
   test('should bundle a single action file using webpack and zip it', async () => {
     await buildActions(config)
-    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(2)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
       entry: [path.normalize('/actions/action.js')],
       output: expect.objectContaining({
@@ -363,7 +363,7 @@ describe('build by bundling js action file with webpack', () => {
     // mockAIOConfig.get.mockReturnValue(global.fakeConfig.tvm)
 
     await buildActions(global.namedPackageConfig)
-    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(2)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
       entry: [path.normalize('/actions/action.js')],
       output: expect.objectContaining({
@@ -378,7 +378,7 @@ describe('build by bundling js action file with webpack', () => {
   test('should still bundle a single action file when there is no ui', async () => {
     global.fakeFileSystem.removeKeys(['/web-src/index.html'])
     await buildActions(config)
-    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
+    expect(webpack.webpackMock.run).toHaveBeenCalledTimes(2)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
       entry: [path.normalize('/actions/action.js')],
       output: expect.objectContaining({
@@ -440,7 +440,7 @@ test('should build 1 zip action and 1 bundled action in one go', async () => {
 
   await buildActions(global.sampleAppConfig)
 
-  expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
+  expect(webpack.webpackMock.run).toHaveBeenCalledTimes(2)
   expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
     entry: [path.normalize('/actions/action.js')],
     output: expect.objectContaining({
@@ -448,7 +448,7 @@ test('should build 1 zip action and 1 bundled action in one go', async () => {
       filename: 'index.js'
     })
   }))
-  expect(utils.zip).toHaveBeenCalledTimes(2)
+  expect(utils.zip).toHaveBeenCalledTimes(4)
   expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/action-temp'),
     path.normalize('/dist/actions/action.zip'))
   expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/action-zip-temp'),
@@ -467,7 +467,7 @@ test('use buildConfig.filterActions to build only action called `action`', async
 
   await buildActions(global.sampleAppConfig, ['action'])
 
-  expect(webpack.webpackMock.run).toHaveBeenCalledTimes(1)
+  expect(webpack.webpackMock.run).toHaveBeenCalledTimes(2)
   expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
     entry: [path.normalize('/actions/action.js')],
     output: expect.objectContaining({
