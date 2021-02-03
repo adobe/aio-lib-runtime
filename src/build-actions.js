@@ -13,9 +13,55 @@ governing permissions and limitations under the License.
 const fs = require('fs-extra')
 const path = require('path')
 const webpack = require('webpack')
+const globby = require('globby')
 const utils = require('./utils')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:action-builder', { provider: 'debug' })
 
+const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename) => {
+  let parentDir = path.dirname(actionPath)
+  const rootParent = path.normalize(path.dirname(root))
+  let configPath = null
+
+  do {
+    const paths = await globby([path.join(parentDir, '*config.js')])
+    if (paths && paths.length > 0) {
+      configPath = paths[0]
+    }
+    parentDir = path.dirname(parentDir)
+  } while (parentDir !== rootParent && !configPath)
+  // default empty
+  const config = configPath ? require(configPath) : {}
+  // entry [] must include action path
+  config.entry = config.entry || []
+  config.entry.push(actionPath)
+  // if output exists, do not overwrite libraryTarget, default to commonjs2
+  config.output = config.output || { libraryTarget: 'commonjs2' }
+  config.output.path = tempBuildDir
+  config.output.filename = outBuildFilename
+  // target MUST be node
+  config.target = 'node'
+  // default to production mode
+  config.mode = config.mode || 'production'
+  // default optimization to NOT minimize
+  config.optimization = config.optimization || {
+    // error on minification for some libraries
+    minimize: false
+  }
+  // the following lines are used to require es6 module, e.g.node-fetch which is used by azure sdk
+  config.resolve = config.resolve || {}
+  // extensions needs to include .js and .json
+  config.resolve.extensions = config.resolve.extensions || []
+  config.resolve.extensions.push('.js', '.json')
+  // mainFields needs to include 'main'
+  config.resolve.mainFields = config.resolve.mainFields || []
+  config.resolve.mainFields.push('main')
+  // we have 1 required plugin to make sure is present
+  config.plugins = config.plugins || []
+  config.plugins.push(new webpack.DefinePlugin({ WEBPACK_ACTION_BUILD: 'true' }))
+
+  aioLogger.debug(`merged webpack config : ${JSON.stringify(config, 0, 2)}`)
+  return config
+}
 // need config.root
 // config.actions.dist
 const buildAction = async (zipFileName, action, root, dist) => {
@@ -60,51 +106,26 @@ const buildAction = async (zipFileName, action, root, dist) => {
   } else {
     const outBuildFilename = 'index.js' // `${name}.tmp.js`
     // if not directory => package and minify to single file
-    const compiler = webpack({
-      entry: [
-        actionPath
-      ],
-      output: {
-        path: tempBuildDir,
-        filename: outBuildFilename,
-        libraryTarget: 'commonjs2'
-      },
-      // see https://webpack.js.org/configuration/mode/
-      mode: 'production',
-      target: 'node',
-      optimization: {
-        // error on minification for some libraries
-        minimize: false
-      },
-      // the following lines are used to require es6 module, e.g.node-fetch which is used by azure sdk
-      resolve: {
-        extensions: ['.js', '.json'],
-        mainFields: ['main']
-      },
-      plugins: [new webpack.DefinePlugin(
-        {
-          WEBPACK_ACTION_BUILD: JSON.stringify(true)
-        })]
-      // todo remove packages from bundled file that are available in runtime (add the deps of deps as well)
-      // disabled for now as we need to consider versions (at least majors) to avoid nasty bugs
-      // ,externals: ['express', 'request', 'request-promise', 'body-parser', 'openwhisk']
-    })
+    const webpackConfig = await getWebpackConfig(actionPath, root, tempBuildDir, outBuildFilename)
+    const compiler = webpack(webpackConfig)
 
     // run the compiler and wait for a result
-    await new Promise((resolve, reject) => compiler.run((err, stats) => {
-      if (err) {
-        reject(err)
-      }
-      // stats must be defined at this point
-      const info = stats.toJson()
-      if (stats.hasWarnings()) {
-        aioLogger.debug(`webpack compilation warnings:\n${info.warnings}`)
-      }
-      if (stats.hasErrors()) {
-        reject(new Error(`action build failed, webpack compilation errors:\n${info.errors}`))
-      }
-      return resolve(stats)
-    }))
+    await new Promise((resolve, reject) => {
+      compiler.run((err, stats) => {
+        if (err) {
+          reject(err)
+        }
+        // stats must be defined at this point
+        const info = stats.toJson()
+        if (stats.hasWarnings()) {
+          aioLogger.warn(`webpack compilation warnings:\n${info.warnings}`)
+        }
+        if (stats.hasErrors()) {
+          reject(new Error(`action build failed, webpack compilation errors:\n${info.errors}`))
+        }
+        return resolve(stats)
+      })
+    })
   }
 
   // todo: split out zipping
