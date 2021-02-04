@@ -43,6 +43,13 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
   config.entry = config.entry || []
   config.entry.push(actionPath)
   config.entry = uniqueArr(config.entry)
+  // make sure filepaths are resolved from the config dir
+  config.entry = config.entry.map(f => {
+    if (!path.isAbsolute(f)) {
+      return path.resolve(path.dirname(configPath), f)
+    }
+    return f
+  })
 
   // if output exists, default to commonjs2
   config.output = config.output || {}

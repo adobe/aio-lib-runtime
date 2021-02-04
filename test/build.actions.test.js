@@ -307,13 +307,13 @@ describe('build by bundling js action file with webpack', () => {
     expect(Object.keys(global.fakeFileSystem.files())).toEqual(expect.arrayContaining(['/includeme.txt']))
   })
 
-  test('should bundle a single action file using webpack and zip it with includes using webpack-config.js', async () => {
+  test('should bundle a single action file using webpack and zip it with includes using webpack-config.js in actions root', async () => {
     // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
       'actions/action.js': global.fixtureFile('/sample-app-includes/actions/action.js'),
       'includeme.txt': global.fixtureFile('/sample-app-includes/includeme.txt'),
-      'actions/mock.config.js': global.fixtureFile('/sample-app-includes/actions/mock.config.js'),
+      'actions/mock.webpackconfig.js': global.fixtureFile('/sample-app-includes/actions/mock.config.js'),
       'manifest.yml': global.fixtureFile('/sample-app-includes/manifest.yml'),
       'package.json': global.fixtureFile('/sample-app-includes/package.json')
     })
@@ -339,7 +339,7 @@ describe('build by bundling js action file with webpack', () => {
     await buildActions(global.sampleAppIncludesConfig)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith({
-      entry: ['file.js', path.normalize('/actions/action.js')],
+      entry: [path.resolve('actions/file.js'), path.normalize('/actions/action.js')],
       mode: 'none',
       optimization: { minimize: false, somefakefield: true },
       output: { fake: false, filename: 'index.js', libraryTarget: 'commonjs2', path: path.normalize('/dist/actions/action-temp') },
@@ -357,7 +357,7 @@ describe('build by bundling js action file with webpack', () => {
     expect(Object.keys(global.fakeFileSystem.files())).toEqual(expect.arrayContaining(['/includeme.txt']))
   })
 
-  test('should bundle a single action file using webpack and zip it with includes using webpack-config.js in actions root folder', async () => {
+  test('should bundle a single action file using webpack and zip it with includes using webpack-config.js in actions folder', async () => {
     // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
@@ -367,9 +367,9 @@ describe('build by bundling js action file with webpack', () => {
     // first call to globby is for processing includes, second call is to get/find webpack config
     globby.mockReturnValueOnce([])
     globby.mockReturnValueOnce([]) // call is to actions/actionname/*.config.js
-    globby.mockReturnValueOnce(['actions/mock2.webpack-config.js'])
+    globby.mockReturnValueOnce(['actions/actionname/mock2.webpack-config.js'])
 
-    jest.mock('actions/mock2.webpack-config.js', () => {
+    jest.mock('actions/actionname/mock2.webpack-config.js', () => {
       return {
         mode: 'none',
         optimization: { somefakefield: true, minimize: true },
@@ -390,7 +390,7 @@ describe('build by bundling js action file with webpack', () => {
     await buildActions(clonedConfig)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith({
-      entry: ['file.js', path.normalize('/actions/actionname/action.js')],
+      entry: [path.resolve('actions/actionname/file.js'), path.normalize('/actions/actionname/action.js')],
       mode: 'none',
       optimization: { minimize: true, somefakefield: true },
       output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/action-temp') },
