@@ -13,7 +13,7 @@ governing permissions and limitations under the License.
 [![Version](https://img.shields.io/npm/v/@adobe/aio-lib-runtime.svg)](https://npmjs.org/package/@adobe/aio-lib-runtime)
 [![Downloads/week](https://img.shields.io/npm/dw/@adobe/aio-lib-runtime.svg)](https://npmjs.org/package/@adobe/aio-lib-runtime)
 ![Node.js CI](https://github.com/adobe/aio-lib-runtime/workflows/Node.js%20CI/badge.svg)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Greenkeeper badge](https://badges.greenkeeper.io/adobe/aio-lib-runtime.svg)](https://greenkeeper.io/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Codecov Coverage](https://img.shields.io/codecov/c/github/adobe/aio-lib-runtime/master.svg?style=flat-square)](https://codecov.io/gh/adobe/aio-lib-runtime/)
 
 # Adobe I/O Runtime Lib
@@ -32,7 +32,7 @@ const sdk = require('@adobe/aio-lib-runtime')
 
 async function sdkTest() {
   //initialize sdk
-  const client = await sdk.init({ apihost: 'apihost', api_key: 'api_key'})
+  const client = await sdk.init('<tenant>', 'x-api-key', '<valid auth token>')
 }
 ```
 
@@ -43,7 +43,7 @@ const sdk = require('@adobe/aio-lib-runtime')
 
 async function sdkTest() {
   // initialize sdk
-  const client = await sdk.init({ apihost: 'apihost', api_key: 'api_key'})
+  const client = await sdk.init('<tenant>', 'x-api-key', '<valid auth token>')
 
   // call methods
   try {
@@ -130,9 +130,11 @@ note: file MUST exist, caller&#39;s responsibility, this method will throw if it
 <dt><a href="#createKeyValueObjectFromFile">createKeyValueObjectFromFile(file)</a> ⇒ <code>object</code></dt>
 <dd><p>returns key value pairs from the parameters supplied. Used to create --param-file and --annotation-file key value pairs</p>
 </dd>
-<dt><a href="#createComponentsfromSequence">createComponentsfromSequence(sequenceAction)</a> ⇒ <code>object</code></dt>
+<dt><a href="#createComponentsFromSequence">createComponentsFromSequence(sequenceAction)</a> ⇒ <code>object</code></dt>
 <dd><p>Creates an object representation of a sequence.</p>
 </dd>
+<dt><del><a href="#createComponentsFromSequence">createComponentsFromSequence(sequenceAction)</a> ⇒ <code>object</code></del></dt>
+<dd></dd>
 <dt><a href="#returnUnion">returnUnion(firstObject, secondObject)</a> ⇒ <code>object</code></dt>
 <dd><p>Creates a union of two objects</p>
 </dd>
@@ -215,7 +217,10 @@ managed projects.</p>
 <dd><p>Compute the project hash based on the manifest content and manifest path. This is used
 for syncing managed projects.</p>
 </dd>
-<dt><a href="#findProjectHashonServer">findProjectHashonServer(ow, projectName)</a> ⇒ <code>Promise.&lt;string&gt;</code></dt>
+<dt><a href="#findProjectHashOnServer">findProjectHashOnServer(ow, projectName)</a> ⇒ <code>Promise.&lt;string&gt;</code></dt>
+<dd><p>Retrieve the project hash from a deployed managed project.</p>
+</dd>
+<dt><del><a href="#findProjectHashOnServer">findProjectHashOnServer(ow, projectName)</a> ⇒ <code>Promise.&lt;string&gt;</code></del></dt>
 <dd><p>Retrieve the project hash from a deployed managed project.</p>
 </dd>
 <dt><a href="#_relApp">_relApp(root, p)</a></dt>
@@ -224,13 +229,19 @@ for syncing managed projects.</p>
 <dd></dd>
 <dt><a href="#checkOpenWhiskCredentials">checkOpenWhiskCredentials(config)</a></dt>
 <dd></dd>
-<dt><a href="#getActionUrls">getActionUrls(config, isRemoteDev, isLocalDev)</a></dt>
+<dt><a href="#getActionUrls">getActionUrls(appConfig, isRemoteDev, isLocalDev)</a></dt>
 <dd></dd>
 <dt><a href="#urlJoin">urlJoin(...args)</a> ⇒ <code>string</code></dt>
 <dd><p>Joins url path parts</p>
 </dd>
 <dt><a href="#removeProtocolFromURL">removeProtocolFromURL(url)</a></dt>
 <dd></dd>
+<dt><a href="#validateActionRuntime">validateActionRuntime(action)</a></dt>
+<dd><p>Checks the validity of nodejs version in action definition and throws an error if invalid.</p>
+</dd>
+<dt><a href="#getActionZipFileName">getActionZipFileName(pkgName, actionName, defaultPkg)</a></dt>
+<dd><p>Returns the action&#39;s build file name without the .zip extension</p>
+</dd>
 </dl>
 
 ## Typedefs
@@ -513,6 +524,61 @@ Filters and prints action logs.
 | strip | <code>boolean</code> | <code>false</code> | if true, strips the timestamp which prefixes every log line |
 | startTime | <code>number</code> | <code>0</code> | time in milliseconds. Only logs after this time will be fetched |
 
+
+* [printFilteredActionLogs(runtime, logger, limit, filterActions, strip, startTime)](#printFilteredActionLogs)
+    * [~isSequenceActivation(activation)](#printFilteredActionLogs..isSequenceActivation) ⇒ <code>boolean</code>
+    * [~printActivationLogs(activation, runtime)](#printFilteredActionLogs..printActivationLogs)
+    * [~printSequenceLogs(activation, runtime)](#printFilteredActionLogs..printSequenceLogs)
+    * [~printLogs(activation, runtime)](#printFilteredActionLogs..printLogs)
+
+<a name="printFilteredActionLogs..isSequenceActivation"></a>
+
+### printFilteredActionLogs~isSequenceActivation(activation) ⇒ <code>boolean</code>
+Check if an activation entry is for a sequence.
+
+**Kind**: inner method of [<code>printFilteredActionLogs</code>](#printFilteredActionLogs)  
+**Returns**: <code>boolean</code> - isSequenceActivation  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| activation | <code>\*</code> | activation log entry |
+
+<a name="printFilteredActionLogs..printActivationLogs"></a>
+
+### printFilteredActionLogs~printActivationLogs(activation, runtime)
+Print activation logs
+
+**Kind**: inner method of [<code>printFilteredActionLogs</code>](#printFilteredActionLogs)  
+
+| Param | Type |
+| --- | --- |
+| activation | <code>\*</code> | 
+| runtime | <code>\*</code> | 
+
+<a name="printFilteredActionLogs..printSequenceLogs"></a>
+
+### printFilteredActionLogs~printSequenceLogs(activation, runtime)
+Print sequence logs
+
+**Kind**: inner method of [<code>printFilteredActionLogs</code>](#printFilteredActionLogs)  
+
+| Param | Type |
+| --- | --- |
+| activation | <code>\*</code> | 
+| runtime | <code>\*</code> | 
+
+<a name="printFilteredActionLogs..printLogs"></a>
+
+### printFilteredActionLogs~printLogs(activation, runtime)
+Print logs
+
+**Kind**: inner method of [<code>printFilteredActionLogs</code>](#printFilteredActionLogs)  
+
+| Param | Type |
+| --- | --- |
+| activation | <code>\*</code> | 
+| runtime | <code>\*</code> | 
+
 <a name="getActionEntryFile"></a>
 
 ## getActionEntryFile(pkgJson) ⇒ <code>string</code>
@@ -648,10 +714,22 @@ returns key value pairs from the parameters supplied. Used to create --param-fil
 | --- | --- | --- |
 | file | <code>string</code> | from flags['param-file'] or flags['annotation-file'] |
 
-<a name="createComponentsfromSequence"></a>
+<a name="createComponentsFromSequence"></a>
 
-## createComponentsfromSequence(sequenceAction) ⇒ <code>object</code>
+## createComponentsFromSequence(sequenceAction) ⇒ <code>object</code>
 Creates an object representation of a sequence.
+
+**Kind**: global function  
+**Returns**: <code>object</code> - the object representation of the sequence  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| sequenceAction | <code>Array</code> | the sequence action array |
+
+<a name="createComponentsFromSequence"></a>
+
+## ~~createComponentsFromSequence(sequenceAction) ⇒ <code>object</code>~~
+***Deprecated***
 
 **Kind**: global function  
 **Returns**: <code>object</code> - the object representation of the sequence  
@@ -956,9 +1034,24 @@ for syncing managed projects.
 | manifestContent | <code>string</code> | the manifest content |
 | manifestPath | <code>string</code> | the manifest path |
 
-<a name="findProjectHashonServer"></a>
+<a name="findProjectHashOnServer"></a>
 
-## findProjectHashonServer(ow, projectName) ⇒ <code>Promise.&lt;string&gt;</code>
+## findProjectHashOnServer(ow, projectName) ⇒ <code>Promise.&lt;string&gt;</code>
+Retrieve the project hash from a deployed managed project.
+
+**Kind**: global function  
+**Returns**: <code>Promise.&lt;string&gt;</code> - the project hash, or '' if not found  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ow | <code>object</code> | the OpenWhisk client object |
+| projectName | <code>string</code> | the project name |
+
+<a name="findProjectHashOnServer"></a>
+
+## ~~findProjectHashOnServer(ow, projectName) ⇒ <code>Promise.&lt;string&gt;</code>~~
+***Deprecated***
+
 Retrieve the project hash from a deployed managed project.
 
 **Kind**: global function  
@@ -1000,12 +1093,12 @@ Retrieve the project hash from a deployed managed project.
 
 <a name="getActionUrls"></a>
 
-## getActionUrls(config, isRemoteDev, isLocalDev)
+## getActionUrls(appConfig, isRemoteDev, isLocalDev)
 **Kind**: global function  
 
 | Param | Default |
 | --- | --- |
-| config |  | 
+| appConfig |  | 
 | isRemoteDev | <code>false</code> | 
 | isLocalDev | <code>false</code> | 
 
@@ -1028,6 +1121,30 @@ Joins url path parts
 | Param |
 | --- |
 | url | 
+
+<a name="validateActionRuntime"></a>
+
+## validateActionRuntime(action)
+Checks the validity of nodejs version in action definition and throws an error if invalid.
+
+**Kind**: global function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| action | <code>object</code> | action object |
+
+<a name="getActionZipFileName"></a>
+
+## getActionZipFileName(pkgName, actionName, defaultPkg)
+Returns the action's build file name without the .zip extension
+
+**Kind**: global function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| pkgName | <code>string</code> | name of the package |
+| actionName | <code>string</code> | name of the action |
+| defaultPkg | <code>boolean</code> | true if pkgName is the default/first package |
 
 <a name="OpenwhiskOptions"></a>
 
