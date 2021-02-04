@@ -318,21 +318,39 @@ describe('build by bundling js action file with webpack', () => {
       'package.json': global.fixtureFile('/sample-app-includes/package.json')
     })
     globby.mockReturnValueOnce(['/includeme.txt'])
-    globby.mockReturnValueOnce(['actions/mock.config.js'])
+    globby.mockReturnValueOnce(['actions/mock.webpack-config.js'])
 
-    jest.mock('actions/mock.config.js', () => {
-      return { mode: 'none' }
+    jest.mock('actions/mock.webpack-config.js', () => {
+      return {
+        mode: 'none',
+        optimization: { somefakefield: true },
+        output: { fake: false },
+        entry: ['file.js'],
+        resolve: {
+          extensions: ['html', 'json', 'css'],
+          mainFields: ['another'],
+          anotherFake: ['yo']
+        },
+        plugins: ['hello'],
+        target: 'cannotovewrite'
+      }
     }, { virtual: true })
 
     await buildActions(global.sampleAppIncludesConfig)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
-    expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-      entry: [path.normalize('/actions/action.js')],
-      output: expect.objectContaining({
-        path: path.normalize('/dist/actions/action-temp'),
-        filename: 'index.js'
-      })
-    }))
+    expect(webpack).toHaveBeenCalledWith({
+      entry: ['file.js', path.normalize('/actions/action.js')],
+      mode: 'none',
+      optimization: { minimize: false, somefakefield: true },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'commonjs2', path: path.normalize('/dist/actions/action-temp') },
+      plugins: ['hello', {}],
+      resolve: {
+        anotherFake: ['yo'],
+        extensions: ['html', 'json', 'css', '.js', '.json'],
+        mainFields: ['another', 'main']
+      },
+      target: 'node'
+    })
     expect(globby).toHaveBeenCalledWith(expect.arrayContaining([path.normalize('/actions/*webpack-config.js')]))
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/action-temp'),
       path.normalize('/dist/actions/action.zip'))
@@ -349,24 +367,41 @@ describe('build by bundling js action file with webpack', () => {
     // first call to globby is for processing includes, second call is to get/find webpack config
     globby.mockReturnValueOnce([])
     globby.mockReturnValueOnce([]) // call is to actions/actionname/*.config.js
-    globby.mockReturnValueOnce(['actions/mock2.config.js'])
+    globby.mockReturnValueOnce(['actions/mock2.webpack-config.js'])
 
-    jest.mock('actions/mock2.config.js', () => {
-      return { mode: 'nope' }
+    jest.mock('actions/mock2.webpack-config.js', () => {
+      return {
+        mode: 'none',
+        optimization: { somefakefield: true, minimize: true },
+        output: { fake: false, libraryTarget: 'fake' },
+        entry: ['file.js'],
+        resolve: {
+          extensions: ['html', 'json', 'css'],
+          mainFields: ['another'],
+          anotherFake: ['yo']
+        },
+        plugins: ['hello'],
+        target: 'cannotovewrite'
+      }
     }, { virtual: true })
 
     const clonedConfig = deepClone(global.sampleAppIncludesConfig)
     clonedConfig.manifest.full.packages.__APP_PACKAGE__.actions.action.function = 'actions/actionname/action.js'
     await buildActions(clonedConfig)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
-    expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-      mode: 'nope',
-      entry: [path.normalize('/actions/actionname/action.js')],
-      output: expect.objectContaining({
-        path: path.normalize('/dist/actions/action-temp'),
-        filename: 'index.js'
-      })
-    }))
+    expect(webpack).toHaveBeenCalledWith({
+      entry: ['file.js', path.normalize('/actions/actionname/action.js')],
+      mode: 'none',
+      optimization: { minimize: true, somefakefield: true },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/action-temp') },
+      plugins: ['hello', {}],
+      resolve: {
+        anotherFake: ['yo'],
+        extensions: ['html', 'json', 'css', '.js', '.json'],
+        mainFields: ['another', 'main']
+      },
+      target: 'node'
+    })
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/action-temp'),
       path.normalize('/dist/actions/action.zip'))
   })

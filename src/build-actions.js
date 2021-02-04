@@ -16,6 +16,11 @@ const webpack = require('webpack')
 const globby = require('globby')
 const utils = require('./utils')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:action-builder', { provider: 'debug' })
+const cloneDeep = require('lodash.clonedeep')
+
+const uniqueArr = (items) => {
+  return [...new Set(items)]
+}
 
 const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename) => {
   let parentDir = path.dirname(actionPath)
@@ -30,12 +35,20 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
     parentDir = path.dirname(parentDir)
   } while (parentDir !== rootParent && !configPath)
   // default empty
-  const config = configPath ? require(configPath) : {}
+  const userConfig = configPath ? require(configPath) : {}
+  // needs cloning because require has a cache, so we make sure to not touch the userConfig
+  const config = cloneDeep(userConfig)
+
   // entry [] must include action path
   config.entry = config.entry || []
   config.entry.push(actionPath)
-  // if output exists, do not overwrite libraryTarget, default to commonjs2
-  config.output = config.output || { libraryTarget: 'commonjs2' }
+  config.entry = uniqueArr(config.entry)
+
+  // if output exists, default to commonjs2
+  config.output = config.output || {}
+  if (config.output.libraryTarget === undefined) {
+    config.output.libraryTarget = 'commonjs2'
+  }
   config.output.path = tempBuildDir
   config.output.filename = outBuildFilename
   // target MUST be node
@@ -43,21 +56,27 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
   // default to production mode
   config.mode = config.mode || 'production'
   // default optimization to NOT minimize
-  config.optimization = config.optimization || {
+  config.optimization = config.optimization || {}
+  if (config.optimization.minimize === undefined) {
     // error on minification for some libraries
-    minimize: false
+    config.optimization.minimize = false
   }
   // the following lines are used to require es6 module, e.g.node-fetch which is used by azure sdk
   config.resolve = config.resolve || {}
   // extensions needs to include .js and .json
   config.resolve.extensions = config.resolve.extensions || []
   config.resolve.extensions.push('.js', '.json')
+  config.resolve.extensions = uniqueArr(config.resolve.extensions)
+
   // mainFields needs to include 'main'
   config.resolve.mainFields = config.resolve.mainFields || []
   config.resolve.mainFields.push('main')
+  config.resolve.mainFields = uniqueArr(config.resolve.mainFields)
+
   // we have 1 required plugin to make sure is present
   config.plugins = config.plugins || []
   config.plugins.push(new webpack.DefinePlugin({ WEBPACK_ACTION_BUILD: 'true' }))
+  // NOTE: no need to make the array unique here, all plugins are different and created via new
 
   aioLogger.debug(`merged webpack config : ${JSON.stringify(config, 0, 2)}`)
   return config
