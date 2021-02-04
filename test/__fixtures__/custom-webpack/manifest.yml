@@ -1,0 +1,7 @@
+packages:
+  __APP_PACKAGE__:
+    actions:
+      action:
+        function: actions/actionname/action.js
+        web: yes
+        runtime: 'nodejs:12'
