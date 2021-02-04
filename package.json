@@ -63,7 +63,8 @@
     "beautify": "eslint src test e2e --fix",
     "test": "npm run unit-tests && npm run lint",
     "typings": "jsdoc -t node_modules/tsd-jsdoc/dist -r src/*.js -d .",
-    "unit-tests": "jest --ci"
+    "unit-tests": "jest --ci",
+    "version": "npm run generate-docs && git add README.md"
   },
   "jest": {
     "collectCoverage": true,
