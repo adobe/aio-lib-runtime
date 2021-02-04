@@ -313,7 +313,6 @@ describe('build by bundling js action file with webpack', () => {
     global.fakeFileSystem.addJson({
       'actions/action.js': global.fixtureFile('/sample-app-includes/actions/action.js'),
       'includeme.txt': global.fixtureFile('/sample-app-includes/includeme.txt'),
-      'actions/mock.webpackconfig.js': global.fixtureFile('/sample-app-includes/actions/mock.config.js'),
       'manifest.yml': global.fixtureFile('/sample-app-includes/manifest.yml'),
       'package.json': global.fixtureFile('/sample-app-includes/package.json')
     })
