@@ -307,7 +307,7 @@ describe('build by bundling js action file with webpack', () => {
     expect(Object.keys(global.fakeFileSystem.files())).toEqual(expect.arrayContaining(['/includeme.txt']))
   })
 
-  test('should bundle a single action file using webpack and zip it with includes using webpack.config.js', async () => {
+  test('should bundle a single action file using webpack and zip it with includes using webpack-config.js', async () => {
     // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
@@ -333,12 +333,13 @@ describe('build by bundling js action file with webpack', () => {
         filename: 'index.js'
       })
     }))
+    expect(globby).toHaveBeenCalledWith(expect.arrayContaining(['/actions/*webpack-config.js']))
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/action-temp'),
       path.normalize('/dist/actions/action.zip'))
     expect(Object.keys(global.fakeFileSystem.files())).toEqual(expect.arrayContaining(['/includeme.txt']))
   })
 
-  test('should bundle a single action file using webpack and zip it with includes using webpack.config.js in actions root folder', async () => {
+  test('should bundle a single action file using webpack and zip it with includes using webpack-config.js in actions root folder', async () => {
     // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({

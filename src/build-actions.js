@@ -23,7 +23,7 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
   let configPath = null
 
   do {
-    const paths = await globby([path.join(parentDir, '*config.js')])
+    const paths = await globby([path.join(parentDir, '*webpack-config.js')])
     if (paths && paths.length > 0) {
       configPath = paths[0]
     }
