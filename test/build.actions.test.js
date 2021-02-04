@@ -333,7 +333,7 @@ describe('build by bundling js action file with webpack', () => {
         filename: 'index.js'
       })
     }))
-    expect(globby).toHaveBeenCalledWith(expect.arrayContaining(['/actions/*webpack-config.js']))
+    expect(globby).toHaveBeenCalledWith(expect.arrayContaining([path.normalize('/actions/*webpack-config.js')]))
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/action-temp'),
       path.normalize('/dist/actions/action.zip'))
     expect(Object.keys(global.fakeFileSystem.files())).toEqual(expect.arrayContaining(['/includeme.txt']))
