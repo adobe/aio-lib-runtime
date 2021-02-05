@@ -14,12 +14,14 @@ const fs = require('fs-extra')
 const cloneDeep = require('lodash.clonedeep')
 const os = require('os')
 const path = require('path')
+const decache = require('decache')
 
 const archiver = require('archiver')
 jest.mock('archiver')
 
 jest.mock('cross-fetch')
 jest.mock('globby')
+jest.mock('decache')
 
 const utils = require('../src/utils')
 const activationLog = { logs: ['2020-06-25T05:50:23.641Z       stdout: logged from action code'] }
@@ -44,6 +46,7 @@ beforeEach(() => {
     'basic_manifest_res_namesonly.json': global.fixtureFile('/deploy/basic_manifest_res_namesonly.json')
   }
   global.fakeFileSystem.addJson(json)
+  decache.mockReset()
 })
 
 afterEach(() => {
@@ -1826,4 +1829,19 @@ describe('validateActionRuntime', () => {
     const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })
     expect(func).toThrowError(`Unsupported node version in action undefined. Supported versions are ${supportedEngines.node}`)
   })
+})
+
+test('requireNoCache', () => {
+  const mockModuleName = 'foo-bar'
+  const mockModuleObject = {
+    someProperty: 'someValue'
+  }
+
+  jest.mock('foo-bar', () => mockModuleObject, { virtual: true })
+
+  const myModule = utils.requireNoCache(mockModuleName)
+  expect(myModule).toStrictEqual({
+    someProperty: 'someValue'
+  })
+  expect(decache).toBeCalledTimes(1)
 })

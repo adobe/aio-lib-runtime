@@ -24,6 +24,8 @@ const mockLogger = require('@adobe/aio-lib-core-logging')
 
 // zip implementation is complex to test => tested in utils.test.js
 utils.zip = jest.fn()
+// use regular require, requireNoCache tested in utils.test.js
+utils.requireNoCache = jest.fn(m => require(m))
 
 // todo move webpack mock to __mocks__
 jest.mock('webpack')

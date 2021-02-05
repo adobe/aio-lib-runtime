@@ -14,6 +14,7 @@
     "@adobe/aio-lib-core-logging": "^1.1.2",
     "archiver": "^5.0.0",
     "cross-fetch": "^3.0.4",
+    "decache": "^4.6.0",
     "execa": "^4.0.3",
     "fs-extra": "^9.0.1",
     "globby": "^11.0.1",

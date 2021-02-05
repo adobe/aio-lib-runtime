@@ -16,7 +16,6 @@ const webpack = require('webpack')
 const globby = require('globby')
 const utils = require('./utils')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:action-builder', { provider: 'debug' })
-const cloneDeep = require('lodash.clonedeep')
 
 const uniqueArr = (items) => {
   return [...new Set(items)]
@@ -34,14 +33,11 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
     }
     parentDir = path.dirname(parentDir)
   } while (parentDir !== rootParent && !configPath)
-  
+
   // default empty
   let config = {}
   if (configPath) {
-    // needs cloning because require has a cache, so we make sure to not touch the userConfig
-    config = cloneDeep(require(configPath))
-    // remove the module from the require cache (in the case of file watching changes)
-    delete require.cache[require.resolve(configPath)]
+    config = utils.requireNoCache(configPath)
   }
 
   // entry [] must include action path

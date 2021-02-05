@@ -22,6 +22,7 @@ const path = require('path')
 const archiver = require('archiver')
 const semver = require('semver')
 const supportedEngines = require('../package.json').engines
+const decache = require('decache')
 
 /**
  *
@@ -1958,6 +1959,18 @@ function validateActionRuntime (action) {
 }
 
 /**
+ * The same as `require`, but the module contents are not cached.
+ *
+ * @param {string} modulePath the path to the module
+ * @returns {object} the loaded module
+ */
+function requireNoCache (modulePath) {
+  const loadedModule = require(modulePath)
+  decache(modulePath)
+  return loadedModule
+}
+
+/**
  * Returns the action's build file name without the .zip extension
  *
  * @param {string} pkgName name of the package
@@ -1969,6 +1982,7 @@ function getActionZipFileName (pkgName, actionName, defaultPkg) {
 }
 
 module.exports = {
+  requireNoCache,
   checkOpenWhiskCredentials,
   getActionEntryFile,
   getIncludesForAction,
