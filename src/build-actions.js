@@ -34,10 +34,15 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
     }
     parentDir = path.dirname(parentDir)
   } while (parentDir !== rootParent && !configPath)
+  
   // default empty
-  const userConfig = configPath ? require(configPath) : {}
-  // needs cloning because require has a cache, so we make sure to not touch the userConfig
-  const config = cloneDeep(userConfig)
+  let config = {}
+  if (configPath) {
+    // needs cloning because require has a cache, so we make sure to not touch the userConfig
+    config = cloneDeep(require(configPath))
+    // remove the module from the require cache (in the case of file watching changes)
+    delete require.cache[require.resolve(configPath)]
+  }
 
   // entry [] must include action path
   config.entry = config.entry || []
