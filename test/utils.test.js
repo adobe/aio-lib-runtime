@@ -14,14 +14,14 @@ const fs = require('fs-extra')
 const cloneDeep = require('lodash.clonedeep')
 const os = require('os')
 const path = require('path')
-const decache = require('decache')
+const clearModule = require('clear-module')
 
 const archiver = require('archiver')
 jest.mock('archiver')
 
 jest.mock('cross-fetch')
 jest.mock('globby')
-jest.mock('decache')
+jest.mock('clear-module')
 
 const utils = require('../src/utils')
 const activationLog = { logs: ['2020-06-25T05:50:23.641Z       stdout: logged from action code'] }
@@ -46,7 +46,7 @@ beforeEach(() => {
     'basic_manifest_res_namesonly.json': global.fixtureFile('/deploy/basic_manifest_res_namesonly.json')
   }
   global.fakeFileSystem.addJson(json)
-  decache.mockReset()
+  clearModule.mockReset()
 })
 
 afterEach(() => {
@@ -1843,5 +1843,5 @@ test('requireNoCache', () => {
   expect(myModule).toStrictEqual({
     someProperty: 'someValue'
   })
-  expect(decache).toBeCalledTimes(1)
+  expect(clearModule).toBeCalledTimes(1)
 })

@@ -22,7 +22,7 @@ const path = require('path')
 const archiver = require('archiver')
 const semver = require('semver')
 const supportedEngines = require('../package.json').engines
-const decache = require('decache')
+const clearModule = require('clear-module')
 
 /**
  *
@@ -1966,7 +1966,7 @@ function validateActionRuntime (action) {
  */
 function requireNoCache (modulePath) {
   const loadedModule = require(modulePath)
-  decache(modulePath)
+  clearModule(modulePath)
   return loadedModule
 }
 
