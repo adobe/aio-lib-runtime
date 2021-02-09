@@ -13,6 +13,7 @@ const ow = require('openwhisk')()
 const fs = require('fs-extra')
 const cloneDeep = require('lodash.clonedeep')
 const os = require('os')
+const path = require('path')
 
 const archiver = require('archiver')
 jest.mock('archiver')
@@ -64,7 +65,7 @@ describe('utils has the right functions', () => {
     expect(typeof utils.createKeyValueObjectFromArray).toEqual('function')
     expect(typeof utils.createKeyValueArrayFromObject).toEqual('function')
     expect(typeof utils.parsePackageName).toEqual('function')
-    expect(typeof utils.createComponentsfromSequence).toEqual('function')
+    expect(typeof utils.createComponentsFromSequence).toEqual('function')
     expect(typeof utils.processInputs).toEqual('function')
 
     expect(typeof utils.createKeyValueInput).toEqual('function')
@@ -83,7 +84,7 @@ describe('utils has the right functions', () => {
     expect(typeof utils.setPaths).toEqual('function')
     expect(typeof utils.getProjectEntities).toEqual('function')
     expect(typeof utils.syncProject).toEqual('function')
-    expect(typeof utils.findProjectHashonServer).toEqual('function')
+    expect(typeof utils.findProjectHashOnServer).toEqual('function')
     expect(typeof utils.getProjectHash).toEqual('function')
     expect(typeof utils.addManagedProjectAnnotations).toEqual('function')
     expect(typeof utils.printLogs).toEqual('function')
@@ -125,9 +126,9 @@ describe('parsePackageName', () => {
   })
 })
 
-describe('createComponentsfromSequence', () => {
+describe('createComponentsFromSequence', () => {
   test('sequence components', () => {
-    const res = utils.createComponentsfromSequence(['a', 'p/b', '/ns/p/c', '/ns2/p/d', '/ns3/e'])
+    const res = utils.createComponentsFromSequence(['a', 'p/b', '/ns/p/c', '/ns2/p/d', '/ns3/e'])
     expect(res).toMatchObject({
       kind: 'sequence',
       components: ['/_/a', '/_/p/b', '/ns/p/c', '/ns2/p/d', '/ns3/e']
@@ -948,7 +949,7 @@ describe('syncProject', () => {
         }
       ]
     }
-    ow.mockResolved('packages.list', [resultObject]) // for findProjectHashonServer
+    ow.mockResolved('packages.list', [resultObject]) // for findProjectHashOnServer
     fs.statSync = jest.fn(() => ({ size: () => 1 }))
     global.fakeFileSystem.addJson({ [manifestPath]: newProjectHash }) // for getProjectHash
 
@@ -1389,7 +1390,7 @@ describe('getProjectHash', () => {
   })
 })
 
-describe('findProjectHashonServer', () => {
+describe('findProjectHashOnServer', () => {
   test('default projectHash (no packages, actions, triggers, rules found)', async () => {
     const testProjectName = 'ThisIsTheNameOfTheProject'
     // const resultObject = [{ annotations: [{ key: 'whisk-managed', value: { projectName: testProjectName, projectHash: 'projectHash' } }] }]
@@ -1397,7 +1398,7 @@ describe('findProjectHashonServer', () => {
     const actList = ow.mockResolved('actions.list', '')
     const trgList = ow.mockResolved('triggers.list', '')
     const rlzList = ow.mockResolved('rules.list', '')
-    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).toHaveBeenCalled()
     expect(trgList).toHaveBeenCalled()
@@ -1412,7 +1413,7 @@ describe('findProjectHashonServer', () => {
     const actList = ow.mockResolved('actions.list', [{ annotations: [] }])
     const trgList = ow.mockResolved('triggers.list', [{ annotations: [] }])
     const rlzList = ow.mockResolved('rules.list', [{ annotations: [] }])
-    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).toHaveBeenCalled()
     expect(trgList).toHaveBeenCalled()
@@ -1427,7 +1428,7 @@ describe('findProjectHashonServer', () => {
     const actList = ow.mockResolved('actions.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
     const trgList = ow.mockResolved('triggers.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
     const rlzList = ow.mockResolved('rules.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
-    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).toHaveBeenCalled()
     expect(trgList).toHaveBeenCalled()
@@ -1442,7 +1443,7 @@ describe('findProjectHashonServer', () => {
     const actList = ow.mockResolved('actions.list', '')
     const trgList = ow.mockResolved('triggers.list', '')
     const rlzList = ow.mockResolved('rules.list', '')
-    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).not.toHaveBeenCalled()
     expect(trgList).not.toHaveBeenCalled()
@@ -1457,7 +1458,7 @@ describe('findProjectHashonServer', () => {
     const actList = ow.mockResolved('actions.list', resultObject)
     const trgList = ow.mockResolved('triggers.list', '')
     const rlzList = ow.mockResolved('rules.list', '')
-    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).toHaveBeenCalled()
     expect(trgList).not.toHaveBeenCalled()
@@ -1472,7 +1473,7 @@ describe('findProjectHashonServer', () => {
     const actList = ow.mockResolved('actions.list', '')
     const trgList = ow.mockResolved('triggers.list', resultObject)
     const rlzList = ow.mockResolved('rules.list', '')
-    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).toHaveBeenCalled()
     expect(trgList).toHaveBeenCalled()
@@ -1487,7 +1488,7 @@ describe('findProjectHashonServer', () => {
     const actList = ow.mockResolved('actions.list', '')
     const trgList = ow.mockResolved('triggers.list', '')
     const rlzList = ow.mockResolved('rules.list', resultObject)
-    const result = await utils.findProjectHashonServer(ow, testProjectName)
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
     expect(pkgList).toHaveBeenCalled()
     expect(actList).toHaveBeenCalled()
     expect(trgList).toHaveBeenCalled()
@@ -1532,38 +1533,147 @@ describe('getActionUrls', () => {
   let config
   beforeEach(async () => {
     config = cloneDeep(global.sampleAppConfig)
+    // add a package, note: preferably this should be part of a multi package mock config
+    config.manifest.full.packages.pkg2 = {
+      actions: {
+        thataction: cloneDeep(config.manifest.full.packages.__APP_PACKAGE__.actions.action)
+      },
+      sequences: {
+        thatsequence: cloneDeep(config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'])
+      }
+    }
   })
 
-  test('local dev false', () => {
+  test('some non web actions, with ui, no dev, no custom apihost, no custom hostname', () => {
     const expected = {
-      'sample-app-1.0.0/action': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
-      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
-      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip'
+      action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
+      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
     }
 
-    const result = utils.getActionUrls(config, config.actions.devRemote, false)
-    expect(result).toEqual(expect.objectContaining(expected))
+    config.manifest.full.packages.pkg2.actions.thataction.web = 'no'
+    config.manifest.full.packages.__APP_PACKAGE__.actions.action.web = false
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expected)
   })
 
-  test('local dev true', () => {
+  test('some non web actions, with ui, no dev, no custom apihost, custom hostname => use custom hostname everywhere', () => {
     const expected = {
-      'sample-app-1.0.0/action': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
-      'sample-app-1.0.0/action-sequence': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-sequence',
-      'sample-app-1.0.0/action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
+      action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
+      'action-sequence': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.custom.net/api/v1/web/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thatsequence'
     }
-    const result = utils.getActionUrls(config, config.actions.devRemote, true)
-    expect(result).toEqual(expect.objectContaining(expected))
-  })
-
-  test('web false', () => {
-    const expected = {
-      'sample-app-1.0.0/action': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action',
-      'sample-app-1.0.0/action-sequence': 'https://adobeioruntime.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
-      'sample-app-1.0.0/action-zip': 'https://adobeioruntime.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip'
-    }
+    config.app.hostname = 'custom.net'
     config.manifest.full.packages.__APP_PACKAGE__.actions.action.web = 'no'
+    delete config.manifest.full.packages.pkg2.sequences.thatsequence.web
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expected)
+  })
+
+  test('some non web actions, with ui, no dev, custom apihost, custom hostname => use custom hostname everywhere', () => {
+    const expected = {
+      action: 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action',
+      'action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.custom.net/api/v1/web/pkg2/thataction',
+      'pkg2/thatsequence': 'https://ow-custom.net/api/v1/fake_ns/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'ow-custom.net'
+    config.app.hostname = 'custom.net'
+    config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = 'no'
+    delete config.manifest.full.packages.pkg2.sequences.thatsequence.web
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expected)
+  })
+
+  test('some non web actions, with ui, no dev, custom apihost, no custom hostname', () => {
+    const expected = {
+      action: 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
+      'action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thataction',
+      'pkg2/thatsequence': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'ow-custom.net'
     config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = false
-    const result = utils.getActionUrls(config, config.actions.devRemote, true)
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expected)
+  })
+
+  test('some non web actions, with ui, local dev, custom apihost (localhost), no custom hostname', () => {
+    const expected = {
+      action: 'http://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action',
+      'action-sequence': 'http://localhost:3030/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'action-zip': 'http://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'http://localhost:3030/api/v1/web/fake_ns/pkg2/thataction',
+      'pkg2/thatsequence': 'http://localhost:3030/api/v1/web/fake_ns/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'localhost:3030'
+    delete config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web
+    const result = utils.getActionUrls(config, false, true)
+    expect(result).toEqual(expected)
+  })
+
+  test('some non web actions, with ui, remote dev, no custom apihost, no custom hostname', () => {
+    const expected = {
+      action: 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action',
+      'action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thatsequence'
+    }
+    delete config.manifest.full.packages.__APP_PACKAGE__.actions['action-zip'].web
+    const result = utils.getActionUrls(config, true, false)
+    expect(result).toEqual(expected)
+  })
+
+  test('some non web actions, no ui, no dev, no custom apihost, no custom hostname', () => {
+    const expected = {
+      action: 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action',
+      'action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thatsequence'
+    }
+    config.manifest.full.packages.__APP_PACKAGE__.actions['action-zip'].web = false
+    config.app.hasFrontend = false
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expected)
+  })
+
+  test('some non web actions, no ui, no dev, custom apihost, custom hostname => use custom hostname', () => {
+    const expected = {
+      action: 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action',
+      'action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.custom.net/api/v1/web/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.custom.net/api/v1/web/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'ow-custom.net'
+    config.app.hostname = 'custom.net'
+    config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = 'no'
+    config.app.hasFrontend = false
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expected)
+  })
+
+  test('some non web actions, same apihost without protocal, same hostname without protocol', () => {
+    const expected = {
+      action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
+      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'adobeioruntime.net'
+    config.app.hostname = 'adobeio-static.net'
+    config.manifest.full.packages.__APP_PACKAGE__.actions.action.web = false
+    config.manifest.full.packages.pkg2.actions.thataction.web = 'no'
+    const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expect.objectContaining(expected))
   })
 })
@@ -1573,7 +1683,7 @@ describe('_absApp', () => {
     const expected = '/test.txt'
 
     const result = utils._absApp('/', 'test.txt')
-    expect(result).toEqual(n(expected))
+    expect(result).toEqual(path.normalize(expected))
   })
 
   test('absolute path', () => {

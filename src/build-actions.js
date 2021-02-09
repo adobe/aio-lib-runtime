@@ -13,18 +13,90 @@ governing permissions and limitations under the License.
 const fs = require('fs-extra')
 const path = require('path')
 const webpack = require('webpack')
+const globby = require('globby')
 const utils = require('./utils')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:action-builder', { provider: 'debug' })
+const cloneDeep = require('lodash.clonedeep')
 
+const uniqueArr = (items) => {
+  return [...new Set(items)]
+}
+
+const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename) => {
+  let parentDir = path.dirname(actionPath)
+  const rootParent = path.normalize(path.dirname(root))
+  let configPath = null
+
+  do {
+    const paths = await globby([path.join(parentDir, '*webpack-config.js')])
+    if (paths && paths.length > 0) {
+      configPath = paths[0]
+    }
+    parentDir = path.dirname(parentDir)
+  } while (parentDir !== rootParent && !configPath)
+  // default empty
+  const userConfig = configPath ? require(configPath) : {}
+  // needs cloning because require has a cache, so we make sure to not touch the userConfig
+  const config = cloneDeep(userConfig)
+
+  // entry [] must include action path
+  config.entry = config.entry || []
+  config.entry.push(actionPath)
+  config.entry = uniqueArr(config.entry)
+  // make sure filepaths are resolved from the config dir
+  config.entry = config.entry.map(f => {
+    if (!path.isAbsolute(f)) {
+      return path.resolve(path.dirname(configPath), f)
+    }
+    return f
+  })
+
+  // if output exists, default to commonjs2
+  config.output = config.output || {}
+  if (config.output.libraryTarget === undefined) {
+    config.output.libraryTarget = 'commonjs2'
+  }
+  config.output.path = tempBuildDir
+  config.output.filename = outBuildFilename
+  // target MUST be node
+  config.target = 'node'
+  // default to production mode
+  config.mode = config.mode || 'production'
+  // default optimization to NOT minimize
+  config.optimization = config.optimization || {}
+  if (config.optimization.minimize === undefined) {
+    // error on minification for some libraries
+    config.optimization.minimize = false
+  }
+  // the following lines are used to require es6 module, e.g.node-fetch which is used by azure sdk
+  config.resolve = config.resolve || {}
+  // extensions needs to include .js and .json
+  config.resolve.extensions = config.resolve.extensions || []
+  config.resolve.extensions.push('.js', '.json')
+  config.resolve.extensions = uniqueArr(config.resolve.extensions)
+
+  // mainFields needs to include 'main'
+  config.resolve.mainFields = config.resolve.mainFields || []
+  config.resolve.mainFields.push('main')
+  config.resolve.mainFields = uniqueArr(config.resolve.mainFields)
+
+  // we have 1 required plugin to make sure is present
+  config.plugins = config.plugins || []
+  config.plugins.push(new webpack.DefinePlugin({ WEBPACK_ACTION_BUILD: 'true' }))
+  // NOTE: no need to make the array unique here, all plugins are different and created via new
+
+  aioLogger.debug(`merged webpack config : ${JSON.stringify(config, 0, 2)}`)
+  return config
+}
 // need config.root
 // config.actions.dist
-const buildAction = async (packageName, actionName, action, root, dist) => {
+const buildAction = async (zipFileName, action, root, dist) => {
   // const actionPath = path.isAbsolute(action.function) ? action.function : path.join(root, action.function)
   // note: it does not seem to be possible to get here with an absolute path ...
   const actionPath = path.join(root, action.function)
 
-  const outPath = path.join(dist, `${packageName}-${actionName}.zip`)
-  const tempBuildDir = path.join(path.dirname(outPath), `${packageName}-${actionName}-temp`) // build all to tempDir first
+  const outPath = path.join(dist, `${zipFileName}.zip`)
+  const tempBuildDir = path.join(dist, `${zipFileName}-temp`) // build all to tempDir first
   const actionFileStats = fs.lstatSync(actionPath)
 
   // make sure temp/ exists
@@ -60,51 +132,26 @@ const buildAction = async (packageName, actionName, action, root, dist) => {
   } else {
     const outBuildFilename = 'index.js' // `${name}.tmp.js`
     // if not directory => package and minify to single file
-    const compiler = webpack({
-      entry: [
-        actionPath
-      ],
-      output: {
-        path: tempBuildDir,
-        filename: outBuildFilename,
-        libraryTarget: 'commonjs2'
-      },
-      // see https://webpack.js.org/configuration/mode/
-      mode: 'production',
-      target: 'node',
-      optimization: {
-        // error on minification for some libraries
-        minimize: false
-      },
-      // the following lines are used to require es6 module, e.g.node-fetch which is used by azure sdk
-      resolve: {
-        extensions: ['.js', '.json'],
-        mainFields: ['main']
-      },
-      plugins: [new webpack.DefinePlugin(
-        {
-          WEBPACK_ACTION_BUILD: JSON.stringify(true)
-        })]
-      // todo remove packages from bundled file that are available in runtime (add the deps of deps as well)
-      // disabled for now as we need to consider versions (at least majors) to avoid nasty bugs
-      // ,externals: ['express', 'request', 'request-promise', 'body-parser', 'openwhisk']
-    })
+    const webpackConfig = await getWebpackConfig(actionPath, root, tempBuildDir, outBuildFilename)
+    const compiler = webpack(webpackConfig)
 
     // run the compiler and wait for a result
-    await new Promise((resolve, reject) => compiler.run((err, stats) => {
-      if (err) {
-        reject(err)
-      }
-      // stats must be defined at this point
-      const info = stats.toJson()
-      if (stats.hasWarnings()) {
-        aioLogger.debug(`webpack compilation warnings:\n${info.warnings}`)
-      }
-      if (stats.hasErrors()) {
-        reject(new Error(`action build failed, webpack compilation errors:\n${info.errors}`))
-      }
-      return resolve(stats)
-    }))
+    await new Promise((resolve, reject) => {
+      compiler.run((err, stats) => {
+        if (err) {
+          reject(err)
+        }
+        // stats must be defined at this point
+        const info = stats.toJson()
+        if (stats.hasWarnings()) {
+          aioLogger.warn(`webpack compilation warnings:\n${info.warnings}`)
+        }
+        if (stats.hasErrors()) {
+          reject(new Error(`action build failed, webpack compilation errors:\n${info.errors}`))
+        }
+        return resolve(stats)
+      })
+    })
   }
 
   // todo: split out zipping
@@ -123,13 +170,17 @@ const buildActions = async (config, filterActions) => {
   if (!config.app.hasBackend) {
     throw new Error('cannot build actions, app has no backend')
   }
+
+  // rewrite config
+  const modifiedConfig = utils.replacePackagePlaceHolder(config)
+
   if (filterActions) {
     // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
-    filterActions = filterActions.map((actionName) => actionName.indexOf('/') === -1 ? config.ow.package + '/' + actionName : actionName)
+    filterActions = filterActions.map((actionName) => actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
   }
+
   // clear out dist dir
   fs.emptyDirSync(config.actions.dist)
-  const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const builtList = []
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
     const actionsToBuild = Object.entries(pkg.actions)
@@ -143,7 +194,10 @@ const buildActions = async (config, filterActions) => {
       // const out =  // todo: log output of each action as it is built
       // need config.root
       // config.actions.dist
-      builtList.push(await buildAction(pkgName, actionName, action, config.root, config.actions.dist))
+      // zipFileName would be <actionName>.zip for default package and
+      // <pkgName>/<actionName>.zip for non default packages for backward compatibility
+      const zipFileName = utils.getActionZipFileName(pkgName, actionName, modifiedConfig.ow.package === pkgName)
+      builtList.push(await buildAction(zipFileName, action, config.root, config.actions.dist))
     }
   }
   return builtList

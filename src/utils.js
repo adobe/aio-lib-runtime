@@ -321,42 +321,102 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
     })
   }
 
+  const activationsLogged = []
   // Getting and printing activation logs
   for (let i = (activations.length - 1); i >= 0; i--) {
     const activation = activations[i]
     lastActivationTime = activation.start
     if (lastActivationTime > startTime) {
-      const allResults = []
-      let results
-      try {
-        results = await runtime.activations.logs({ activationId: activation.activationId })
-      } catch (err) { // Happens in some cases such as trying to get logs of a trigger activation
-        // TODO: Trigger logs can be obtained from activation result but will need some formatting for the timestamp
-        // results = await runtime.activations.get({ activationId: activation.activationId })
-        continue
+      await printLogs(activation, runtime)
+    }
+  }
+  return { lastActivationTime }
+
+  /**
+   * Check if an activation entry is for a sequence.
+   *
+   * @param {*} activation activation log entry
+   * @returns {boolean} isSequenceActivation
+   */
+  function isSequenceActivation (activation) {
+    if (activation.annotations && activation.annotations.length) {
+      return activation.annotations.some(item => (item.key === 'kind' && item.value === 'sequence'))
+    }
+    return false
+  }
+
+  /**
+   * Print activation logs
+   * @param {*} activation
+   * @param {*} runtime
+   */
+  async function printActivationLogs (activation, runtime) {
+    const results = []
+    let retValue
+    try {
+      if (activationsLogged.includes(activation.activationId)) {
+        // Happens when this activation is already covered through a sequence
+        return
+      } else {
+        activationsLogged.push(activation.activationId)
       }
-      if (results.logs.length > 0) {
+      retValue = await runtime.activations.logs({ activationId: activation.activationId })
+      if (retValue.logs.length > 0) {
         activation.annotations.forEach((annotation) => {
           if (annotation.key === 'path') {
             logFunc(annotation.value + ':' + activation.activationId)
           }
         })
-        results.logs.forEach(function (logMsg) {
+        retValue.logs.forEach(function (logMsg) {
           if (strip) {
-            allResults.push(stripLog(logMsg))
+            results.push(stripLog(logMsg))
           } else {
-            allResults.push(logMsg)
+            results.push(logMsg)
           }
         })
       }
-      allResults.sort()
-      allResults.forEach((logMsg) => {
-        logFunc(logMsg)
-        // logFunc()  // new line ?
-      })
+    } catch (err) { // Happens in some cases such as trying to get logs of a trigger activation
+      // TODO: Trigger logs can be obtained from activation result but will need some formatting for the timestamp
+      // retValue = await runtime.activations.get({ activationId: activation.activationId })
+      return
+    }
+    results.sort()
+    results.forEach((logMsg) => {
+      logFunc(logMsg)
+      // logFunc()  // new line ?
+    })
+  }
+
+  /**
+   * Print sequence logs
+   * @param {*} activation
+   * @param {*} runtime
+   */
+  async function printSequenceLogs (activation, runtime) {
+    try {
+      const seqActivation = await runtime.activations.get(activation.activationId)
+      for (const seqItemActivationId of seqActivation.logs) {
+        const seqItemActivation = await runtime.activations.get(seqItemActivationId)
+        await printLogs(seqItemActivation, runtime)
+      }
+    } catch (err) {
+      // Happens when either the sequence or one of the actions in the sequence fails with 'application error'
+      // Ignore
     }
   }
-  return { lastActivationTime }
+
+  /**
+   * Print logs
+   * @param {*} activation
+   * @param {*} runtime
+   */
+  async function printLogs (activation, runtime) {
+    if (isSequenceActivation(activation)) {
+      await printSequenceLogs(activation, runtime)
+    } else {
+      await printActivationLogs(activation, runtime)
+    }
+  }
 }
 
 /**
@@ -584,7 +644,7 @@ function createKeyValueObjectFromFile (file) {
  * @param {Array} sequenceAction the sequence action array
  * @returns {object} the object representation of the sequence
  */
-function createComponentsfromSequence (sequenceAction) {
+function createComponentsFromSequence (sequenceAction) {
   const fqn = require('openwhisk-fqn')
   const objSequence = {}
   objSequence.kind = 'sequence'
@@ -593,6 +653,17 @@ function createComponentsfromSequence (sequenceAction) {
     return fqn(component)
   })
   return objSequence
+}
+
+/* istanbul ignore next */
+/**
+ * @alias createComponentsFromSequence
+ * @deprecated use `createComponentsFromSequence`
+ * @param {Array} sequenceAction the sequence action array
+ * @returns {object} the object representation of the sequence
+ */
+function createComponentsfromSequence (sequenceAction) {
+  return createComponentsFromSequence(sequenceAction)
 }
 
 /**
@@ -1487,7 +1558,7 @@ async function undeployPackage (entities, ow, logger) {
  */
 async function syncProject (projectName, manifestPath, manifestContent, entities, ow, logger, imsOrgId, deleteEntities = true) {
   // find project hash from server based on entities in the manifest file
-  const hashProjectSynced = await findProjectHashonServer(ow, projectName)
+  const hashProjectSynced = await findProjectHashOnServer(ow, projectName)
 
   // compute the project hash from the manifest file
   const projectHash = getProjectHash(manifestContent, manifestPath)
@@ -1630,7 +1701,7 @@ function getProjectHash (manifestContent, manifestPath) {
  * @param {string} projectName the project name
  * @returns {Promise<string>} the project hash, or '' if not found
  */
-async function findProjectHashonServer (ow, projectName) {
+async function findProjectHashOnServer (ow, projectName) {
   let projectHash = ''
   const options = {}
   // check for package with the projectName in manifest File and if found -> return the projectHash on the server
@@ -1683,6 +1754,20 @@ async function findProjectHashonServer (ow, projectName) {
   return projectHash
 }
 
+/* istanbul ignore next */
+/**
+ * Retrieve the project hash from a deployed managed project.
+ *
+ * @deprecated use `findProjectHashOnServer`
+ * @alias findProjectHashOnServer
+ * @param {object} ow the OpenWhisk client object
+ * @param {string} projectName the project name
+ * @returns {Promise<string>} the project hash, or '' if not found
+ */
+async function findProjectHashonServer (ow, projectName) {
+  return findProjectHashOnServer(ow, projectName)
+}
+
 /**
  * @param root
  * @param p
@@ -1727,42 +1812,98 @@ function checkOpenWhiskCredentials (config) {
 }
 
 /**
- * @param config
+ * @param appConfig
  * @param isRemoteDev
  * @param isLocalDev
  */
 function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
-  // set action urls
-  // action urls {name: url}, if !LocalDev subdomain uses namespace
-  const actionsAndSequences = {}
+  // sets action urls [{ name: url }]
   const config = replacePackagePlaceHolder(appConfig)
-  Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
-    Object.entries(pkg.actions).forEach(([actionName, action]) => {
-      actionsAndSequences[pkgName + '/' + actionName] = action
-    })
-    Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
-      actionsAndSequences[pkgName + '/' + actionName] = action
-    })
-  })
-  return Object.entries(actionsAndSequences).reduce((obj, [name, action]) => {
+  const cleanApihost = removeProtocolFromURL(config.ow.apihost)
+  const cleanHostname = removeProtocolFromURL(config.app.hostname)
+  const apihostIsCustom = cleanApihost !== removeProtocolFromURL(config.ow.defaultApihost)
+  const hostnameIsCustom = cleanHostname !== removeProtocolFromURL(config.app.defaultHostname)
+
+  /** @private */
+  function getActionUrl (pkgAndActionName, action) {
     const webArg = action['web-export'] || action.web
     const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
-    if (isLocalDev) {
-      // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
-      obj[name] = urlJoin(config.ow.apihost, 'api', config.ow.apiversion, webUri, config.ow.namespace, name)
-    } else if (isRemoteDev || !webUri || !config.app.hasFrontend) {
-      // - if remote dev we don't care about same domain as the UI runs on localhost
-      // - if action is non web it cannot be called from the UI and we can point directly to ApiHost domain
+
+    const actionIsBehindCdn =
+    // if local dev runtime actions are served locally actions can't be reached via CDN
+    // if action is non web it cannot share cookies, and need to be called with auth, use ApiHost directly
+    !isLocalDev && webUri && (
+      // By default:
+      // - if remote dev the UI runs on localhost so the actions can be served directly from the ApiHost domain
       // - if action has no UI no need to use the CDN url
-      // NOTE this will not work for apihosts that do not support <ns>.apihost url
-      // https://<ns>.adobeioruntime.net/api/v1/web/<package>/<action>
-      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.ow.apihost), 'api', config.ow.apiversion, webUri, name)
+      (!isRemoteDev && config.app.hasFrontend) ||
+      // UNLESS: the user has specified a custom hostname, in which case we have to use it
+      hostnameIsCustom
+    )
+
+    // if the apihost is custom but no custom hostname is provided then CDN should not be used
+    const customApihostButNoCustomHostname = apihostIsCustom && !hostnameIsCustom
+
+    if (actionIsBehindCdn && !customApihostButNoCustomHostname) {
+      // https://<ns>.adobe-static.net/api/v1/web/<package>/<action></action>
+      // or https://<ns>.custom-hostname.xyz/api/v1/web/<package>/<action></action>
+      return urlJoin(
+        'https://' + config.ow.namespace + '.' + cleanHostname,
+        'api',
+        config.ow.apiversion,
+        webUri,
+        pkgAndActionName
+      )
+    } else if (
+      isLocalDev ||
+      (!actionIsBehindCdn && apihostIsCustom) ||
+      (actionIsBehindCdn && customApihostButNoCustomHostname)
+    ) {
+      // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
+      // or https://custom-ow-host.xyz/api/v1/web/<ns>/<package>/<action>
+      return urlJoin(
+        isLocalDev ? 'http://' : 'https://',
+        cleanApihost,
+        'api',
+        config.ow.apiversion,
+        webUri,
+        config.ow.namespace,
+        pkgAndActionName
+      )
     } else {
-      // https://<ns>.adobe-static.net/api/v1/web/<package>/<action>
-      obj[name] = urlJoin('https://' + config.ow.namespace + '.' + removeProtocolFromURL(config.app.hostname), 'api', config.ow.apiversion, webUri, name)
+      // if (!actionIsBehindCdn && !apihostIsCustom)
+      // https://<ns>.adobeioruntime.net/api/v1/web/<package>/<action>
+      return urlJoin(
+        'https://' + config.ow.namespace + '.' + cleanApihost,
+        'api',
+        config.ow.apiversion,
+        webUri,
+        pkgAndActionName
+      )
     }
-    return obj
-  }, {})
+  }
+
+  // populate urls
+  const actionsAndSequences = {}
+  Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
+    Object.entries(pkg.actions).forEach(([actionName, action]) => {
+      actionsAndSequences[getActionZipFileName(pkgName, actionName, pkgName === config.ow.package)] = action
+    })
+    Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
+      actionsAndSequences[getActionZipFileName(pkgName, actionName, pkgName === config.ow.package)] = action
+    })
+  })
+  const urls = {}
+  Object.entries(actionsAndSequences).forEach(([pkgAndActionName, action]) => {
+    let fullNameInURL = pkgAndActionName
+    if (pkgAndActionName.indexOf('/') === -1) {
+      // pkg not included in pkgAndActionName since this is from the default package
+      // But the pkg name is required to construct the URL
+      fullNameInURL = config.ow.package + '/' + pkgAndActionName
+    }
+    urls[pkgAndActionName] = getActionUrl(fullNameInURL, action)
+  })
+  return urls
 }
 
 /**
@@ -1797,7 +1938,7 @@ function replacePackagePlaceHolder (config) {
     // Using custom package name.
     // Set config.ow.package so that syncProject can use it as project name for annotations.
     const packageNames = Object.keys(packages)
-    config.ow.package = packageNames[0]
+    modifiedConfig.ow.package = packageNames[0]
   }
   return modifiedConfig
 }
@@ -1816,6 +1957,17 @@ function validateActionRuntime (action) {
   }
 }
 
+/**
+ * Returns the action's build file name without the .zip extension
+ *
+ * @param {string} pkgName name of the package
+ * @param {string} actionName name of the action
+ * @param {boolean} defaultPkg true if pkgName is the default/first package
+ */
+function getActionZipFileName (pkgName, actionName, defaultPkg) {
+  return defaultPkg ? actionName : pkgName + '/' + actionName
+}
+
 module.exports = {
   checkOpenWhiskCredentials,
   getActionEntryFile,
@@ -1830,6 +1982,7 @@ module.exports = {
   getKeyValueObjectFromMergedParameters,
   parsePathPattern,
   parsePackageName,
+  createComponentsFromSequence,
   createComponentsfromSequence,
   processInputs,
   createKeyValueInput, /* internal */
@@ -1848,6 +2001,7 @@ module.exports = {
   setPaths,
   getProjectEntities,
   syncProject,
+  findProjectHashOnServer,
   findProjectHashonServer,
   getProjectHash,
   addManagedProjectAnnotations,
@@ -1861,5 +2015,6 @@ module.exports = {
   removeProtocolFromURL,
   zip,
   replacePackagePlaceHolder,
-  validateActionRuntime
+  validateActionRuntime,
+  getActionZipFileName
 }
