@@ -659,6 +659,20 @@ describe('processPackage', () => {
     expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/basic_manifest_res_namesonly.json')))
   })
 
+  test('basic manifest with package parameters', async () => {
+    const packages = JSON.parse(fs.readFileSync('/basic_manifest.json'))
+    packages.hello.inputs = { 'my-pkg-param': 'pkg-param-value' }
+    const entities = utils.processPackage(packages, {}, {}, {})
+    const res = JSON.parse(fs.readFileSync('/basic_manifest_res.json'))
+    res.pkgAndDeps[0].package = {
+      parameters: [{
+        key: 'my-pkg-param',
+        value: 'pkg-param-value'
+      }]
+    }
+    expect(entities).toMatchObject(res)
+  })
+
   test('shared package', async () => {
     const res = utils.processPackage({ pkg1: { public: true } }, {}, {}, {}, false, {})
     expect(res).toEqual(expect.objectContaining({ pkgAndDeps: [{ name: 'pkg1', package: { publish: true } }] }))
