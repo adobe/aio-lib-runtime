@@ -41,6 +41,7 @@ beforeEach(() => {
     'goodbye.js': global.fixtureFile('/deploy/goodbye.js'),
     'basic_manifest.json': global.fixtureFile('/deploy/basic_manifest.json'),
     'basic_manifest_res.json': global.fixtureFile('/deploy/basic_manifest_res.json'),
+    'pkgparam_manifest_res.json': global.fixtureFile('/deploy/pkgparam_manifest_res.json'),
     'basic_manifest_res_namesonly.json': global.fixtureFile('/deploy/basic_manifest_res_namesonly.json')
   }
   global.fakeFileSystem.addJson(json)
@@ -663,14 +664,7 @@ describe('processPackage', () => {
     const packages = JSON.parse(fs.readFileSync('/basic_manifest.json'))
     packages.hello.inputs = { 'my-pkg-param': 'pkg-param-value' }
     const entities = utils.processPackage(packages, {}, {}, {})
-    const res = JSON.parse(fs.readFileSync('/basic_manifest_res.json'))
-    res.pkgAndDeps[0].package = {
-      parameters: [{
-        key: 'my-pkg-param',
-        value: 'pkg-param-value'
-      }]
-    }
-    expect(entities).toMatchObject(res)
+    expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/pkgparam_manifest_res.json')))
   })
 
   test('shared package', async () => {
