@@ -1693,6 +1693,21 @@ describe('getActionUrls', () => {
     const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expect.objectContaining(expected))
   })
+
+  test('should not fail with a package that has no actions', () => {
+    const expected = {
+      action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
+      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'adobeioruntime.net'
+    config.app.hostname = 'adobeio-static.net'
+    config.manifest.full.packages.__APP_PACKAGE__.actions.action.web = false
+    delete config.manifest.full.packages.pkg2.actions
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expect.objectContaining(expected))
+  })
 })
 
 describe('_absApp', () => {
