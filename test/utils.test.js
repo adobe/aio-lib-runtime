@@ -41,6 +41,8 @@ beforeEach(() => {
     'goodbye.js': global.fixtureFile('/deploy/goodbye.js'),
     'basic_manifest.json': global.fixtureFile('/deploy/basic_manifest.json'),
     'basic_manifest_res.json': global.fixtureFile('/deploy/basic_manifest_res.json'),
+    'pkgparam_manifest_res.json': global.fixtureFile('/deploy/pkgparam_manifest_res.json'),
+    'pkgparam_manifest_res_multi.json': global.fixtureFile('/deploy/pkgparam_manifest_res_multi.json'),
     'basic_manifest_res_namesonly.json': global.fixtureFile('/deploy/basic_manifest_res_namesonly.json')
   }
   global.fakeFileSystem.addJson(json)
@@ -657,6 +659,21 @@ describe('processPackage', () => {
   test('basic manifest with namesOnly flag', async () => {
     const entities = utils.processPackage(JSON.parse(fs.readFileSync('/basic_manifest.json')), {}, {}, {}, true, {})
     expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/basic_manifest_res_namesonly.json')))
+  })
+
+  test('basic manifest with package parameters', async () => {
+    const packages = JSON.parse(fs.readFileSync('/basic_manifest.json'))
+    packages.hello.inputs = { 'my-pkg-param': 'pkg-param-value' }
+    const entities = utils.processPackage(packages, {}, {}, {})
+    expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/pkgparam_manifest_res.json')))
+  })
+
+  test('basic manifest with package parameters in multiple packages', async () => {
+    const packages = JSON.parse(fs.readFileSync('/basic_manifest.json'))
+    packages.hello.inputs = { 'my-pkg-param': 'pkg-param-value' }
+    packages.hello2 = { inputs: { 'my-pkg-param2': 'pkg-param-value2' } }
+    const entities = utils.processPackage(packages, {}, {}, {})
+    expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/pkgparam_manifest_res_multi.json')))
   })
 
   test('shared package', async () => {

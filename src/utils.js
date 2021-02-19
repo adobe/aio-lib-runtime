@@ -1179,6 +1179,18 @@ function processPackage (packages,
     if (pkgs[key].public) {
       objPackage.package = { publish: pkgs[key].public }
     }
+    let pkgDeploymentInputs = {}
+    const packageInputs = pkgs[key].inputs || {}
+    if (deploymentPkgs[key]) {
+      pkgDeploymentInputs = deploymentPkgs[key].inputs || {}
+    }
+    const allPkgInputs = returnUnion(packageInputs, pkgDeploymentInputs)
+    // if parameter is provided as key : 'data type' , process it to set default values before deployment
+    if (Object.entries(allPkgInputs).length !== 0) {
+      const processedInput = createKeyValueInput(processInputs(allPkgInputs, params))
+      objPackage.package = objPackage.package || {}
+      objPackage.package.parameters = processedInput
+    }
     pkgAndDeps.push(objPackage)
     // From wskdeploy repo : currently, the 'version' and 'license' values are not stored in Apache OpenWhisk, but there are plans to support it in the future
     // pkg.version = packages[key]['version']
