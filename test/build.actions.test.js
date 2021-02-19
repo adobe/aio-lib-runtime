@@ -113,16 +113,6 @@ describe('build by zipping js action folder', () => {
       path.normalize('/dist/actions/action-zip.zip'))
   })
 
-  /*
-  test('should not fail if no package.json if there is an index.js', async () => {
-    // delete package.json
-    global.fakeFileSystem.removeKeys(['/actions/action-zip/package.json'])
-    // vol.unlinkSync('/actions/action-zip/package.json')
-    await buildActions(config)
-    expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/action-zip-temp'), path.resolve('/dist/actions/action-zip.zip'))
-    // expect(execa).not.toHaveBeenCalled()
-  })
- */
   test('should fail if no package.json and no index.js', async () => {
     // delete package.json
     global.fakeFileSystem.removeKeys(['/actions/action-zip/package.json'])

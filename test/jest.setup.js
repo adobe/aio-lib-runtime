@@ -470,8 +470,9 @@ global.sampleAppReducedConfig = {
 }
 
 /**
- * @param folderPath
- * @param relativePath
+ * @param {string} folderPath folderPath
+ * @param {string} relativePath relativePath
+ * @returns {object} json files
  */
 function getFilesRecursively (folderPath, relativePath = '') {
   const files = []

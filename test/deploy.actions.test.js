@@ -748,7 +748,7 @@ function addSampleAppReducedFiles () {
 }
 
 /**
- * @param buildDir
+ * @param {string} buildDir build dir path
  */
 function addFakeFiles (buildDir) {
   const fakeFiles = {}

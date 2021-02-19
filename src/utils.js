@@ -70,12 +70,6 @@ const supportedEngines = require('../package.json').engines
  */
 
 /**
- * @typedef ManifestAction
- * @type {object}
- * @property {Array} include - array of include glob patterns
- */
-
-/**
  * @typedef IncludeEntry
  * @type {object}
  * @property {string} dest - destination for included files
@@ -86,7 +80,7 @@ const supportedEngines = require('../package.json').engines
  * Gets the list of files matching the patterns defined by action.include
  *
  * @param {ManifestAction} action - action object from manifest which defines includes
- * @returns {Array(IncludeEntry)}
+ * @returns {Promise<Array<IncludeEntry>>} list of files matching the patterns defined by action.include
  */
 async function getIncludesForAction (action) {
   const includeFiles = []
@@ -200,7 +194,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesRule
-
  */
 
 /**
@@ -303,8 +296,8 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
   const actionFilterFunc = (actionPath, annotationValue) => {
     // For logs of all deployed actions under a package
     if (actionPath.endsWith('/')) {
-      actionPath = actionPath.startsWith('/') ? actionPath : '/' + actionPath
-      return annotationValue.includes(actionPath)
+      const actionPathStrLookUp = actionPath.startsWith('/') ? actionPath : '/' + actionPath
+      return annotationValue.includes(actionPathStrLookUp)
     }
     // For actions with full path (pkg/actionName) specified in filterActions
     return annotationValue.endsWith(actionPath)
@@ -347,8 +340,9 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
 
   /**
    * Print activation logs
-   * @param {*} activation
-   * @param {*} runtime
+   *
+   * @param {object} activation activation object
+   * @param {object} runtime runtime object
    */
   async function printActivationLogs (activation, runtime) {
     const results = []
@@ -389,8 +383,9 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
 
   /**
    * Print sequence logs
-   * @param {*} activation
-   * @param {*} runtime
+   *
+   * @param {object} activation sequence activation
+   * @param {object} runtime runtime object
    */
   async function printSequenceLogs (activation, runtime) {
     try {
@@ -407,8 +402,9 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
 
   /**
    * Print logs
-   * @param {*} activation
-   * @param {*} runtime
+   *
+   * @param {object} activation activation
+   * @param {object} runtime runtime
    */
   async function printLogs (activation, runtime) {
     if (isSequenceActivation(activation)) {
@@ -424,7 +420,7 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
  * note: file MUST exist, caller's responsibility, this method will throw if it does not exist
  *
  * @param {*} pkgJson : path to a package.json file
- * @returns {string}
+ * @returns {string} name of the entry file
  */
 function getActionEntryFile (pkgJson) {
   const pkgJsonContent = fs.readJsonSync(pkgJson)
@@ -437,10 +433,10 @@ function getActionEntryFile (pkgJson) {
 /**
  * Zip a file/folder using archiver
  *
- * @param {string} filePath
- * @param {string} out
- * @param {boolean} pathInZip
- * @returns {Promise}
+ * @param {string} filePath path of file.folder to zip
+ * @param {string} out output path
+ * @param {boolean} pathInZip internal path in zip
+ * @returns {Promise} returns with a blank promise when done
  */
 function zip (filePath, out, pathInZip = false) {
   aioLogger.debug(`Creating zip of file/folder ${filePath}`)
@@ -1769,16 +1765,22 @@ async function findProjectHashonServer (ow, projectName) {
 }
 
 /**
- * @param root
- * @param p
+ * Path relative to the root
+ *
+ * @param {string} root root path
+ * @param {string} p path
+ * @returns {string} relative path
  */
 function _relApp (root, p) {
   return path.relative(root, path.normalize(p))
 }
 
 /**
- * @param root
- * @param p
+ * Absolute path
+ *
+ * @param {string} root root path
+ * @param {string} p path
+ * @returns {string} absolute path
  */
 function _absApp (root, p) {
   if (path.isAbsolute(p)) return p
@@ -1786,7 +1788,9 @@ function _absApp (root, p) {
 }
 
 /**
- * @param config
+ * Checks the existence of required openwhisk credentials
+ *
+ * @param {object} config openwhisk config
  */
 function checkOpenWhiskCredentials (config) {
   const owConfig = config.ow
@@ -1812,9 +1816,12 @@ function checkOpenWhiskCredentials (config) {
 }
 
 /**
- * @param appConfig
- * @param isRemoteDev
- * @param isLocalDev
+ * Returns action URLs based on the manifest config
+ *
+ * @param {object} appConfig app config
+ * @param {boolean} isRemoteDev remote dev
+ * @param {boolean} isLocalDev local dev
+ * @returns {object} urls of actions
  */
 function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
   // sets action urls [{ name: url }]
@@ -1910,7 +1917,7 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
  * Joins url path parts
  *
  * @param {...string} args url parts
- * @returns {string}
+ * @returns {string} joined url
  */
 function urlJoin (...args) {
   let start = ''
@@ -1921,12 +1928,17 @@ function urlJoin (...args) {
 }
 
 /**
- * @param url
+ * @param {string} url url
+ * @returns {string} url
  */
 function removeProtocolFromURL (url) {
   return url.replace(/(^\w+:|^)\/\//, '')
 }
 
+/**
+ * @param {object} config config
+ * @returns {object} sanitized config
+ */
 function replacePackagePlaceHolder (config) {
   const modifiedConfig = cloneDeep(config)
   const packages = modifiedConfig.manifest.full.packages
@@ -1963,6 +1975,7 @@ function validateActionRuntime (action) {
  * @param {string} pkgName name of the package
  * @param {string} actionName name of the action
  * @param {boolean} defaultPkg true if pkgName is the default/first package
+ * @returns {string} name of zip file for the action contents
  */
 function getActionZipFileName (pkgName, actionName, defaultPkg) {
   return defaultPkg ? actionName : pkgName + '/' + actionName

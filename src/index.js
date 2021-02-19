@@ -16,6 +16,29 @@ const deployActions = require('./deploy-actions')
 const undeployActions = require('./undeploy-actions')
 const printActionLogs = require('./print-action-logs')
 const RuntimeAPI = require('./RuntimeAPI')
+const ow = require('openwhisk')
+
+/**
+ * @typedef {object} OpenwhiskOptions
+ * @property {string} apihost Hostname and optional port for openwhisk platform
+ * @property {string} api_key Authorisation key
+ * @property {string} [api] Full API URL
+ * @property {string} [apiversion] Api version
+ * @property {string} [namespace] Namespace for resource requests
+ * @property {boolean} [ignore_certs] Turns off server SSL/TLS certificate verification
+ * @property {string} [key] Client key to use when connecting to the apihost
+ */
+
+/**
+ * @typedef {object} OpenwhiskClient
+ * @property {ow.Actions} actions actions
+ * @property {ow.Activations} activations activations
+ * @property {ow.Namespaces} namespaces namespaces
+ * @property {ow.Packages} packages packages
+ * @property {ow.Rules} rules rules
+ * @property {ow.Triggers} triggers triggers
+ * @property {ow.Routes} routes routes
+ */
 
 /**
  * Returns a Promise that resolves with a new RuntimeAPI object.
