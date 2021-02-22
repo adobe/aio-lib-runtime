@@ -184,7 +184,7 @@ const buildActions = async (config, filterActions) => {
   fs.emptyDirSync(config.actions.dist)
   const builtList = []
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
-    const actionsToBuild = Object.entries(pkg.actions)
+    const actionsToBuild = Object.entries(pkg.actions || {})
 
     // build all sequentially (todo make bundler execution parallel)
     for (const [actionName, action] of actionsToBuild) {

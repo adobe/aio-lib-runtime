@@ -59,7 +59,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   const relDist = utils._relApp(config.root, config.actions.dist)
   for (const [pkgName, pkg] of Object.entries(manifest.packages)) {
     pkg.version = config.app.version
-    for (const [name, action] of Object.entries(pkg.actions)) {
+    for (const [name, action] of Object.entries(pkg.actions || {})) {
       // change path to built action
       const zipFileName = utils.getActionZipFileName(pkgName, name, modifiedConfig.ow.package === pkgName) + '.zip'
       action.function = path.join(relDist, zipFileName)
