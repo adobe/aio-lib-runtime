@@ -368,6 +368,9 @@ declare function printLogs(activation: any, strip: boolean, logger: any): void;
  * Filters and prints action logs.
  * @param runtime - runtime (openwhisk) object
  * @param logger - an instance of a logger to emit messages to
+ *    undefined = console.log
+ *    logger = use this logger
+ *    { logFunc?, bannerFunc? } = use given logFunc for logs and bannerFunc for activation banner
  * @param limit - maximum number of activations to fetch logs from
  * @param filterActions - array of actions to fetch logs from
  *    ['pkg1/'] = logs of all deployed actions under package pkg1
