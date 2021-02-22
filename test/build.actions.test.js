@@ -568,7 +568,15 @@ test('non default package present in manifest', async () => {
     path.normalize('/dist/actions/action-zip.zip'))
 })
 
-test('should not fail if package does not have actions', async () => {
+test('should not fail if default package does not have actions', async () => {
+  addSampleAppFiles()
+  const config = deepClone(global.sampleAppConfig)
+  delete config.manifest.full.packages.__APP_PACKAGE__.actions
+  await buildActions(config)
+  expect(utils.zip).toHaveBeenCalledTimes(0)
+})
+
+test('should not fail if extra package does not have actions', async () => {
   addSampleAppFiles()
   const config = deepClone(global.sampleAppConfig)
   config.manifest.full.packages.extrapkg = deepClone(config.manifest.full.packages.__APP_PACKAGE__)
