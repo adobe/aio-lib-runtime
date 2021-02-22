@@ -67,6 +67,38 @@ describe('printActionLogs', () => {
     expect(logger).not.toHaveBeenCalled()
   })
 
+  test('(config, limit=3, custom banner) and 3 activations and no logs', async () => {
+    const activations = [
+      { activationId: 123, start: 555555, name: 'one' },
+      { activationId: 456, start: 555666, name: 'two' },
+      { activationId: 100, start: 666666, name: 'three' }
+    ]
+    owListActivationMock.mockResolvedValue(activations)
+    owLogsActivationMock.mockResolvedValue({ logs: [] })
+
+    const mockBannerLogger = jest.fn()
+    await printActionLogs(fakeConfig, { bannerFunc: mockBannerLogger }, 3)
+
+    expect(mockBannerLogger).toHaveBeenCalledTimes(3)
+    expect(mockBannerLogger).toHaveBeenNthCalledWith(1, activations[2], [])
+    expect(mockBannerLogger).toHaveBeenNthCalledWith(2, activations[1], [])
+    expect(mockBannerLogger).toHaveBeenNthCalledWith(3, activations[0], [])
+  })
+
+  test('(config, limit=3, custom logger) and 3 activations with logs', async () => {
+    const activations = [
+      { activationId: 123, start: 555555, name: 'one', annotations: [] },
+      { activationId: 456, start: 555666, name: 'two', annotations: [] },
+      { activationId: 100, start: 666666, name: 'three', annotations: [{ key: 'path', value: 'three' }] }
+    ]
+    owListActivationMock.mockResolvedValue(activations)
+    owLogsActivationMock.mockResolvedValue({ logs: ['ABC'] })
+
+    const mockCustomLogger = jest.fn()
+    await printActionLogs(fakeConfig, { logFunc: mockCustomLogger }, 3)
+    expect(mockCustomLogger).toHaveBeenCalledTimes(3 + 1) // only one activation has annotations for a banner
+  })
+
   test('(config, limit=3, logger) and 3 activations and no logs', async () => {
     owListActivationMock.mockResolvedValue([
       { activationId: 123, start: 555555, name: 'one' },
