@@ -1901,7 +1901,7 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   // populate urls
   const actionsAndSequences = {}
   Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
-    Object.entries(pkg.actions).forEach(([actionName, action]) => {
+    Object.entries(pkg.actions || {}).forEach(([actionName, action]) => {
       actionsAndSequences[getActionZipFileName(pkgName, actionName, pkgName === config.ow.package)] = action
     })
     Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
