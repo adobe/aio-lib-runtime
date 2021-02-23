@@ -22,17 +22,16 @@ const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...package
 /**
  * runs the command
  *
- * @param {object} [config={}]
- * @param {object} [deployConfig={}]
+ * @param {object} [config={}] app config
+ * @param {object} [deployConfig={}] deployment config
  * @param {object} [deployConfig.filterEntities] add filters to deploy only specified OpenWhisk entities
  * @param {Array} [deployConfig.filterEntities.actions] filter list of actions to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.sequences] filter list of sequences to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.triggers] filter list of triggers to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.rules] filter list of rules to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.apis] filter list of apis to deploy, e.g. ['name1', ..]
- * @param eventEmitter
- * @param logFunc
  * @param {Array} [deployConfig.filterEntities.dependencies] filter list of package dependencies to deploy, e.g. ['name1', ..]
+ * @param {object} logFunc custom logger function
  * @returns {Promise<object>} deployedEntities
  */
 async function deployActions (config, deployConfig = {}, logFunc) {
@@ -90,23 +89,24 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   if (Array.isArray(deployedEntities.actions)) {
     const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
     deployedEntities.actions = deployedEntities.actions.map(action => {
+      const retAction = deepCopy(action)
       // the key in actionUrlsFromManifest would not have pkg name for actions in default package
       const actionKey = action.name.replace(modifiedConfig.ow.package + '/', '')
       const url = actionUrlsFromManifest[actionKey]
       if (url) {
-        action.url = url
+        retAction.url = url
       }
-      return action
+      return retAction
     })
   }
   return deployedEntities
 }
 
 /**
- * @param scriptConfig
- * @param manifestContent
- * @param logFunc
- * @param filterEntities
+ * @param {object} scriptConfig config
+ * @param {object} manifestContent manifest
+ * @param {object} logFunc custom logger function
+ * @param {object} filterEntities entities (actions, sequences, triggers, rules etc) to be filtered
  */
 async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities) {
   const packageName = scriptConfig.ow.package
@@ -121,16 +121,23 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
   const ow = await new IOruntime().init(owOptions)
 
   /**
-   * @param pkgEntity
-   * @param filter
+   * @param {object} pkgName name of the package
+   * @param {object} pkgEntity package object from the manifest
+   * @param {object} filterItems items (actions, sequences, triggers, rules etc) to be filtered
+   * @param {object} fullNameCheck true of the items are part of packages (actions and sequences)
+   * @returns {object} package object containing only the filterItems
    */
   function _filterOutPackageEntity (pkgName, pkgEntity, filterItems, fullNameCheck) {
-    filterItems = filterItems || []
-    pkgEntity = pkgEntity || {}
+    if (pkgEntity === undefined || filterItems === undefined) {
+      return {}
+    }
     // We check the full name (<packageName>/<actionName>) for actions and sequences
     return Object.keys(pkgEntity)
       .filter(name => fullNameCheck ? filterItems.includes(pkgName + '/' + name) : filterItems.includes(name))
-      .reduce((obj, key) => { obj[key] = pkgEntity[key]; return obj }, {})
+      .reduce((obj, key) => {
+        obj[key] = pkgEntity[key] // eslint-disable-line no-param-reassign
+        return obj
+      }, {})
   }
 
   aioLogger.debug('Deploying')
@@ -145,9 +152,9 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
 
     filterableItems.forEach(k => {
       Object.entries(packages).forEach(([pkgName, pkg]) => {
-        pkg[k] = _filterOutPackageEntity(pkgName, pkg[k], filterEntities[k], packageItems.includes(k))
+        pkg[k] = _filterOutPackageEntity(pkgName, pkg[k], filterEntities[k], packageItems.includes(k)) // eslint-disable-line no-param-reassign
         // cleanup empty entities
-        if (Object.keys(pkg[k]).length === 0) delete pkg[k]
+        if (Object.keys(pkg[k]).length === 0) delete pkg[k] // eslint-disable-line no-param-reassign
       })
     })
     // todo filter out packages, like auth package
@@ -168,7 +175,7 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
       const needsReplacement = a.exec && a.exec.kind === 'sequence' && a.exec.components && a.exec.components.includes(DEFAULT_VALIDATOR)
       if (needsReplacement) {
         aioLogger.debug(`replacing headless auth validator with app registry validator for action ${a.name}`)
-        a.exec.components = a.exec.components.map(a => replaceValidator[a] || a)
+        a.exec.components = a.exec.components.map(a => replaceValidator[a] || a) // eslint-disable-line no-param-reassign
       }
     })
   }
