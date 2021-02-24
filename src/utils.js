@@ -416,9 +416,13 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
  * @returns {string} name of the entry file
  */
 function getActionEntryFile (pkgJson) {
-  const pkgJsonContent = fs.readJsonSync(pkgJson)
-  if (pkgJsonContent.main) {
-    return pkgJsonContent.main
+  try {
+    const pkgJsonContent = fs.readJsonSync(pkgJson)
+    if (pkgJsonContent.main) {
+      return pkgJsonContent.main
+    }
+  } catch (err) {
+    console.log('caught it ... ', err)
   }
   return 'index.js'
 }
@@ -790,16 +794,13 @@ function returnDeploymentTriggerInputs (deploymentPackages) {
  * @returns {object} the action annotation entities
  */
 function returnAnnotations (action) {
-  const annotationParams = {}
-
+  const annotationParams = action && action.annotations ? cloneDeep(action.annotations) : {}
   // common annotations
-
   if (action.annotations && action.annotations.conductor !== undefined) {
     annotationParams.conductor = action.annotations.conductor
   }
 
   // web related annotations
-
   if (action.web !== undefined) {
     Object.assign(annotationParams, checkWebFlags(action.web))
   } else if (action['web-export'] !== undefined) {
@@ -809,24 +810,17 @@ function returnAnnotations (action) {
     annotationParams['raw-http'] = false
   }
 
-  if (action.annotations && action.annotations['require-whisk-auth'] !== undefined) {
-    if (annotationParams['web-export'] === true) {
+  if (action.annotations && annotationParams['web-export'] === true) {
+    if (action.annotations['require-whisk-auth'] !== undefined) {
       annotationParams['require-whisk-auth'] = action.annotations['require-whisk-auth']
     }
-  }
-
-  if (action.annotations && action.annotations['raw-http'] !== undefined) {
-    if (annotationParams['web-export'] === true) {
+    if (action.annotations['raw-http'] !== undefined) {
       annotationParams['raw-http'] = action.annotations['raw-http']
     }
-  }
-
-  if (action.annotations && action.annotations.final !== undefined) {
-    if (annotationParams['web-export'] === true) {
+    if (action.annotations.final !== undefined) {
       annotationParams.final = action.annotations.final
     }
   }
-
   return annotationParams
 }
 
