@@ -20,7 +20,8 @@ jest.setTimeout(30000)
 // load .env values in the e2e folder, if any
 require('dotenv').config({ path: path.join(__dirname, '.env') })
 
-let sdkClient = {}, config = {}
+let sdkClient = {}
+let config = {}
 const apiKey = process.env['RuntimeAPI_API_KEY']
 const apihost = process.env['RuntimeAPI_APIHOST']
 const namespace = process.env['RuntimeAPI_NAMESPACE']
@@ -35,9 +36,9 @@ beforeEach(() => {
   config.ow.namespace = namespace
   config.ow.auth = apiKey
   config.root = path.resolve('./test/__fixtures__/sample-app')
-  config.actions.src = path.resolve(config.root+'/'+config.actions.src)
-  config.actions.dist = path.resolve(config.root+'/'+config.actions.dist)
-  config.manifest.src = path.resolve(config.root+'/'+'manifest.yml')
+  config.actions.src = path.resolve(config.root + '/' + config.actions.src)
+  config.actions.dist = path.resolve(config.root + '/' + config.actions.dist)
+  config.manifest.src = path.resolve(config.root + '/' + 'manifest.yml')
 })
 
 describe('build-actions', () => {
@@ -46,13 +47,12 @@ describe('build-actions', () => {
       '/Users/himar/work/deleteme/whatever/aio-lib-runtime/test/__fixtures__/sample-app/dist/actions/action.zip',
       '/Users/himar/work/deleteme/whatever/aio-lib-runtime/test/__fixtures__/sample-app/dist/actions/action-zip.zip'
     ]))
-    expect(fs.readdirSync(path.resolve(config.actions.dist))).toEqual(expect.arrayContaining(["action-temp", "action-zip-temp", "action-zip.zip", "action.zip"]))
+    expect(fs.readdirSync(path.resolve(config.actions.dist))).toEqual(expect.arrayContaining(['action-temp', 'action-zip-temp', 'action-zip.zip', 'action.zip']))
     fs.emptydirSync(config.actions.dist)
     fs.rmdirSync(config.actions.dist)
-  })  
+  })
 })
 
-let activation = { }
 describe('build, deploy, invoke and undeploy of actions', () => {
   test('full config', async () => {
     // console.log(config)
@@ -65,28 +65,28 @@ describe('build, deploy, invoke and undeploy of actions', () => {
     // Deploy
     config.root = path.resolve('./')
     const deployedEntities = await sdk.deployActions(config)
-    expect(deployedEntities.actions[0].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-1.0.0/action'))
-    expect(deployedEntities.actions[1].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip'))
-    expect(deployedEntities.actions[2].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence'))
+    expect(deployedEntities.actions[0].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-1.0.0/action')).toEqual(true)
+    expect(deployedEntities.actions[1].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip')).toEqual(true)
+    expect(deployedEntities.actions[2].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence')).toEqual(true)
 
     // Cleanup build files
     fs.emptydirSync(config.actions.dist)
     fs.rmdirSync(config.actions.dist)
 
-    // Verify actions created in openwhisk 
-    let actions = await sdkClient.actions.list({limit:3})
-    expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({name: 'action-sequence', namespace: expect.stringContaining('/sample-app-1.0.0')}),
-    expect.objectContaining({name: 'action-zip', namespace: expect.stringContaining('/sample-app-1.0.0')}),
-    expect.objectContaining({name: 'action', namespace: expect.stringContaining('/sample-app-1.0.0')})]))
-    activation = await sdkClient.actions.invoke('sample-app-1.0.0/action')
-    
+    // Verify actions created in openwhisk
+    let actions = await sdkClient.actions.list({ limit: 3 })
+    expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'action-sequence', namespace: expect.stringContaining('/sample-app-1.0.0') }),
+      expect.objectContaining({ name: 'action-zip', namespace: expect.stringContaining('/sample-app-1.0.0') }),
+      expect.objectContaining({ name: 'action', namespace: expect.stringContaining('/sample-app-1.0.0') })]))
+    await sdkClient.actions.invoke('sample-app-1.0.0/action')
+
     // Undeploy
     await sdk.undeployActions(config)
-    actions = await sdkClient.actions.list({limit:1})
+    actions = await sdkClient.actions.list({ limit: 1 })
     if (actions.length > 0) {
       expect(actions[0].name).not.toEqual('action-sequence')
     }
-  })  
+  })
 })
 
 describe('print logs', () => {
