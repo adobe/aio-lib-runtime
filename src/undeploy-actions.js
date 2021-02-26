@@ -16,7 +16,7 @@ const IORuntime = require('./RuntimeAPI')
 
 /**
  * @param {object} config app config
- * @param {object} logFunc custom logger function
+ * @param {object} [logFunc] custom logger function
  */
 async function undeployActions (config, logFunc) {
   if (!config.app.hasBackend) {
