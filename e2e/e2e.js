@@ -44,8 +44,8 @@ beforeEach(() => {
 describe('build-actions', () => {
   test('full config', async () => {
     expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
-      '/Users/himar/work/deleteme/whatever/aio-lib-runtime/test/__fixtures__/sample-app/dist/actions/action.zip',
-      '/Users/himar/work/deleteme/whatever/aio-lib-runtime/test/__fixtures__/sample-app/dist/actions/action-zip.zip'
+      expect.stringContaining('action.zip'),
+      expect.stringContaining('action-zip.zip')
     ]))
     expect(fs.readdirSync(path.resolve(config.actions.dist))).toEqual(expect.arrayContaining(['action-temp', 'action-zip-temp', 'action-zip.zip', 'action.zip']))
     fs.emptydirSync(config.actions.dist)
@@ -54,12 +54,12 @@ describe('build-actions', () => {
 })
 
 describe('build, deploy, invoke and undeploy of actions', () => {
-  test('full config', async () => {
+  test('basic manifest', async () => {
     // console.log(config)
     // Build
     expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
-      '/Users/himar/work/deleteme/whatever/aio-lib-runtime/test/__fixtures__/sample-app/dist/actions/action.zip',
-      '/Users/himar/work/deleteme/whatever/aio-lib-runtime/test/__fixtures__/sample-app/dist/actions/action-zip.zip'
+      expect.stringContaining('action.zip'),
+      expect.stringContaining('action-zip.zip')
     ]))
 
     // Deploy
@@ -87,12 +87,70 @@ describe('build, deploy, invoke and undeploy of actions', () => {
       expect(actions[0].name).not.toEqual('action-sequence')
     }
   })
+
+  test('manifest with includes', async () => {
+    config = deepClone(global.sampleAppIncludesConfig)
+    config.ow.namespace = namespace
+    config.ow.auth = apiKey
+    config.root = path.resolve('./test/__fixtures__/sample-app-includes')
+    config.actions.src = path.resolve(config.root + '/' + config.actions.src)
+    config.actions.dist = path.resolve(config.root + '/' + config.actions.dist)
+    config.manifest.src = path.resolve(config.root + '/' + 'manifest.yml')
+    // console.log(config)
+    // Build
+    expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
+      expect.stringContaining('action.zip')
+    ]))
+
+    // Deploy
+    config.root = path.resolve('./')
+    const deployedEntities = await sdk.deployActions(config)
+    expect(deployedEntities.actions[0].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-include-1.0.0/action')).toEqual(true)
+
+    // Cleanup build files
+    fs.emptydirSync(config.actions.dist)
+    fs.rmdirSync(config.actions.dist)
+
+    // Verify actions created in openwhisk
+    let actions = await sdkClient.actions.list({ limit: 3 })
+    expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'action', namespace: expect.stringContaining('/sample-app-include-1.0.0') })]))
+    await sdkClient.actions.invoke('sample-app-include-1.0.0/action')
+
+    // Undeploy
+    await sdk.undeployActions(config)
+    actions = await sdkClient.actions.list({ limit: 1 })
+    if (actions.length > 0) {
+      expect(actions[0].name).not.toEqual('action')
+    }
+  })
+
+  test('basic manifest with filter', async () => {
+    // console.log(config)
+    // Build
+    expect(await sdk.buildActions(config, ['action'])).toEqual([expect.stringContaining('action.zip')])
+
+    // Deploy
+    config.root = path.resolve('./')
+    const deployedEntities = await sdk.deployActions(config, { filterEntities: { actions: ['action'] } })
+    expect(deployedEntities.actions.length).toBe(1)
+    expect(deployedEntities.actions[0].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-1.0.0/action')).toEqual(true)
+
+    // Cleanup build files
+    fs.emptydirSync(config.actions.dist)
+    fs.rmdirSync(config.actions.dist)
+
+    // Verify actions created in openwhisk
+    const actions = await sdkClient.actions.list({ limit: 3 })
+    expect(actions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'action', namespace: expect.stringContaining('/sample-app-1.0.0') })]))
+    await sdkClient.actions.invoke('sample-app-1.0.0/action')
+  })
 })
 
 describe('print logs', () => {
   test('basic', async () => {
     const logs = []
-    const storeLogs = (str) => { /* console.log(str);  */ logs.push(str) }
+    const storeLogs = (str) => { logs.push(str) }
     const retResult = await sdk.printActionLogs(config, storeLogs, 1, [], false, false)
     // expect(logs[1]).toEqual(expect.stringContaining('stdout: hello'))
     expect(typeof retResult).toEqual('object')
