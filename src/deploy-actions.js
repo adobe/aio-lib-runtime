@@ -22,7 +22,7 @@ const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...package
 /**
  * runs the command
  *
- * @param {object} [config={}] app config
+ * @param {object} config app config
  * @param {object} [deployConfig={}] deployment config
  * @param {object} [deployConfig.filterEntities] add filters to deploy only specified OpenWhisk entities
  * @param {Array} [deployConfig.filterEntities.actions] filter list of actions to deploy, e.g. ['name1', ..]
@@ -31,7 +31,7 @@ const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...package
  * @param {Array} [deployConfig.filterEntities.rules] filter list of rules to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.apis] filter list of apis to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.dependencies] filter list of package dependencies to deploy, e.g. ['name1', ..]
- * @param {object} logFunc custom logger function
+ * @param {object} [logFunc] custom logger function
  * @returns {Promise<object>} deployedEntities
  */
 async function deployActions (config, deployConfig = {}, logFunc) {
