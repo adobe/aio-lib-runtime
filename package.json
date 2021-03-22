@@ -23,7 +23,7 @@
     "openwhisk-fqn": "0.0.2",
     "semver": "^7.3.2",
     "sha1": "^1.1.1",
-    "webpack": "^4.44.1"
+    "webpack": "^5.26.3"
   },
   "deprecated": false,
   "description": "Adobe I/O Runtime Lib",
@@ -43,7 +43,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.0",
-    "jest": "^24.8.0",
+    "jest": "^26.6.3",
     "jest-fetch-mock": "^3.0.2",
     "jest-junit": "^10.0.0",
     "jest-plugin-fs": "^2.9.0",
