@@ -1307,6 +1307,24 @@ describe('createKeyValueObjectFromFlag', () => {
     expect(typeof res).toEqual('object')
     expect(res).toMatchObject({ name1: ['val0', 'val1'], name2: 'val2' })
   })
+
+  test('return expected large number', () => {
+    const res = utils.createKeyValueObjectFromFlag(['foo', '4566206088344615922'])
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ foo: '4566206088344615922' })
+  })
+
+  test('bad json object', () => {
+    const res = utils.createKeyValueObjectFromFlag(['foo', '{ looks like json but its not }'])
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ foo: '{ looks like json but its not }' })
+  })
+
+  test('number is a number', () => {
+    const res = utils.createKeyValueObjectFromFlag(['num', 108])
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ num: 108 })
+  })
 })
 
 describe('createKeyValueArrayFromFile', () => {

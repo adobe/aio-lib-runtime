@@ -549,9 +549,15 @@ function createKeyValueObjectFromFlag (flag) {
     for (i = 0; i < flag.length; i += 2) {
       try {
         // assume it is JSON, there is only 1 way to find out
-        tempObj[flag[i]] = JSON.parse(flag[i + 1])
+        const flagVal = flag[i + 1]
+        if (typeof flagVal === 'string' && ['{', '['].indexOf(flagVal.charAt(0)) > -1) {
+          tempObj[flag[i]] = JSON.parse(flagVal)
+        } else {
+          aioLogger.debug(`JSON parse threw exception for value ${flagVal}`)
+          tempObj[flag[i]] = flagVal
+        }
       } catch (ex) {
-        // hmm ... not json, treat as string
+        // hmm ... not json, treat as what it is ... number, string
         tempObj[flag[i]] = flag[i + 1]
       }
     }
@@ -624,8 +630,7 @@ function getKeyValueObjectFromMergedParameters (params, paramFilePath) {
  * @returns {object} An object of key value pairs in this format : {Your key1 : 'Your Value 1' , Your key2: 'Your value 2'}
  */
 function createKeyValueObjectFromFile (file) {
-  const jsonData = fs.readFileSync(file)
-  return JSON.parse(jsonData)
+  return fs.readJSONSync(file)
 }
 
 /**
