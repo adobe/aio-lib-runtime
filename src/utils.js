@@ -412,17 +412,17 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
  * returns path to main function as defined in package.json OR default of index.js
  * note: file MUST exist, caller's responsibility, this method will throw if it does not exist
  *
- * @param {*} pkgJson : path to a package.json file
- * @returns {string} name of the entry file
+ * @param {string} pkgJsonPath : path to a package.json file
+ * @returns {string} path to the entry file
  */
-function getActionEntryFile (pkgJson) {
+function getActionEntryFile (pkgJsonPath) {
   try {
-    const pkgJsonContent = fs.readJsonSync(pkgJson)
+    const pkgJsonContent = fs.readJsonSync(pkgJsonPath)
     if (pkgJsonContent.main) {
       return pkgJsonContent.main
     }
   } catch (err) {
-    console.log('caught it ... ', err)
+    aioLogger.debug(`File not found or does not define 'main' : ${pkgJsonPath}`)
   }
   return 'index.js'
 }
