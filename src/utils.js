@@ -467,18 +467,7 @@ function createKeyValueObjectFromArray (inputsArray = []) {
   const tempObj = {}
   inputsArray.forEach((input) => {
     if (input.key && input.value) {
-      try {
-        // assume it is JSON, there is only 1 way to find out
-        if (typeof input.value === 'string' && ['{', '['].indexOf(input.value.charAt(0)) > -1) {
-          tempObj[input.key] = JSON.parse(input.value)
-        } else {
-          aioLogger.debug(`JSON parse threw exception for value ${input.value}`)
-          tempObj[input.key] = input.value
-        }
-      } catch (ex) {
-        // hmm ... not json, treat as string
-        tempObj[input.key] = input.value
-      }
+      tempObj[input.key] = safeParse(input.value)
     } else {
       throw (new Error('Please provide correct input array with key and value params in each array item'))
     }
@@ -496,6 +485,23 @@ function createKeyValueArrayFromObject (object) {
 }
 
 /**
+ * @description returns JSON.parse of passed object, but handles exceptions, and numeric strings
+ * @param {string} val value to parse
+ * @returns {object} the parsed object
+ */
+function safeParse (val) {
+  let resultVal = val
+  if (typeof val === 'string' && ['{', '['].indexOf(val.charAt(0)) > -1) {
+    try {
+      resultVal = JSON.parse(val)
+    } catch (ex) {
+      aioLogger.debug(`JSON parse threw exception for value ${val}`)
+    }
+  }
+  return resultVal
+}
+
+/**
  * @description returns key value array from the parameters supplied. Used to create --param and --annotation key value pairs
  * @param {Array} flag value from flags.param or flags.annotation
  * @returns {Array} An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
@@ -505,19 +511,7 @@ function createKeyValueArrayFromFlag (flag) {
     const tempArray = []
     for (let i = 0; i < flag.length; i += 2) {
       const obj = { key: flag[i] }
-      try {
-        // assume it is JSON, there is only 1? way to find out ( careful Icarus )
-        const flagVal = flag[i + 1]
-        if (typeof flagVal === 'string' && ['{', '['].indexOf(flagVal.charAt(0)) > -1) {
-          obj.value = JSON.parse(flagVal)
-        } else {
-          aioLogger.debug(`JSON parse threw exception for value ${flagVal}`)
-          obj.value = flagVal
-        }
-      } catch (ex) {
-        // hmm ... not json, treat as string
-        obj.value = flag[i + 1]
-      }
+      obj.value = safeParse(flag[i + 1])
       tempArray.push(obj)
     }
     return tempArray
@@ -552,19 +546,7 @@ function createKeyValueObjectFromFlag (flag) {
     let i
     const tempObj = {}
     for (i = 0; i < flag.length; i += 2) {
-      try {
-        // assume it is JSON, there is only 1 way to find out
-        const flagVal = flag[i + 1]
-        if (typeof flagVal === 'string' && ['{', '['].indexOf(flagVal.charAt(0)) > -1) {
-          tempObj[flag[i]] = JSON.parse(flagVal)
-        } else {
-          aioLogger.debug(`JSON parse threw exception for value ${flagVal}`)
-          tempObj[flag[i]] = flagVal
-        }
-      } catch (ex) {
-        // hmm ... not json, treat as what it is ... number, string
-        tempObj[flag[i]] = flag[i + 1]
-      }
+      tempObj[flag[i]] = safeParse(flag[i + 1])
     }
     return tempObj
   } else {

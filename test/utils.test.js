@@ -1835,17 +1835,6 @@ describe('getIncludesForAction', () => {
 //   })
 // })
 
-/*
-
-  function urlJoin (...args) {
-    let start = ''
-    if (args[0] && args[0].startsWith('/')) start = '/'
-    return start + args.map(a => a && a.replace(/(^\/|\/$)/g, ''))
-      .filter(a => a) // remove empty strings / nulls
-      .join('/')
-  }
-  */
-
 describe('urlJoin', () => {
   test('a', () => {
     expect(utils.urlJoin('a', 'b')).toBe('a/b')
