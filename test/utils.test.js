@@ -104,6 +104,21 @@ describe('createKeyValueArrayFromObject', () => {
     const res = utils.createKeyValueArrayFromObject({ key1: 'val2' })
     expect(res).toMatchObject([{ key: 'key1', value: 'val2' }])
   })
+
+  test('array of key:value (number) pairs', () => {
+    const res = utils.createKeyValueArrayFromObject({ key1: 52 })
+    expect(res).toMatchObject([{ key: 'key1', value: 52 }])
+  })
+
+  test('array of key:value (numberic string) pairs', () => {
+    const res = utils.createKeyValueArrayFromObject({ key1: '52' })
+    expect(res).toMatchObject([{ key: 'key1', value: '52' }])
+  })
+
+  test('not really json ... ', () => {
+    const res = utils.createKeyValueArrayFromObject({ key1: '{52}' })
+    expect(res).toMatchObject([{ key: 'key1', value: '{52}' }])
+  })
 })
 describe('parsePackageName', () => {
   test('only package name', () => {
@@ -1275,6 +1290,21 @@ describe('createKeyValueObjectFromArray', () => {
     const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: 'val2' }])
     expect(res).toMatchObject({ key1: 'val2' })
   })
+
+  test('array of key:value (number) pairs', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: 1 }])
+    expect(res).toMatchObject({ key1: 1 })
+  })
+
+  test('array of key:value (numeric string) pairs', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: '11' }])
+    expect(res).toMatchObject({ key1: '11' })
+  })
+
+  test('array of key:value (not really json)) pairs', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: '{did you think this was json}' }])
+    expect(res).toMatchObject({ key1: '{did you think this was json}' })
+  })
 })
 
 describe('createKeyValueArrayFromFlag', () => {
@@ -1286,10 +1316,28 @@ describe('createKeyValueArrayFromFlag', () => {
     const res = utils.createKeyValueArrayFromFlag(['name1', 'val1', 'name2', 'val2'])
     expect(res).toMatchObject([{ key: 'name1', value: 'val1' }, { key: 'name2', value: 'val2' }])
   })
+
+  test('array of key:value (number) pairs', () => {
+    const res = utils.createKeyValueArrayFromFlag(['name1', 12, 'name2', 23])
+    expect(res).toMatchObject([{ key: 'name1', value: 12 }, { key: 'name2', value: 23 }])
+  })
+
+  test('array of key:value (numeric string) pairs', () => {
+    const res = utils.createKeyValueArrayFromFlag(['name1', '12', 'name2', '23'])
+    expect(res).toMatchObject([{ key: 'name1', value: '12' }, { key: 'name2', value: '23' }])
+  })
+
   test('array of key:value (object) pairs', () => {
     const res = utils.createKeyValueArrayFromFlag(['name1', '["val0","val1"]', 'name2', 'val2'])
     expect(typeof res[0].value).toEqual('object')
     expect(res).toMatchObject([{ key: 'name1', value: ['val0', 'val1'] }, { key: 'name2', value: 'val2' }])
+  })
+
+  test('array of key:value (looks like a json object) pairs', () => {
+    const res = utils.createKeyValueArrayFromFlag(['name1', '[this is a literal string value with brackets]', 'name2', '{literal value with curlies}'])
+    expect(typeof res[0].value).toEqual('string')
+    expect(typeof res[1].value).toEqual('string')
+    expect(res).toMatchObject([{ key: 'name1', value: '[this is a literal string value with brackets]' }, { key: 'name2', value: '{literal value with curlies}' }])
   })
 })
 

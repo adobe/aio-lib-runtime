@@ -469,7 +469,12 @@ function createKeyValueObjectFromArray (inputsArray = []) {
     if (input.key && input.value) {
       try {
         // assume it is JSON, there is only 1 way to find out
-        tempObj[input.key] = JSON.parse(input.value)
+        if (typeof input.value === 'string' && ['{', '['].indexOf(input.value.charAt(0)) > -1) {
+          tempObj[input.key] = JSON.parse(input.value)
+        } else {
+          aioLogger.debug(`JSON parse threw exception for value ${input.value}`)
+          tempObj[input.key] = input.value
+        }
       } catch (ex) {
         // hmm ... not json, treat as string
         tempObj[input.key] = input.value
@@ -497,14 +502,18 @@ function createKeyValueArrayFromObject (object) {
  */
 function createKeyValueArrayFromFlag (flag) {
   if (flag.length % 2 === 0) {
-    let i
     const tempArray = []
-    for (i = 0; i < flag.length; i += 2) {
-      const obj = {}
-      obj.key = flag[i]
+    for (let i = 0; i < flag.length; i += 2) {
+      const obj = { key: flag[i] }
       try {
-        // assume it is JSON, there is only 1 way to find out
-        obj.value = JSON.parse(flag[i + 1])
+        // assume it is JSON, there is only 1? way to find out ( careful Icarus )
+        const flagVal = flag[i + 1]
+        if (typeof flagVal === 'string' && ['{', '['].indexOf(flagVal.charAt(0)) > -1) {
+          obj.value = JSON.parse(flagVal)
+        } else {
+          aioLogger.debug(`JSON parse threw exception for value ${flagVal}`)
+          obj.value = flagVal
+        }
       } catch (ex) {
         // hmm ... not json, treat as string
         obj.value = flag[i + 1]
@@ -523,15 +532,11 @@ function createKeyValueArrayFromFlag (flag) {
  * @returns {Array} An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
  */
 function createKeyValueArrayFromFile (file) {
-  const jsonData = fs.readFileSync(file)
-  const jsonParams = JSON.parse(jsonData)
+  const jsonParams = fs.readJsonSync(file)
   const tempArray = []
   Object.entries(jsonParams).forEach(
     ([key, value]) => {
-      const obj = {}
-      obj.key = key
-      obj.value = value
-      tempArray.push(obj)
+      tempArray.push({ key, value })
     }
   )
   return tempArray
