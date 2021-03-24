@@ -1048,9 +1048,16 @@ function createActionObject (fullName, manifestAction) {
  *          an object with the new manifest and deployment packages
  */
 function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
+  const { getCliEnv, DEFAULT_ENV, PROD_ENV, STAGE_ENV } = require('@adobe/aio-lib-env')
+  const env = getCliEnv() || DEFAULT_ENV
+
   // do not modify those
+  const ADOBE_AUTH_ACTIONS = {
+    [PROD_ENV]: '/adobeio/shared-validators-v1/headless',
+    [STAGE_ENV]: '/adobeio/shared-validators-v1/headless-stage'
+  }
   const ADOBE_AUTH_ANNOTATION = 'require-adobe-auth'
-  const ADOBE_AUTH_ACTION = '/adobeio/shared-validators-v1/headless'
+  const ADOBE_AUTH_ACTION = ADOBE_AUTH_ACTIONS[env]
   const REWRITE_ACTION_PREFIX = '__secured_'
 
   // avoid side effects, do not modify input packages
