@@ -183,7 +183,7 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
     entities.actions.forEach(a => {
       const needsReplacement = a.exec && a.exec.kind === 'sequence' && a.exec.components && a.exec.components.includes(DEFAULT_VALIDATOR)
       if (needsReplacement) {
-        aioLogger.debug(`replacing headless auth validator with app registry validator for action ${a.name}`)
+        aioLogger.debug(`replacing headless auth validator ${DEFAULT_VALIDATOR} with app registry validator ${APP_REGISTRY_VALIDATOR} for action ${a.name} and cli env = ${env}`)
         a.exec.components = a.exec.components.map(a => replaceValidator[a] || a) // eslint-disable-line no-param-reassign
       }
     })

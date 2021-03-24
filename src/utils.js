@@ -14,7 +14,7 @@ const fs = require('fs-extra')
 const sha1 = require('sha1')
 const cloneDeep = require('lodash.clonedeep')
 const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:index', { level: process.env.LOG_LEVEL })
-const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:utils', { provider: 'debug' })
+const debugLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:utils', { provider: 'debug' })
 const yaml = require('js-yaml')
 const fetch = require('cross-fetch')
 const globby = require('globby')
@@ -432,7 +432,7 @@ function getActionEntryFile (pkgJson) {
  * @returns {Promise} returns with a blank promise when done
  */
 function zip (filePath, out, pathInZip = false) {
-  aioLogger.debug(`Creating zip of file/folder ${filePath}`)
+  debugLogger.debug(`Creating zip of file/folder ${filePath}`)
   const stream = fs.createWriteStream(out)
   const archive = archiver('zip', { zlib: { level: 9 } })
 
@@ -1076,7 +1076,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
 
         // check if the annotation is defined AND the action is a web action
         if ((isWeb || isWebExport) && thisAction.annotations && thisAction.annotations[ADOBE_AUTH_ANNOTATION]) {
-          logger.debug(`found annotation '${ADOBE_AUTH_ANNOTATION}' in action '${key}/${actionName}'`)
+          debugLogger.debug(`found annotation '${ADOBE_AUTH_ANNOTATION}' in action '${key}/${actionName}', cli env = ${env}`)
 
           // 1. rename the action
           const renamedAction = REWRITE_ACTION_PREFIX + actionName
@@ -1107,7 +1107,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
           }
           delete newPackages[key].actions[renamedAction].annotations[ADOBE_AUTH_ANNOTATION]
 
-          logger.debug(`renamed action '${key}/${actionName}' to '${key}/${renamedAction}'`)
+          debugLogger.debug(`renamed action '${key}/${actionName}' to '${key}/${renamedAction}'`)
 
           // 3. create the sequence
           if (newPackages[key].sequences === undefined) {
@@ -1124,7 +1124,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
             web: (isRaw && 'raw') || 'yes'
           }
 
-          logger.debug(`defined new sequence '${key}/${actionName}': '${ADOBE_AUTH_ACTION},${key}/${renamedAction}'`)
+          debugLogger.debug(`defined new sequence '${key}/${actionName}': '${ADOBE_AUTH_ACTION},${key}/${renamedAction}'`)
         }
       })
     }
