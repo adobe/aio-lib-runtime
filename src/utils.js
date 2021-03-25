@@ -471,13 +471,7 @@ function createKeyValueObjectFromArray (inputsArray = []) {
   const tempObj = {}
   inputsArray.forEach((input) => {
     if (input.key && input.value) {
-      try {
-        // assume it is JSON, there is only 1 way to find out
-        tempObj[input.key] = JSON.parse(input.value)
-      } catch (ex) {
-        // hmm ... not json, treat as string
-        tempObj[input.key] = input.value
-      }
+      tempObj[input.key] = safeParse(input.value)
     } else {
       throw (new Error('Please provide correct input array with key and value params in each array item'))
     }
@@ -495,24 +489,33 @@ function createKeyValueArrayFromObject (object) {
 }
 
 /**
+ * @description returns JSON.parse of passed object, but handles exceptions, and numeric strings
+ * @param {string} val value to parse
+ * @returns {object} the parsed object
+ */
+function safeParse (val) {
+  let resultVal = val
+  if (typeof val === 'string' && ['{', '['].indexOf(val.charAt(0)) > -1) {
+    try {
+      resultVal = JSON.parse(val)
+    } catch (ex) {
+      aioLogger.debug(`JSON parse threw exception for value ${val}`)
+    }
+  }
+  return resultVal
+}
+
+/**
  * @description returns key value array from the parameters supplied. Used to create --param and --annotation key value pairs
  * @param {Array} flag value from flags.param or flags.annotation
  * @returns {Array} An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
  */
 function createKeyValueArrayFromFlag (flag) {
   if (flag.length % 2 === 0) {
-    let i
     const tempArray = []
-    for (i = 0; i < flag.length; i += 2) {
-      const obj = {}
-      obj.key = flag[i]
-      try {
-        // assume it is JSON, there is only 1 way to find out
-        obj.value = JSON.parse(flag[i + 1])
-      } catch (ex) {
-        // hmm ... not json, treat as string
-        obj.value = flag[i + 1]
-      }
+    for (let i = 0; i < flag.length; i += 2) {
+      const obj = { key: flag[i] }
+      obj.value = safeParse(flag[i + 1])
       tempArray.push(obj)
     }
     return tempArray
@@ -527,15 +530,11 @@ function createKeyValueArrayFromFlag (flag) {
  * @returns {Array} An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
  */
 function createKeyValueArrayFromFile (file) {
-  const jsonData = fs.readFileSync(file)
-  const jsonParams = JSON.parse(jsonData)
+  const jsonParams = fs.readJsonSync(file)
   const tempArray = []
   Object.entries(jsonParams).forEach(
     ([key, value]) => {
-      const obj = {}
-      obj.key = key
-      obj.value = value
-      tempArray.push(obj)
+      tempArray.push({ key, value })
     }
   )
   return tempArray
@@ -551,13 +550,7 @@ function createKeyValueObjectFromFlag (flag) {
     let i
     const tempObj = {}
     for (i = 0; i < flag.length; i += 2) {
-      try {
-        // assume it is JSON, there is only 1 way to find out
-        tempObj[flag[i]] = JSON.parse(flag[i + 1])
-      } catch (ex) {
-        // hmm ... not json, treat as string
-        tempObj[flag[i]] = flag[i + 1]
-      }
+      tempObj[flag[i]] = safeParse(flag[i + 1])
     }
     return tempObj
   } else {
@@ -628,8 +621,7 @@ function getKeyValueObjectFromMergedParameters (params, paramFilePath) {
  * @returns {object} An object of key value pairs in this format : {Your key1 : 'Your Value 1' , Your key2: 'Your value 2'}
  */
 function createKeyValueObjectFromFile (file) {
-  const jsonData = fs.readFileSync(file)
-  return JSON.parse(jsonData)
+  return fs.readJSONSync(file)
 }
 
 /**
