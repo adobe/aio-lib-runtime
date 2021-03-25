@@ -15,8 +15,8 @@ const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime
 const IORuntime = require('./RuntimeAPI')
 
 /**
- * @param config
- * @param logFunc
+ * @param {object} config app config
+ * @param {object} [logFunc] custom logger function
  */
 async function undeployActions (config, logFunc) {
   if (!config.app.hasBackend) {
@@ -44,10 +44,10 @@ async function undeployActions (config, logFunc) {
 }
 
 /**
- * @param packageName
- * @param manifestContent
- * @param owOptions
- * @param logger
+ * @param {string} packageName name of the package to be undeployed
+ * @param {object} manifestContent manifest
+ * @param {object} owOptions openwhisk options
+ * @param {object} logger custom logger function
  */
 async function undeployWsk (packageName, manifestContent, owOptions, logger) {
   const ow = await new IORuntime().init(owOptions)

@@ -41,6 +41,8 @@ beforeEach(() => {
     'goodbye.js': global.fixtureFile('/deploy/goodbye.js'),
     'basic_manifest.json': global.fixtureFile('/deploy/basic_manifest.json'),
     'basic_manifest_res.json': global.fixtureFile('/deploy/basic_manifest_res.json'),
+    'pkgparam_manifest_res.json': global.fixtureFile('/deploy/pkgparam_manifest_res.json'),
+    'pkgparam_manifest_res_multi.json': global.fixtureFile('/deploy/pkgparam_manifest_res_multi.json'),
     'basic_manifest_res_namesonly.json': global.fixtureFile('/deploy/basic_manifest_res_namesonly.json')
   }
   global.fakeFileSystem.addJson(json)
@@ -101,6 +103,21 @@ describe('createKeyValueArrayFromObject', () => {
   test('array of key:value (string) pairs', () => {
     const res = utils.createKeyValueArrayFromObject({ key1: 'val2' })
     expect(res).toMatchObject([{ key: 'key1', value: 'val2' }])
+  })
+
+  test('array of key:value (number) pairs', () => {
+    const res = utils.createKeyValueArrayFromObject({ key1: 52 })
+    expect(res).toMatchObject([{ key: 'key1', value: 52 }])
+  })
+
+  test('array of key:value (numberic string) pairs', () => {
+    const res = utils.createKeyValueArrayFromObject({ key1: '52' })
+    expect(res).toMatchObject([{ key: 'key1', value: '52' }])
+  })
+
+  test('not really json ... ', () => {
+    const res = utils.createKeyValueArrayFromObject({ key1: '{52}' })
+    expect(res).toMatchObject([{ key: 'key1', value: '{52}' }])
   })
 })
 describe('parsePackageName', () => {
@@ -657,6 +674,21 @@ describe('processPackage', () => {
   test('basic manifest with namesOnly flag', async () => {
     const entities = utils.processPackage(JSON.parse(fs.readFileSync('/basic_manifest.json')), {}, {}, {}, true, {})
     expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/basic_manifest_res_namesonly.json')))
+  })
+
+  test('basic manifest with package parameters', async () => {
+    const packages = JSON.parse(fs.readFileSync('/basic_manifest.json'))
+    packages.hello.inputs = { 'my-pkg-param': 'pkg-param-value' }
+    const entities = utils.processPackage(packages, {}, {}, {})
+    expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/pkgparam_manifest_res.json')))
+  })
+
+  test('basic manifest with package parameters in multiple packages', async () => {
+    const packages = JSON.parse(fs.readFileSync('/basic_manifest.json'))
+    packages.hello.inputs = { 'my-pkg-param': 'pkg-param-value' }
+    packages.hello2 = { inputs: { 'my-pkg-param2': 'pkg-param-value2' } }
+    const entities = utils.processPackage(packages, {}, {}, {})
+    expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/pkgparam_manifest_res_multi.json')))
   })
 
   test('shared package', async () => {
@@ -1258,6 +1290,21 @@ describe('createKeyValueObjectFromArray', () => {
     const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: 'val2' }])
     expect(res).toMatchObject({ key1: 'val2' })
   })
+
+  test('array of key:value (number) pairs', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: 1 }])
+    expect(res).toMatchObject({ key1: 1 })
+  })
+
+  test('array of key:value (numeric string) pairs', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: '11' }])
+    expect(res).toMatchObject({ key1: '11' })
+  })
+
+  test('array of key:value (not really json)) pairs', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: '{did you think this was json}' }])
+    expect(res).toMatchObject({ key1: '{did you think this was json}' })
+  })
 })
 
 describe('createKeyValueArrayFromFlag', () => {
@@ -1269,10 +1316,28 @@ describe('createKeyValueArrayFromFlag', () => {
     const res = utils.createKeyValueArrayFromFlag(['name1', 'val1', 'name2', 'val2'])
     expect(res).toMatchObject([{ key: 'name1', value: 'val1' }, { key: 'name2', value: 'val2' }])
   })
+
+  test('array of key:value (number) pairs', () => {
+    const res = utils.createKeyValueArrayFromFlag(['name1', 12, 'name2', 23])
+    expect(res).toMatchObject([{ key: 'name1', value: 12 }, { key: 'name2', value: 23 }])
+  })
+
+  test('array of key:value (numeric string) pairs', () => {
+    const res = utils.createKeyValueArrayFromFlag(['name1', '12', 'name2', '23'])
+    expect(res).toMatchObject([{ key: 'name1', value: '12' }, { key: 'name2', value: '23' }])
+  })
+
   test('array of key:value (object) pairs', () => {
     const res = utils.createKeyValueArrayFromFlag(['name1', '["val0","val1"]', 'name2', 'val2'])
     expect(typeof res[0].value).toEqual('object')
     expect(res).toMatchObject([{ key: 'name1', value: ['val0', 'val1'] }, { key: 'name2', value: 'val2' }])
+  })
+
+  test('array of key:value (looks like a json object) pairs', () => {
+    const res = utils.createKeyValueArrayFromFlag(['name1', '[this is a literal string value with brackets]', 'name2', '{literal value with curlies}'])
+    expect(typeof res[0].value).toEqual('string')
+    expect(typeof res[1].value).toEqual('string')
+    expect(res).toMatchObject([{ key: 'name1', value: '[this is a literal string value with brackets]' }, { key: 'name2', value: '{literal value with curlies}' }])
   })
 })
 
@@ -1289,6 +1354,24 @@ describe('createKeyValueObjectFromFlag', () => {
     const res = utils.createKeyValueObjectFromFlag(['name1', '["val0","val1"]', 'name2', 'val2'])
     expect(typeof res).toEqual('object')
     expect(res).toMatchObject({ name1: ['val0', 'val1'], name2: 'val2' })
+  })
+
+  test('return expected large number', () => {
+    const res = utils.createKeyValueObjectFromFlag(['foo', '4566206088344615922'])
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ foo: '4566206088344615922' })
+  })
+
+  test('bad json object', () => {
+    const res = utils.createKeyValueObjectFromFlag(['foo', '{ looks like json but its not }'])
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ foo: '{ looks like json but its not }' })
+  })
+
+  test('number is a number', () => {
+    const res = utils.createKeyValueObjectFromFlag(['num', 108])
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ num: 108 })
   })
 })
 
@@ -1676,6 +1759,35 @@ describe('getActionUrls', () => {
     const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expect.objectContaining(expected))
   })
+
+  test('should not fail with a package that has no actions', () => {
+    const expected = {
+      action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
+      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'adobeioruntime.net'
+    config.app.hostname = 'adobeio-static.net'
+    config.manifest.full.packages.__APP_PACKAGE__.actions.action.web = false
+    delete config.manifest.full.packages.pkg2.actions
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expect.objectContaining(expected))
+  })
+
+  test('should not fail if default package has no actions', () => {
+    const expected = {
+      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'adobeioruntime.net'
+    config.app.hostname = 'adobeio-static.net'
+    config.manifest.full.packages.pkg2.actions.thataction.web = false
+    delete config.manifest.full.packages.__APP_PACKAGE__.actions
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expect.objectContaining(expected))
+  })
 })
 
 describe('_absApp', () => {
@@ -1722,17 +1834,6 @@ describe('getIncludesForAction', () => {
 //     expect(res).toBe('index.js')
 //   })
 // })
-
-/*
-
-  function urlJoin (...args) {
-    let start = ''
-    if (args[0] && args[0].startsWith('/')) start = '/'
-    return start + args.map(a => a && a.replace(/(^\/|\/$)/g, ''))
-      .filter(a => a) // remove empty strings / nulls
-      .join('/')
-  }
-  */
 
 describe('urlJoin', () => {
   test('a', () => {

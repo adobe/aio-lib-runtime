@@ -113,16 +113,6 @@ describe('build by zipping js action folder', () => {
       path.normalize('/dist/actions/action-zip.zip'))
   })
 
-  /*
-  test('should not fail if no package.json if there is an index.js', async () => {
-    // delete package.json
-    global.fakeFileSystem.removeKeys(['/actions/action-zip/package.json'])
-    // vol.unlinkSync('/actions/action-zip/package.json')
-    await buildActions(config)
-    expect(utils.zip).toHaveBeenCalledWith(path.resolve('/dist/actions/action-zip-temp'), path.resolve('/dist/actions/action-zip.zip'))
-    // expect(execa).not.toHaveBeenCalled()
-  })
- */
   test('should fail if no package.json and no index.js', async () => {
     // delete package.json
     global.fakeFileSystem.removeKeys(['/actions/action-zip/package.json'])
@@ -565,6 +555,26 @@ test('non default package present in manifest', async () => {
   expect(utils.zip).toHaveBeenNthCalledWith(3, expect.stringContaining(path.normalize('/dist/actions/action-temp')),
     path.normalize('/dist/actions/action.zip'))
   expect(utils.zip).toHaveBeenNthCalledWith(4, expect.stringContaining(path.normalize('/dist/actions/action-zip-temp')),
+    path.normalize('/dist/actions/action-zip.zip'))
+})
+
+test('should not fail if default package does not have actions', async () => {
+  addSampleAppFiles()
+  const config = deepClone(global.sampleAppConfig)
+  delete config.manifest.full.packages.__APP_PACKAGE__.actions
+  await buildActions(config)
+  expect(utils.zip).toHaveBeenCalledTimes(0)
+})
+
+test('should not fail if extra package does not have actions', async () => {
+  addSampleAppFiles()
+  const config = deepClone(global.sampleAppConfig)
+  config.manifest.full.packages.extrapkg = deepClone(config.manifest.full.packages.__APP_PACKAGE__)
+  delete config.manifest.full.packages.extrapkg.actions
+  await buildActions(config)
+  expect(utils.zip).toHaveBeenNthCalledWith(1, expect.stringContaining(path.normalize('/dist/actions/action-temp')),
+    path.normalize('/dist/actions/action.zip'))
+  expect(utils.zip).toHaveBeenNthCalledWith(2, expect.stringContaining(path.normalize('/dist/actions/action-zip-temp')),
     path.normalize('/dist/actions/action-zip.zip'))
 })
 

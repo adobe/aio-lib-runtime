@@ -172,6 +172,56 @@ test('deploy full manifest with extra package present', async () => {
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedMultiDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
 })
 
+test('deploy full manifest with a package that does not have any actions', async () => {
+  addSampleAppFiles()
+  runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
+
+  const buildDir = global.sampleAppConfig.actions.dist
+  // fake a previous build
+  const fakeFiles = {}
+  fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
+  fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
+  global.fakeFileSystem.addJson(fakeFiles)
+
+  const multiPackageConfig = deepCopy(global.sampleAppConfig)
+  multiPackageConfig.manifest.full.packages.extrapkg = deepCopy(multiPackageConfig.manifest.full.packages.__APP_PACKAGE__)
+  delete multiPackageConfig.manifest.full.packages.extrapkg.actions
+  const expectedMultiDistManifest = deepCopy(expectedDistManifest)
+  expectedMultiDistManifest.packages.extrapkg = deepCopy(expectedMultiDistManifest.packages['sample-app-1.0.0'])
+  delete expectedMultiDistManifest.packages.extrapkg.actions
+  await deployActions(multiPackageConfig)
+
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
+
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedMultiDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
+})
+
+test('should not fail if default package does not have any actions', async () => {
+  addSampleAppFiles()
+  runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
+
+  const buildDir = global.sampleAppConfig.actions.dist
+  // fake a previous build
+  const fakeFiles = {}
+  fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
+  fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
+  global.fakeFileSystem.addJson(fakeFiles)
+
+  const multiPackageConfig = deepCopy(global.sampleAppConfig)
+  delete multiPackageConfig.manifest.full.packages.__APP_PACKAGE__.actions
+  const expectedMultiDistManifest = deepCopy(expectedDistManifest)
+  delete expectedMultiDistManifest.packages['sample-app-1.0.0'].actions
+  await deployActions(multiPackageConfig)
+
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
+
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedMultiDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
+})
+
 test('use deployConfig.filterEntities to deploy only one action', async () => {
   addSampleAppFiles()
   runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
@@ -748,7 +798,7 @@ function addSampleAppReducedFiles () {
 }
 
 /**
- * @param buildDir
+ * @param {string} buildDir build dir path
  */
 function addFakeFiles (buildDir) {
   const fakeFiles = {}

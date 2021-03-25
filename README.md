@@ -242,6 +242,9 @@ for syncing managed projects.</p>
 <dt><a href="#getActionZipFileName">getActionZipFileName(pkgName, actionName, defaultPkg)</a></dt>
 <dd><p>Returns the action&#39;s build file name without the .zip extension</p>
 </dd>
+<dt><a href="#activationLogBanner">activationLogBanner(a, activation, activationLogs)</a></dt>
+<dd><p>Creates an info banner for an activation.</p>
+</dd>
 </dl>
 
 ## Typedefs
@@ -518,7 +521,7 @@ Filters and prints action logs.
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
 | runtime | <code>object</code> |  | runtime (openwhisk) object |
-| logger | <code>object</code> |  | an instance of a logger to emit messages to |
+| logger | <code>object</code> |  | an instance of a logger to emit messages to (may optionally provide logFunc and bannerFunc to customize logging) |
 | limit | <code>number</code> |  | maximum number of activations to fetch logs from |
 | filterActions | <code>Array</code> |  | array of actions to fetch logs from    ['pkg1/'] = logs of all deployed actions under package pkg1    ['pkg1/action'] = logs of action 'action' under package 'pkg1'    [] = logs of all actions in the namespace |
 | strip | <code>boolean</code> | <code>false</code> | if true, strips the timestamp which prefixes every log line |
@@ -1145,6 +1148,19 @@ Returns the action's build file name without the .zip extension
 | pkgName | <code>string</code> | name of the package |
 | actionName | <code>string</code> | name of the action |
 | defaultPkg | <code>boolean</code> | true if pkgName is the default/first package |
+
+<a name="activationLogBanner"></a>
+
+## activationLogBanner(a, activation, activationLogs)
+Creates an info banner for an activation.
+
+**Kind**: global function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| a | <code>Logger</code> | logger |
+| activation | <code>Activation</code> | metadata |
+| activationLogs | <code>Array.&lt;string&gt;</code> | the logs of the activation (may selectively suppress banner if there are no log lines) |
 
 <a name="OpenwhiskOptions"></a>
 

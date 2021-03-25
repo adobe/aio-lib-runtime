@@ -43,7 +43,7 @@ const supportedEngines = require('../package.json').engines
  * @property {Array<ManifestTrigger>} [triggers] Triggers in the manifest package
  * @property {Array<ManifestRule>} [rules] Rules in the manifest package
  * @property {Array<ManifestDependency>} [dependencies] Dependencies in the manifest package
- * @property {Array<ManifestApi>} [apis] Apis in the manifest package
+ * @property {Array<object>} [apis] Apis in the manifest package
  *
  */
 
@@ -58,21 +58,15 @@ const supportedEngines = require('../package.json').engines
  *                    executes, e.g. 'nodejs:12'
  * @property {string} [main] the entry point to the function
  * @property {object} [inputs] the list of action default parameters
- * @property {ManifestActionLimits} [limits] limits for the action
+ * @property {Array<object>} [limits] limits for the action
  * @property {string} [web] indicate if an action should be exported as web, can take the
  *                    value of: true | false | yes | no | raw
  * @property {string} [web-export] same as web
  * @property {boolean} [raw-http] indicate if an action should be exported as raw web action, this
  *                     option is only valid if `web` or `web-export` is set to true
  * @property {string} [docker] the docker container to run the action into
- * @property {ManifestActionAnnotations} [annotations] the manifest action annotations
+ * @property {Array<object>} [annotations] the manifest action annotations
  *
- */
-
-/**
- * @typedef ManifestAction
- * @type {object}
- * @property {Array} include - array of include glob patterns
  */
 
 /**
@@ -86,7 +80,7 @@ const supportedEngines = require('../package.json').engines
  * Gets the list of files matching the patterns defined by action.include
  *
  * @param {ManifestAction} action - action object from manifest which defines includes
- * @returns {Array(IncludeEntry)}
+ * @returns {Promise<Array<IncludeEntry>>} list of files matching the patterns defined by action.include
  */
 async function getIncludesForAction (action) {
   const includeFiles = []
@@ -117,6 +111,7 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md
  *
  * @typedef {object} ManifestSequence
+ * @property {string} actions Comma separated list of actions in the sequence
  */
 
 /**
@@ -124,6 +119,9 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_triggers.md
  *
  * @typedef {object} ManifestTrigger
+ * @property {object} [inputs] inputs like cron and trigger_payload
+ * @property {string} [feed] feed associated with the trigger.
+ * @property {object} [annotations] annotations
  */
 
 /**
@@ -131,13 +129,8 @@ async function getIncludesForAction (action) {
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_rules.md
  *
  * @typedef {object} ManifestRule
- */
-
-/**
- * The manifest api definition
- * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_apis.md
- *
- * @typedef {object} ManifestApi
+ * @property {string} trigger trigger name
+ * @property {string} action action name
  */
 
 /**
@@ -145,20 +138,8 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} ManifestDependency
- */
-
-/**
- * The manifest action limits definition
- * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#valid-limit-keys.md
- *
- * @typedef {object} ManifestActionLimits
- */
-
-/**
- * The manifest action annotations definition
- * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#action-annotations
- *
- * @typedef {object} ManifestActionAnnotations
+ * @property {string} location package to bind to
+ * @property {object} [inputs] package parameters
  */
 
 /**
@@ -193,6 +174,9 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesAction
+ * @property {string} action blank
+ * @property {string} name name
+ * @property {object} exec exec object
  */
 
 /**
@@ -200,7 +184,8 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesRule
-
+ * @property {string} trigger trigger name
+ * @property {string} action action name
  */
 
 /**
@@ -208,6 +193,9 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesTrigger
+ * @property {string} [feed] feed associated with the trigger
+ * @property {object} [annotations] annotations
+ * @property {object} [parameters] parameters
  */
 
 /**
@@ -215,6 +203,8 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {object} OpenWhiskEntitiesPackage
+ * @property {boolean} [publish] true for shared package
+ * @property {object} [parameters] parameters
  */
 
 /**
@@ -228,16 +218,9 @@ async function getIncludesForAction (action) {
  */
 
 /**
- * The deployment trigger definition
- * TODO
- *
- * @typedef {object} DeploymentTrigger
- */
-
-/**
  * @typedef {object} DeploymentFileComponents
  * @property {ManifestPackages} packages Packages in the manifest
- * @property {Array<DeploymentTrigger>} deploymentTriggers Triggers in the deployment manifest
+ * @property {object} deploymentTriggers Trigger names and their inputs in the deployment manifest
  * @property {DeploymentPackages} deploymentPackages Packages in the deployment manifest
  * @property {string} manifestPath Path to manifest
  * @property {object} manifestContent Parsed manifest object
@@ -280,7 +263,7 @@ function printLogs (activation, strip, logger) {
  * Filters and prints action logs.
  *
  * @param {object} runtime runtime (openwhisk) object
- * @param {object} logger an instance of a logger to emit messages to
+ * @param {object} logger an instance of a logger to emit messages to (may optionally provide logFunc and bannerFunc to customize logging)
  * @param {number} limit maximum number of activations to fetch logs from
  * @param {Array} filterActions array of actions to fetch logs from
  *    ['pkg1/'] = logs of all deployed actions under package pkg1
@@ -292,7 +275,7 @@ function printLogs (activation, strip, logger) {
 async function printFilteredActionLogs (runtime, logger, limit, filterActions = [], strip = false, startTime = 0) {
   // Get activations
   const listOptions = { limit: limit, skip: 0 }
-  const logFunc = logger || console.log
+  const logFunc = logger ? logger.logFunc || logger : console.log
   // This will narrow down the activation list to specific action
   if (filterActions.length === 1 && !filterActions[0].endsWith('/')) {
     listOptions.name = filterActions[0]
@@ -303,8 +286,8 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
   const actionFilterFunc = (actionPath, annotationValue) => {
     // For logs of all deployed actions under a package
     if (actionPath.endsWith('/')) {
-      actionPath = actionPath.startsWith('/') ? actionPath : '/' + actionPath
-      return annotationValue.includes(actionPath)
+      const actionPathStrLookUp = actionPath.startsWith('/') ? actionPath : '/' + actionPath
+      return annotationValue.includes(actionPathStrLookUp)
     }
     // For actions with full path (pkg/actionName) specified in filterActions
     return annotationValue.endsWith(actionPath)
@@ -347,8 +330,9 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
 
   /**
    * Print activation logs
-   * @param {*} activation
-   * @param {*} runtime
+   *
+   * @param {object} activation activation object
+   * @param {object} runtime runtime object
    */
   async function printActivationLogs (activation, runtime) {
     const results = []
@@ -360,13 +344,16 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
       } else {
         activationsLogged.push(activation.activationId)
       }
+
       retValue = await runtime.activations.logs({ activationId: activation.activationId })
+      // allow banners to be customized
+      if (logger && logger.bannerFunc) {
+        logger.bannerFunc(activation, retValue.logs)
+      } else {
+        activationLogBanner(logFunc, activation, retValue.logs)
+      }
+
       if (retValue.logs.length > 0) {
-        activation.annotations.forEach((annotation) => {
-          if (annotation.key === 'path') {
-            logFunc(annotation.value + ':' + activation.activationId)
-          }
-        })
         retValue.logs.forEach(function (logMsg) {
           if (strip) {
             results.push(stripLog(logMsg))
@@ -389,8 +376,9 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
 
   /**
    * Print sequence logs
-   * @param {*} activation
-   * @param {*} runtime
+   *
+   * @param {object} activation sequence activation
+   * @param {object} runtime runtime object
    */
   async function printSequenceLogs (activation, runtime) {
     try {
@@ -407,8 +395,9 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
 
   /**
    * Print logs
-   * @param {*} activation
-   * @param {*} runtime
+   *
+   * @param {object} activation activation
+   * @param {object} runtime runtime
    */
   async function printLogs (activation, runtime) {
     if (isSequenceActivation(activation)) {
@@ -424,7 +413,7 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
  * note: file MUST exist, caller's responsibility, this method will throw if it does not exist
  *
  * @param {*} pkgJson : path to a package.json file
- * @returns {string}
+ * @returns {string} name of the entry file
  */
 function getActionEntryFile (pkgJson) {
   const pkgJsonContent = fs.readJsonSync(pkgJson)
@@ -437,10 +426,10 @@ function getActionEntryFile (pkgJson) {
 /**
  * Zip a file/folder using archiver
  *
- * @param {string} filePath
- * @param {string} out
- * @param {boolean} pathInZip
- * @returns {Promise}
+ * @param {string} filePath path of file.folder to zip
+ * @param {string} out output path
+ * @param {boolean} pathInZip internal path in zip
+ * @returns {Promise} returns with a blank promise when done
  */
 function zip (filePath, out, pathInZip = false) {
   aioLogger.debug(`Creating zip of file/folder ${filePath}`)
@@ -478,13 +467,7 @@ function createKeyValueObjectFromArray (inputsArray = []) {
   const tempObj = {}
   inputsArray.forEach((input) => {
     if (input.key && input.value) {
-      try {
-        // assume it is JSON, there is only 1 way to find out
-        tempObj[input.key] = JSON.parse(input.value)
-      } catch (ex) {
-        // hmm ... not json, treat as string
-        tempObj[input.key] = input.value
-      }
+      tempObj[input.key] = safeParse(input.value)
     } else {
       throw (new Error('Please provide correct input array with key and value params in each array item'))
     }
@@ -502,24 +485,33 @@ function createKeyValueArrayFromObject (object) {
 }
 
 /**
+ * @description returns JSON.parse of passed object, but handles exceptions, and numeric strings
+ * @param {string} val value to parse
+ * @returns {object} the parsed object
+ */
+function safeParse (val) {
+  let resultVal = val
+  if (typeof val === 'string' && ['{', '['].indexOf(val.charAt(0)) > -1) {
+    try {
+      resultVal = JSON.parse(val)
+    } catch (ex) {
+      aioLogger.debug(`JSON parse threw exception for value ${val}`)
+    }
+  }
+  return resultVal
+}
+
+/**
  * @description returns key value array from the parameters supplied. Used to create --param and --annotation key value pairs
  * @param {Array} flag value from flags.param or flags.annotation
  * @returns {Array} An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
  */
 function createKeyValueArrayFromFlag (flag) {
   if (flag.length % 2 === 0) {
-    let i
     const tempArray = []
-    for (i = 0; i < flag.length; i += 2) {
-      const obj = {}
-      obj.key = flag[i]
-      try {
-        // assume it is JSON, there is only 1 way to find out
-        obj.value = JSON.parse(flag[i + 1])
-      } catch (ex) {
-        // hmm ... not json, treat as string
-        obj.value = flag[i + 1]
-      }
+    for (let i = 0; i < flag.length; i += 2) {
+      const obj = { key: flag[i] }
+      obj.value = safeParse(flag[i + 1])
       tempArray.push(obj)
     }
     return tempArray
@@ -534,15 +526,11 @@ function createKeyValueArrayFromFlag (flag) {
  * @returns {Array} An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
  */
 function createKeyValueArrayFromFile (file) {
-  const jsonData = fs.readFileSync(file)
-  const jsonParams = JSON.parse(jsonData)
+  const jsonParams = fs.readJsonSync(file)
   const tempArray = []
   Object.entries(jsonParams).forEach(
     ([key, value]) => {
-      const obj = {}
-      obj.key = key
-      obj.value = value
-      tempArray.push(obj)
+      tempArray.push({ key, value })
     }
   )
   return tempArray
@@ -558,13 +546,7 @@ function createKeyValueObjectFromFlag (flag) {
     let i
     const tempObj = {}
     for (i = 0; i < flag.length; i += 2) {
-      try {
-        // assume it is JSON, there is only 1 way to find out
-        tempObj[flag[i]] = JSON.parse(flag[i + 1])
-      } catch (ex) {
-        // hmm ... not json, treat as string
-        tempObj[flag[i]] = flag[i + 1]
-      }
+      tempObj[flag[i]] = safeParse(flag[i + 1])
     }
     return tempObj
   } else {
@@ -635,8 +617,7 @@ function getKeyValueObjectFromMergedParameters (params, paramFilePath) {
  * @returns {object} An object of key value pairs in this format : {Your key1 : 'Your Value 1' , Your key2: 'Your value 2'}
  */
 function createKeyValueObjectFromFile (file) {
-  const jsonData = fs.readFileSync(file)
-  return JSON.parse(jsonData)
+  return fs.readJSONSync(file)
 }
 
 /**
@@ -1145,7 +1126,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
  *
  * @param {ManifestPackages} packages the manifest packages
  * @param {DeploymentPackages} deploymentPackages the deployment packages
- * @param {DeploymentTrigger} deploymentTriggers the deployment triggers
+ * @param {object} deploymentTriggers the deployment triggers
  * @param {object} params the package params
  * @param {boolean} [namesOnly=false] if false, set the namespaces as well
  * @param {object} [owOptions={}] additional OpenWhisk options
@@ -1182,6 +1163,18 @@ function processPackage (packages,
     const objPackage = { name: key }
     if (pkgs[key].public) {
       objPackage.package = { publish: pkgs[key].public }
+    }
+    let pkgDeploymentInputs = {}
+    const packageInputs = pkgs[key].inputs || {}
+    if (deploymentPkgs[key]) {
+      pkgDeploymentInputs = deploymentPkgs[key].inputs || {}
+    }
+    const allPkgInputs = returnUnion(packageInputs, pkgDeploymentInputs)
+    // if parameter is provided as key : 'data type' , process it to set default values before deployment
+    if (Object.entries(allPkgInputs).length !== 0) {
+      const processedInput = createKeyValueInput(processInputs(allPkgInputs, params))
+      objPackage.package = objPackage.package || {}
+      objPackage.package.parameters = processedInput
     }
     pkgAndDeps.push(objPackage)
     // From wskdeploy repo : currently, the 'version' and 'license' values are not stored in Apache OpenWhisk, but there are plans to support it in the future
@@ -1769,16 +1762,22 @@ async function findProjectHashonServer (ow, projectName) {
 }
 
 /**
- * @param root
- * @param p
+ * Path relative to the root
+ *
+ * @param {string} root root path
+ * @param {string} p path
+ * @returns {string} relative path
  */
 function _relApp (root, p) {
   return path.relative(root, path.normalize(p))
 }
 
 /**
- * @param root
- * @param p
+ * Absolute path
+ *
+ * @param {string} root root path
+ * @param {string} p path
+ * @returns {string} absolute path
  */
 function _absApp (root, p) {
   if (path.isAbsolute(p)) return p
@@ -1786,7 +1785,9 @@ function _absApp (root, p) {
 }
 
 /**
- * @param config
+ * Checks the existence of required openwhisk credentials
+ *
+ * @param {object} config openwhisk config
  */
 function checkOpenWhiskCredentials (config) {
   const owConfig = config.ow
@@ -1812,9 +1813,12 @@ function checkOpenWhiskCredentials (config) {
 }
 
 /**
- * @param appConfig
- * @param isRemoteDev
- * @param isLocalDev
+ * Returns action URLs based on the manifest config
+ *
+ * @param {object} appConfig app config
+ * @param {boolean} isRemoteDev remote dev
+ * @param {boolean} isLocalDev local dev
+ * @returns {object} urls of actions
  */
 function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
   // sets action urls [{ name: url }]
@@ -1886,7 +1890,7 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   // populate urls
   const actionsAndSequences = {}
   Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
-    Object.entries(pkg.actions).forEach(([actionName, action]) => {
+    Object.entries(pkg.actions || {}).forEach(([actionName, action]) => {
       actionsAndSequences[getActionZipFileName(pkgName, actionName, pkgName === config.ow.package)] = action
     })
     Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
@@ -1910,7 +1914,7 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
  * Joins url path parts
  *
  * @param {...string} args url parts
- * @returns {string}
+ * @returns {string} joined url
  */
 function urlJoin (...args) {
   let start = ''
@@ -1921,12 +1925,17 @@ function urlJoin (...args) {
 }
 
 /**
- * @param url
+ * @param {string} url url
+ * @returns {string} url
  */
 function removeProtocolFromURL (url) {
   return url.replace(/(^\w+:|^)\/\//, '')
 }
 
+/**
+ * @param {object} config config
+ * @returns {object} sanitized config
+ */
 function replacePackagePlaceHolder (config) {
   const modifiedConfig = cloneDeep(config)
   const packages = modifiedConfig.manifest.full.packages
@@ -1963,9 +1972,27 @@ function validateActionRuntime (action) {
  * @param {string} pkgName name of the package
  * @param {string} actionName name of the action
  * @param {boolean} defaultPkg true if pkgName is the default/first package
+ * @returns {string} name of zip file for the action contents
  */
 function getActionZipFileName (pkgName, actionName, defaultPkg) {
   return defaultPkg ? actionName : pkgName + '/' + actionName
+}
+
+/**
+ * Creates an info banner for an activation.
+ *
+ * @param {object} logFunc custom logger function
+ * @param {object} activation activation metadata
+ * @param {Array<string>} activationLogs the logs of the activation (may selectively suppress banner if there are no log lines)
+ */
+function activationLogBanner (logFunc, activation, activationLogs) {
+  if (activationLogs.length > 0) {
+    activation.annotations.forEach((annotation) => {
+      if (annotation.key === 'path') {
+        logFunc(annotation.value + ':' + activation.activationId)
+      }
+    })
+  }
 }
 
 module.exports = {

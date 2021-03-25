@@ -173,22 +173,23 @@ const buildActions = async (config, filterActions) => {
 
   // rewrite config
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
+  let sanitizedFilterActions = cloneDeep(filterActions)
 
-  if (filterActions) {
+  if (sanitizedFilterActions) {
     // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
-    filterActions = filterActions.map((actionName) => actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
+    sanitizedFilterActions = sanitizedFilterActions.map((actionName) => actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
   }
 
   // clear out dist dir
   fs.emptyDirSync(config.actions.dist)
   const builtList = []
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
-    const actionsToBuild = Object.entries(pkg.actions)
+    const actionsToBuild = Object.entries(pkg.actions || {})
 
     // build all sequentially (todo make bundler execution parallel)
     for (const [actionName, action] of actionsToBuild) {
       const actionFullName = pkgName + '/' + actionName
-      if (Array.isArray(filterActions) && !filterActions.includes(actionFullName)) {
+      if (Array.isArray(sanitizedFilterActions) && !sanitizedFilterActions.includes(actionFullName)) {
         continue
       }
       // const out =  // todo: log output of each action as it is built
