@@ -495,7 +495,7 @@ function safeParse (val) {
     try {
       resultVal = JSON.parse(val)
     } catch (ex) {
-      aioLogger.debug(`JSON parse threw exception for value ${val}`)
+      debugLogger.debug(`JSON parse threw exception for value ${val}`)
     }
   }
   return resultVal
