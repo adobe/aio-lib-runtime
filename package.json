@@ -54,7 +54,7 @@
     "tsd-jsdoc": "^2.4.0"
   },
   "engines": {
-    "node": "^10 || ^12"
+    "node": "^10 || ^12 || ^14"
   },
   "scripts": {
     "e2e": "jest --config e2e/jest.config.js",
