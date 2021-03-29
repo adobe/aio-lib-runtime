@@ -82,7 +82,10 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
 
   // we have 1 required plugin to make sure is present
   config.plugins = config.plugins || []
-  config.plugins.push(new webpack.DefinePlugin({ WEBPACK_ACTION_BUILD: 'true' }))
+  config.plugins.push(new webpack.DefinePlugin({
+    WEBPACK_ACTION_BUILD: 'true',
+    'process.env.AIO_ENV_IS_STAGE': process.env.AIO_ENV_IS_STAGE || false
+  }))
   // NOTE: no need to make the array unique here, all plugins are different and created via new
 
   aioLogger.debug(`merged webpack config : ${JSON.stringify(config, 0, 2)}`)
