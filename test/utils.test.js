@@ -329,7 +329,7 @@ describe('returnAnnotations', () => {
   })
   test('action = { web: false, annotations: { final: true } }', () => {
     const res = utils.returnAnnotations({ web: false, annotations: { final: true } })
-    expect(res).toEqual({ 'web-export': false, 'raw-http': false })
+    expect(res).toEqual(expect.objectContaining({ 'web-export': false, 'raw-http': false }))
   })
   test('action = { web: false, annotations: { raw-http: true } }', () => {
     const res = utils.returnAnnotations({ web: false, annotations: { 'raw-http': true } })
@@ -337,7 +337,7 @@ describe('returnAnnotations', () => {
   })
   test('action = { web: false, annotations: { require-whisk-auth: true } }', () => {
     const res = utils.returnAnnotations({ web: false, annotations: { 'require-whisk-auth': true } })
-    expect(res).toEqual({ 'web-export': false, 'raw-http': false })
+    expect(res).toEqual(expect.objectContaining({ 'web-export': false, 'raw-http': false }))
   })
   test('action = { web: true, annotations: { require-whisk-auth: true } }', () => {
     const res = utils.returnAnnotations({ web: true, annotations: { 'require-whisk-auth': true } })
@@ -809,9 +809,11 @@ describe('processPackage', () => {
     // does not rewrite if apihost is not 'https://adobeioruntime.net'
     let res = utils.processPackage(basicPackage, {}, {}, {}, false, {})
     expect(res).toEqual({
-      actions: [
-        { name: 'pkg1/theaction', annotations: { 'web-export': true }, action: fakeCode }
-      ],
+      actions: [{
+        name: 'pkg1/theaction',
+        annotations: expect.objectContaining({ 'web-export': true }),
+        action: fakeCode
+      }],
       apis: [],
       pkgAndDeps: [{ name: 'pkg1' }],
       rules: [],
@@ -823,9 +825,11 @@ describe('processPackage', () => {
     delete packagesCopy.pkg1.actions.theaction.web
     res = utils.processPackage(packagesCopy, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
     expect(res).toEqual({
-      actions: [
-        { name: 'pkg1/theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode }
-      ],
+      actions: [{
+        name: 'pkg1/theaction',
+        annotations: expect.objectContaining({ 'web-export': false, 'raw-http': false }),
+        action: fakeCode
+      }],
       apis: [],
       pkgAndDeps: [{ name: 'pkg1' }],
       rules: [],
@@ -1847,18 +1851,18 @@ describe('getIncludesForAction', () => {
 })
 
 // todo: cover all of getActionEntryFile from here ... LN:300
-// describe('getActionEntryFile', () => {
-//   test('empty package.json', () => {
-//     global.fakeFileSystem.reset()
-//     // global.fakeFileSystem.removeKeys(['/actions/action-zip/package.json'])
-//     global.fakeFileSystem.removeKeys(['/actions/action-zip/index.js'])
-//     global.fakeFileSystem.addJson({
-//       'actions/action-zip/sample.js': global.fixtureFile('/sample-app/actions/action-zip/index.js')
-//     })
-//     const res = utils.getActionEntryFile('actions/action-zip/package.json')
-//     expect(res).toBe('index.js')
-//   })
-// })
+describe('getActionEntryFile', () => {
+  test('empty package.json', () => {
+    const ffs = global.fakeFileSystem
+    ffs.reset()
+    ffs.removeKeys(['/actions/action-zip/package.json'])
+    ffs.addJson({
+      'actions/action-zip/sample.js': global.fixtureFile('/sample-app/actions/action-zip/index.js')
+    })
+    const res = utils.getActionEntryFile('actions/action-zip/package.json')
+    expect(res).toBe('index.js')
+  })
+})
 
 describe('urlJoin', () => {
   test('a', () => {
@@ -1921,7 +1925,9 @@ describe('zip', () => {
   // })
 
   test('should fail if file does not exists', async () => {
-    await expect(utils.zip('/notexist.js', '/out.zip')).rejects.toEqual(expect.objectContaining({ message: expect.stringContaining('ENOENT') }))
+    await expect(utils.zip('/notexist.js', '/out.zip')).rejects.toEqual(expect.objectContaining({
+      message: expect.stringContaining('ENOENT')
+    }))
     expect(archiver.mockFile).toHaveBeenCalledTimes(0)
     expect(archiver.mockDirectory).toHaveBeenCalledTimes(0)
     expect(fs.existsSync('/out.zip')).toEqual(false)
