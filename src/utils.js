@@ -422,7 +422,7 @@ function getActionEntryFile (pkgJsonPath) {
       return pkgJsonContent.main
     }
   } catch (err) {
-    aioLogger.debug(`File not found or does not define 'main' : ${pkgJsonPath}`)
+    debugLogger.debug(`File not found or does not define 'main' : ${pkgJsonPath}`)
   }
   return 'index.js'
 }
