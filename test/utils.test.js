@@ -34,6 +34,10 @@ const owRulesDel = 'rules.delete'
 const owTriggerDel = 'triggers.delete'
 const owAPIDel = 'routes.delete'
 
+const libEnv = require('@adobe/aio-lib-env')
+const { STAGE_ENV, PROD_ENV } = jest.requireActual('@adobe/aio-lib-env')
+jest.mock('@adobe/aio-lib-env')
+
 beforeEach(() => {
   const json = {
     'file.json': global.fixtureFile('/trigger/parameters.json'),
@@ -649,6 +653,7 @@ describe('undeployPackage', () => {
 
 describe('processPackage', () => {
   const HEADLESS_VALIDATOR = '/adobeio/shared-validators-v1/headless'
+  const HEADLESS_VALIDATOR_STAGE = '/adobeio/shared-validators-v1/headless-stage'
   const basicPackage = {
     pkg1: {
       actions: {
@@ -886,6 +891,38 @@ describe('processPackage', () => {
       rules: [],
       triggers: []
     })
+
+    // test stage validator
+    libEnv.getCliEnv.mockReturnValue(STAGE_ENV)
+    res = utils.processPackage(basicPackage, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR_STAGE, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+    // reset to prod for next tests
+    libEnv.getCliEnv.mockReturnValue(PROD_ENV)
+
+    // test default env => PROD
+    libEnv.getCliEnv.mockReturnValue(null)
+    res = utils.processPackage(basicPackage, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+    // reset to prod for next tests
+    libEnv.getCliEnv.mockReturnValue(PROD_ENV)
 
     // action uses web-export
     packagesCopy = cloneDeep(basicPackage)
