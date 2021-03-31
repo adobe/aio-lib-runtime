@@ -1334,6 +1334,20 @@ describe('createKeyValueObjectFromArray', () => {
     const func = () => utils.createKeyValueObjectFromArray([undefined])
     expect(func).toThrow(new Error('Please provide correct input array with key and value params in each array item'))
   })
+
+  test('more tests', () => {
+    expect(() => utils.createKeyValueObjectFromArray([{}])).toThrow('Please provide correct input array')
+    // missing key
+    expect(() => utils.createKeyValueObjectFromArray([{ value: 'keyless entry' }])).toThrow('Please provide correct input array')
+    // falsy key
+    expect(() => utils.createKeyValueObjectFromArray([{ key: 0 }])).not.toThrow()
+    // key but no value
+    expect(() => utils.createKeyValueObjectFromArray([{ key: 'a' }])).not.toThrow()
+    // falsy value, but actually a number
+    expect(() => utils.createKeyValueObjectFromArray([{ key: 'a', value: 0 }])).not.toThrow()
+    // falsy value, empty string
+    expect(() => utils.createKeyValueObjectFromArray([{ key: 'a', value: '' }])).not.toThrow()
+  })
 })
 
 describe('createKeyValueArrayFromFlag', () => {
