@@ -1346,6 +1346,45 @@ describe('createKeyValueObjectFromArray', () => {
     const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: '{did you think this was json}' }])
     expect(res).toMatchObject({ key1: '{did you think this was json}' })
   })
+
+  test('a value of 0 should be passed through', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: 0 }])
+    expect(res).toMatchObject({ key1: 0 })
+  })
+
+  test('a value of false should be passed through', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: false }])
+    expect(res).toMatchObject({ key1: false })
+  })
+
+  test('a value of empty string should be passed through', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: '' }])
+    expect(res).toMatchObject({ key1: '' })
+  })
+
+  test('a null input should throw', () => {
+    const func = () => utils.createKeyValueObjectFromArray([null])
+    expect(func).toThrow(new Error('Please provide correct input array with key and value params in each array item'))
+  })
+
+  test('undefined input should throw', () => {
+    const func = () => utils.createKeyValueObjectFromArray([undefined])
+    expect(func).toThrow(new Error('Please provide correct input array with key and value params in each array item'))
+  })
+
+  test('more tests', () => {
+    expect(() => utils.createKeyValueObjectFromArray([{}])).toThrow('Please provide correct input array')
+    // missing key
+    expect(() => utils.createKeyValueObjectFromArray([{ value: 'keyless entry' }])).toThrow('Please provide correct input array')
+    // falsy key
+    expect(() => utils.createKeyValueObjectFromArray([{ key: 0 }])).not.toThrow()
+    // key but no value
+    expect(() => utils.createKeyValueObjectFromArray([{ key: 'a' }])).not.toThrow()
+    // falsy value, but actually a number
+    expect(() => utils.createKeyValueObjectFromArray([{ key: 'a', value: 0 }])).not.toThrow()
+    // falsy value, empty string
+    expect(() => utils.createKeyValueObjectFromArray([{ key: 'a', value: '' }])).not.toThrow()
+  })
 })
 
 describe('createKeyValueArrayFromFlag', () => {

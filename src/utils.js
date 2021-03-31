@@ -470,7 +470,7 @@ function zip (filePath, out, pathInZip = false) {
 function createKeyValueObjectFromArray (inputsArray = []) {
   const tempObj = {}
   inputsArray.forEach((input) => {
-    if (input.key && input.value) {
+    if (input && input.key !== undefined && input.key !== null && input.key !== '') {
       tempObj[input.key] = safeParse(input.value)
     } else {
       throw (new Error('Please provide correct input array with key and value params in each array item'))
