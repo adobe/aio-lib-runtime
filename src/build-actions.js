@@ -27,7 +27,7 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
   let parentDir = path.dirname(actionPath)
   const rootParent = path.normalize(path.dirname(root))
   let configPath = null
-  const cli_env = getCliEnv()
+  const cliEnv = getCliEnv()
 
   do {
     const paths = await globby([path.join(parentDir, '*webpack-config.js')])
@@ -86,7 +86,7 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
   config.plugins = config.plugins || []
   config.plugins.push(new webpack.DefinePlugin({
     WEBPACK_ACTION_BUILD: 'true',
-    'process.env.AIO_CLI_ENV': `"${cli_env}"`
+    'process.env.AIO_CLI_ENV': `"${cliEnv}"`
   }))
   // NOTE: no need to make the array unique here, all plugins are different and created via new
 
