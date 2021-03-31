@@ -14,7 +14,7 @@ const fs = require('fs-extra')
 const sha1 = require('sha1')
 const cloneDeep = require('lodash.clonedeep')
 const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:index', { level: process.env.LOG_LEVEL })
-const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:utils', { provider: 'debug' })
+const debugLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:utils', { provider: 'debug' })
 const yaml = require('js-yaml')
 const fetch = require('cross-fetch')
 const globby = require('globby')
@@ -422,7 +422,7 @@ function getActionEntryFile (pkgJsonPath) {
       return pkgJsonContent.main
     }
   } catch (err) {
-    aioLogger.debug(`File not found or does not define 'main' : ${pkgJsonPath}`)
+    debugLogger.debug(`File not found or does not define 'main' : ${pkgJsonPath}`)
   }
   return 'index.js'
 }
@@ -436,7 +436,7 @@ function getActionEntryFile (pkgJsonPath) {
  * @returns {Promise} returns with a blank promise when done
  */
 function zip (filePath, out, pathInZip = false) {
-  aioLogger.debug(`Creating zip of file/folder ${filePath}`)
+  debugLogger.debug(`Creating zip of file/folder ${filePath}`)
   const stream = fs.createWriteStream(out)
   const archive = archiver('zip', { zlib: { level: 9 } })
 
@@ -499,7 +499,7 @@ function safeParse (val) {
     try {
       resultVal = JSON.parse(val)
     } catch (ex) {
-      aioLogger.debug(`JSON parse threw exception for value ${val}`)
+      debugLogger.debug(`JSON parse threw exception for value ${val}`)
     }
   }
   return resultVal
@@ -1034,9 +1034,16 @@ function createActionObject (fullName, manifestAction) {
  *          an object with the new manifest and deployment packages
  */
 function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
+  const { getCliEnv, DEFAULT_ENV, PROD_ENV, STAGE_ENV } = require('@adobe/aio-lib-env')
+  const env = getCliEnv() || DEFAULT_ENV
+
   // do not modify those
+  const ADOBE_AUTH_ACTIONS = {
+    [PROD_ENV]: '/adobeio/shared-validators-v1/headless',
+    [STAGE_ENV]: '/adobeio/shared-validators-v1/headless-stage'
+  }
   const ADOBE_AUTH_ANNOTATION = 'require-adobe-auth'
-  const ADOBE_AUTH_ACTION = '/adobeio/shared-validators-v1/headless'
+  const ADOBE_AUTH_ACTION = ADOBE_AUTH_ACTIONS[env]
   const REWRITE_ACTION_PREFIX = '__secured_'
 
   // avoid side effects, do not modify input packages
@@ -1055,7 +1062,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
 
         // check if the annotation is defined AND the action is a web action
         if ((isWeb || isWebExport) && thisAction.annotations && thisAction.annotations[ADOBE_AUTH_ANNOTATION]) {
-          logger.debug(`found annotation '${ADOBE_AUTH_ANNOTATION}' in action '${key}/${actionName}'`)
+          debugLogger.debug(`found annotation '${ADOBE_AUTH_ANNOTATION}' in action '${key}/${actionName}', cli env = ${env}`)
 
           // 1. rename the action
           const renamedAction = REWRITE_ACTION_PREFIX + actionName
@@ -1086,7 +1093,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
           }
           delete newPackages[key].actions[renamedAction].annotations[ADOBE_AUTH_ANNOTATION]
 
-          logger.debug(`renamed action '${key}/${actionName}' to '${key}/${renamedAction}'`)
+          debugLogger.debug(`renamed action '${key}/${actionName}' to '${key}/${renamedAction}'`)
 
           // 3. create the sequence
           if (newPackages[key].sequences === undefined) {
@@ -1103,7 +1110,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
             web: (isRaw && 'raw') || 'yes'
           }
 
-          logger.debug(`defined new sequence '${key}/${actionName}': '${ADOBE_AUTH_ACTION},${key}/${renamedAction}'`)
+          debugLogger.debug(`defined new sequence '${key}/${actionName}': '${ADOBE_AUTH_ACTION},${key}/${renamedAction}'`)
         }
       })
     }
