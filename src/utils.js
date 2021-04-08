@@ -14,7 +14,7 @@ const fs = require('fs-extra')
 const sha1 = require('sha1')
 const cloneDeep = require('lodash.clonedeep')
 const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:index', { level: process.env.LOG_LEVEL })
-const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:utils', { provider: 'debug' })
+const debugLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:utils', { provider: 'debug' })
 const yaml = require('js-yaml')
 const fetch = require('cross-fetch')
 const globby = require('globby')
@@ -412,13 +412,17 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
  * returns path to main function as defined in package.json OR default of index.js
  * note: file MUST exist, caller's responsibility, this method will throw if it does not exist
  *
- * @param {*} pkgJson : path to a package.json file
- * @returns {string} name of the entry file
+ * @param {string} pkgJsonPath : path to a package.json file
+ * @returns {string} path to the entry file
  */
-function getActionEntryFile (pkgJson) {
-  const pkgJsonContent = fs.readJsonSync(pkgJson)
-  if (pkgJsonContent.main) {
-    return pkgJsonContent.main
+function getActionEntryFile (pkgJsonPath) {
+  try {
+    const pkgJsonContent = fs.readJsonSync(pkgJsonPath)
+    if (pkgJsonContent.main) {
+      return pkgJsonContent.main
+    }
+  } catch (err) {
+    debugLogger.debug(`File not found or does not define 'main' : ${pkgJsonPath}`)
   }
   return 'index.js'
 }
@@ -432,7 +436,7 @@ function getActionEntryFile (pkgJson) {
  * @returns {Promise} returns with a blank promise when done
  */
 function zip (filePath, out, pathInZip = false) {
-  aioLogger.debug(`Creating zip of file/folder ${filePath}`)
+  debugLogger.debug(`Creating zip of file/folder ${filePath}`)
   const stream = fs.createWriteStream(out)
   const archive = archiver('zip', { zlib: { level: 9 } })
 
@@ -466,14 +470,8 @@ function zip (filePath, out, pathInZip = false) {
 function createKeyValueObjectFromArray (inputsArray = []) {
   const tempObj = {}
   inputsArray.forEach((input) => {
-    if (input.key && input.value) {
-      try {
-        // assume it is JSON, there is only 1 way to find out
-        tempObj[input.key] = JSON.parse(input.value)
-      } catch (ex) {
-        // hmm ... not json, treat as string
-        tempObj[input.key] = input.value
-      }
+    if (input && input.key !== undefined && input.key !== null && input.key !== '') {
+      tempObj[input.key] = safeParse(input.value)
     } else {
       throw (new Error('Please provide correct input array with key and value params in each array item'))
     }
@@ -491,24 +489,33 @@ function createKeyValueArrayFromObject (object) {
 }
 
 /**
+ * @description returns JSON.parse of passed object, but handles exceptions, and numeric strings
+ * @param {string} val value to parse
+ * @returns {object} the parsed object
+ */
+function safeParse (val) {
+  let resultVal = val
+  if (typeof val === 'string' && ['{', '['].indexOf(val.charAt(0)) > -1) {
+    try {
+      resultVal = JSON.parse(val)
+    } catch (ex) {
+      debugLogger.debug(`JSON parse threw exception for value ${val}`)
+    }
+  }
+  return resultVal
+}
+
+/**
  * @description returns key value array from the parameters supplied. Used to create --param and --annotation key value pairs
  * @param {Array} flag value from flags.param or flags.annotation
  * @returns {Array} An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
  */
 function createKeyValueArrayFromFlag (flag) {
   if (flag.length % 2 === 0) {
-    let i
     const tempArray = []
-    for (i = 0; i < flag.length; i += 2) {
-      const obj = {}
-      obj.key = flag[i]
-      try {
-        // assume it is JSON, there is only 1 way to find out
-        obj.value = JSON.parse(flag[i + 1])
-      } catch (ex) {
-        // hmm ... not json, treat as string
-        obj.value = flag[i + 1]
-      }
+    for (let i = 0; i < flag.length; i += 2) {
+      const obj = { key: flag[i] }
+      obj.value = safeParse(flag[i + 1])
       tempArray.push(obj)
     }
     return tempArray
@@ -523,15 +530,11 @@ function createKeyValueArrayFromFlag (flag) {
  * @returns {Array} An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
  */
 function createKeyValueArrayFromFile (file) {
-  const jsonData = fs.readFileSync(file)
-  const jsonParams = JSON.parse(jsonData)
+  const jsonParams = fs.readJsonSync(file)
   const tempArray = []
   Object.entries(jsonParams).forEach(
     ([key, value]) => {
-      const obj = {}
-      obj.key = key
-      obj.value = value
-      tempArray.push(obj)
+      tempArray.push({ key, value })
     }
   )
   return tempArray
@@ -547,13 +550,7 @@ function createKeyValueObjectFromFlag (flag) {
     let i
     const tempObj = {}
     for (i = 0; i < flag.length; i += 2) {
-      try {
-        // assume it is JSON, there is only 1 way to find out
-        tempObj[flag[i]] = JSON.parse(flag[i + 1])
-      } catch (ex) {
-        // hmm ... not json, treat as string
-        tempObj[flag[i]] = flag[i + 1]
-      }
+      tempObj[flag[i]] = safeParse(flag[i + 1])
     }
     return tempObj
   } else {
@@ -624,8 +621,7 @@ function getKeyValueObjectFromMergedParameters (params, paramFilePath) {
  * @returns {object} An object of key value pairs in this format : {Your key1 : 'Your Value 1' , Your key2: 'Your value 2'}
  */
 function createKeyValueObjectFromFile (file) {
-  const jsonData = fs.readFileSync(file)
-  return JSON.parse(jsonData)
+  return fs.readJSONSync(file)
 }
 
 /**
@@ -790,16 +786,13 @@ function returnDeploymentTriggerInputs (deploymentPackages) {
  * @returns {object} the action annotation entities
  */
 function returnAnnotations (action) {
-  const annotationParams = {}
-
+  const annotationParams = action && action.annotations ? cloneDeep(action.annotations) : {}
   // common annotations
-
   if (action.annotations && action.annotations.conductor !== undefined) {
     annotationParams.conductor = action.annotations.conductor
   }
 
   // web related annotations
-
   if (action.web !== undefined) {
     Object.assign(annotationParams, checkWebFlags(action.web))
   } else if (action['web-export'] !== undefined) {
@@ -809,24 +802,17 @@ function returnAnnotations (action) {
     annotationParams['raw-http'] = false
   }
 
-  if (action.annotations && action.annotations['require-whisk-auth'] !== undefined) {
-    if (annotationParams['web-export'] === true) {
+  if (action.annotations && annotationParams['web-export'] === true) {
+    if (action.annotations['require-whisk-auth'] !== undefined) {
       annotationParams['require-whisk-auth'] = action.annotations['require-whisk-auth']
     }
-  }
-
-  if (action.annotations && action.annotations['raw-http'] !== undefined) {
-    if (annotationParams['web-export'] === true) {
+    if (action.annotations['raw-http'] !== undefined) {
       annotationParams['raw-http'] = action.annotations['raw-http']
     }
-  }
-
-  if (action.annotations && action.annotations.final !== undefined) {
-    if (annotationParams['web-export'] === true) {
+    if (action.annotations.final !== undefined) {
       annotationParams.final = action.annotations.final
     }
   }
-
   return annotationParams
 }
 
@@ -1048,9 +1034,16 @@ function createActionObject (fullName, manifestAction) {
  *          an object with the new manifest and deployment packages
  */
 function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
+  const { getCliEnv, DEFAULT_ENV, PROD_ENV, STAGE_ENV } = require('@adobe/aio-lib-env')
+  const env = getCliEnv() || DEFAULT_ENV
+
   // do not modify those
+  const ADOBE_AUTH_ACTIONS = {
+    [PROD_ENV]: '/adobeio/shared-validators-v1/headless',
+    [STAGE_ENV]: '/adobeio/shared-validators-v1/headless-stage'
+  }
   const ADOBE_AUTH_ANNOTATION = 'require-adobe-auth'
-  const ADOBE_AUTH_ACTION = '/adobeio/shared-validators-v1/headless'
+  const ADOBE_AUTH_ACTION = ADOBE_AUTH_ACTIONS[env]
   const REWRITE_ACTION_PREFIX = '__secured_'
 
   // avoid side effects, do not modify input packages
@@ -1069,7 +1062,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
 
         // check if the annotation is defined AND the action is a web action
         if ((isWeb || isWebExport) && thisAction.annotations && thisAction.annotations[ADOBE_AUTH_ANNOTATION]) {
-          logger.debug(`found annotation '${ADOBE_AUTH_ANNOTATION}' in action '${key}/${actionName}'`)
+          debugLogger.debug(`found annotation '${ADOBE_AUTH_ANNOTATION}' in action '${key}/${actionName}', cli env = ${env}`)
 
           // 1. rename the action
           const renamedAction = REWRITE_ACTION_PREFIX + actionName
@@ -1100,7 +1093,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
           }
           delete newPackages[key].actions[renamedAction].annotations[ADOBE_AUTH_ANNOTATION]
 
-          logger.debug(`renamed action '${key}/${actionName}' to '${key}/${renamedAction}'`)
+          debugLogger.debug(`renamed action '${key}/${actionName}' to '${key}/${renamedAction}'`)
 
           // 3. create the sequence
           if (newPackages[key].sequences === undefined) {
@@ -1117,7 +1110,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
             web: (isRaw && 'raw') || 'yes'
           }
 
-          logger.debug(`defined new sequence '${key}/${actionName}': '${ADOBE_AUTH_ACTION},${key}/${renamedAction}'`)
+          debugLogger.debug(`defined new sequence '${key}/${actionName}': '${ADOBE_AUTH_ACTION},${key}/${renamedAction}'`)
         }
       })
     }

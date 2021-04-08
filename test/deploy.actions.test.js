@@ -28,12 +28,18 @@ ioruntime.mockImplementation(() => {
 })
 const deepCopy = require('lodash.clonedeep')
 
+const libEnv = require('@adobe/aio-lib-env')
+const { STAGE_ENV, PROD_ENV } = jest.requireActual('@adobe/aio-lib-env')
+jest.mock('@adobe/aio-lib-env')
+
 afterEach(() => global.fakeFileSystem.reset())
 
 beforeEach(() => {
   // mockAIOConfig.get.mockReset()
   runtimeLibUtils.processPackage.mockReset()
   runtimeLibUtils.syncProject.mockReset()
+  // default ims env
+  libEnv.getCliEnv.mockReturnValue(PROD_ENV)
 })
 
 const expectedDistManifest = {
@@ -745,6 +751,138 @@ test('if actions are deployed with the headless validator and custom package and
       {
         name: 'pkg/sequenceToReplace',
         exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/app-registry', 'pkg/action'] }
+      }
+    ]
+  })
+})
+
+test('default ims env = prod: if actions are deployed with the headless validator and there is a UI it should rewrite the sequence with the app-registry validator', async () => {
+  addSampleAppFiles()
+  libEnv.getCliEnv.mockReturnValue(null)
+
+  // mock deployed entities
+  runtimeLibUtils.processPackage.mockReturnValue({
+    actions: [
+      { name: 'pkg/sequence', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] } },
+      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless', 'pkg/action'] } }
+    ]
+  })
+
+  const buildDir = global.sampleAppConfig.actions.dist
+  // fake a previous build
+  addFakeFiles(buildDir)
+
+  const returnedEntities = await deployActions(global.sampleAppConfig)
+
+  expect(returnedEntities).toEqual({
+    actions: [
+      {
+        name: 'pkg/sequence',
+        exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] }
+        // no url cause not referenced in manifest
+      },
+      {
+        name: 'pkg/sequenceToReplace',
+        exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/app-registry', 'pkg/action'] }
+      }
+    ]
+  })
+})
+
+test('stage ims env: if actions are deployed with the headless validator and there is a UI it should rewrite the sequence with the app-registry validator', async () => {
+  addSampleAppFiles()
+  libEnv.getCliEnv.mockReturnValue(STAGE_ENV)
+
+  // mock deployed entities
+  runtimeLibUtils.processPackage.mockReturnValue({
+    actions: [
+      { name: 'pkg/sequence', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] } },
+      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless-stage', 'pkg/action'] } }
+    ]
+  })
+
+  const buildDir = global.sampleAppConfig.actions.dist
+  // fake a previous build
+  addFakeFiles(buildDir)
+
+  const returnedEntities = await deployActions(global.sampleAppConfig)
+
+  expect(returnedEntities).toEqual({
+    actions: [
+      {
+        name: 'pkg/sequence',
+        exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] }
+        // no url cause not referenced in manifest
+      },
+      {
+        name: 'pkg/sequenceToReplace',
+        exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/app-registry-stage', 'pkg/action'] }
+      }
+    ]
+  })
+})
+
+test('ims stage: if actions are deployed with the headless validator and there is no UI it should NOT rewrite the sequence with the app-registry validator', async () => {
+  addSampleAppReducedFiles()
+  libEnv.getCliEnv.mockReturnValue(STAGE_ENV)
+
+  // mock deployed entities
+  runtimeLibUtils.processPackage.mockReturnValue({
+    actions: [
+      { name: 'pkg/sequence', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] } },
+      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless-stage', 'pkg/action'] } }
+    ]
+  })
+
+  const buildDir = global.sampleAppReducedConfig.actions.dist
+  // fake a previous build
+  addFakeFiles(buildDir)
+
+  const returnedEntities = await deployActions(global.sampleAppReducedConfig)
+
+  expect(returnedEntities).toEqual({
+    actions: [
+      {
+        name: 'pkg/sequence',
+        exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] }
+        // no url cause not referenced in manifest
+      },
+      {
+        name: 'pkg/sequenceToReplace',
+        exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless-stage', 'pkg/action'] }
+      }
+    ]
+  })
+})
+
+test('ims stage: if actions are deployed with the headless validator and custom package and there is a UI it should rewrite the sequence with the app-registry validator', async () => {
+  addNamedPackageFiles()
+  libEnv.getCliEnv.mockReturnValue(STAGE_ENV)
+
+  // mock deployed entities
+  runtimeLibUtils.processPackage.mockReturnValue({
+    actions: [
+      { name: 'pkg/sequence', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] } },
+      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless-stage', 'pkg/action'] } }
+    ]
+  })
+
+  const buildDir = global.namedPackageConfig.actions.dist
+  // fake a previous build
+  addFakeFiles(buildDir)
+
+  const returnedEntities = await deployActions(global.namedPackageConfig)
+
+  expect(returnedEntities).toEqual({
+    actions: [
+      {
+        name: 'pkg/sequence',
+        exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] }
+        // no url cause not referenced in manifest
+      },
+      {
+        name: 'pkg/sequenceToReplace',
+        exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/app-registry-stage', 'pkg/action'] }
       }
     ]
   })

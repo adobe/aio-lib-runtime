@@ -34,6 +34,10 @@ const owRulesDel = 'rules.delete'
 const owTriggerDel = 'triggers.delete'
 const owAPIDel = 'routes.delete'
 
+const libEnv = require('@adobe/aio-lib-env')
+const { STAGE_ENV, PROD_ENV } = jest.requireActual('@adobe/aio-lib-env')
+jest.mock('@adobe/aio-lib-env')
+
 beforeEach(() => {
   const json = {
     'file.json': global.fixtureFile('/trigger/parameters.json'),
@@ -103,6 +107,21 @@ describe('createKeyValueArrayFromObject', () => {
   test('array of key:value (string) pairs', () => {
     const res = utils.createKeyValueArrayFromObject({ key1: 'val2' })
     expect(res).toMatchObject([{ key: 'key1', value: 'val2' }])
+  })
+
+  test('array of key:value (number) pairs', () => {
+    const res = utils.createKeyValueArrayFromObject({ key1: 52 })
+    expect(res).toMatchObject([{ key: 'key1', value: 52 }])
+  })
+
+  test('array of key:value (numberic string) pairs', () => {
+    const res = utils.createKeyValueArrayFromObject({ key1: '52' })
+    expect(res).toMatchObject([{ key: 'key1', value: '52' }])
+  })
+
+  test('not really json ... ', () => {
+    const res = utils.createKeyValueArrayFromObject({ key1: '{52}' })
+    expect(res).toMatchObject([{ key: 'key1', value: '{52}' }])
   })
 })
 describe('parsePackageName', () => {
@@ -314,7 +333,7 @@ describe('returnAnnotations', () => {
   })
   test('action = { web: false, annotations: { final: true } }', () => {
     const res = utils.returnAnnotations({ web: false, annotations: { final: true } })
-    expect(res).toEqual({ 'web-export': false, 'raw-http': false })
+    expect(res).toEqual(expect.objectContaining({ 'web-export': false, 'raw-http': false }))
   })
   test('action = { web: false, annotations: { raw-http: true } }', () => {
     const res = utils.returnAnnotations({ web: false, annotations: { 'raw-http': true } })
@@ -322,7 +341,7 @@ describe('returnAnnotations', () => {
   })
   test('action = { web: false, annotations: { require-whisk-auth: true } }', () => {
     const res = utils.returnAnnotations({ web: false, annotations: { 'require-whisk-auth': true } })
-    expect(res).toEqual({ 'web-export': false, 'raw-http': false })
+    expect(res).toEqual(expect.objectContaining({ 'web-export': false, 'raw-http': false }))
   })
   test('action = { web: true, annotations: { require-whisk-auth: true } }', () => {
     const res = utils.returnAnnotations({ web: true, annotations: { 'require-whisk-auth': true } })
@@ -634,6 +653,7 @@ describe('undeployPackage', () => {
 
 describe('processPackage', () => {
   const HEADLESS_VALIDATOR = '/adobeio/shared-validators-v1/headless'
+  const HEADLESS_VALIDATOR_STAGE = '/adobeio/shared-validators-v1/headless-stage'
   const basicPackage = {
     pkg1: {
       actions: {
@@ -794,9 +814,11 @@ describe('processPackage', () => {
     // does not rewrite if apihost is not 'https://adobeioruntime.net'
     let res = utils.processPackage(basicPackage, {}, {}, {}, false, {})
     expect(res).toEqual({
-      actions: [
-        { name: 'pkg1/theaction', annotations: { 'web-export': true }, action: fakeCode }
-      ],
+      actions: [{
+        name: 'pkg1/theaction',
+        annotations: expect.objectContaining({ 'web-export': true }),
+        action: fakeCode
+      }],
       apis: [],
       pkgAndDeps: [{ name: 'pkg1' }],
       rules: [],
@@ -808,9 +830,11 @@ describe('processPackage', () => {
     delete packagesCopy.pkg1.actions.theaction.web
     res = utils.processPackage(packagesCopy, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
     expect(res).toEqual({
-      actions: [
-        { name: 'pkg1/theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode }
-      ],
+      actions: [{
+        name: 'pkg1/theaction',
+        annotations: expect.objectContaining({ 'web-export': false, 'raw-http': false }),
+        action: fakeCode
+      }],
       apis: [],
       pkgAndDeps: [{ name: 'pkg1' }],
       rules: [],
@@ -867,6 +891,38 @@ describe('processPackage', () => {
       rules: [],
       triggers: []
     })
+
+    // test stage validator
+    libEnv.getCliEnv.mockReturnValue(STAGE_ENV)
+    res = utils.processPackage(basicPackage, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR_STAGE, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+    // reset to prod for next tests
+    libEnv.getCliEnv.mockReturnValue(PROD_ENV)
+
+    // test default env => PROD
+    libEnv.getCliEnv.mockReturnValue(null)
+    res = utils.processPackage(basicPackage, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+    // reset to prod for next tests
+    libEnv.getCliEnv.mockReturnValue(PROD_ENV)
 
     // action uses web-export
     packagesCopy = cloneDeep(basicPackage)
@@ -1275,6 +1331,60 @@ describe('createKeyValueObjectFromArray', () => {
     const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: 'val2' }])
     expect(res).toMatchObject({ key1: 'val2' })
   })
+
+  test('array of key:value (number) pairs', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: 1 }])
+    expect(res).toMatchObject({ key1: 1 })
+  })
+
+  test('array of key:value (numeric string) pairs', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: '11' }])
+    expect(res).toMatchObject({ key1: '11' })
+  })
+
+  test('array of key:value (not really json)) pairs', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: '{did you think this was json}' }])
+    expect(res).toMatchObject({ key1: '{did you think this was json}' })
+  })
+
+  test('a value of 0 should be passed through', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: 0 }])
+    expect(res).toMatchObject({ key1: 0 })
+  })
+
+  test('a value of false should be passed through', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: false }])
+    expect(res).toMatchObject({ key1: false })
+  })
+
+  test('a value of empty string should be passed through', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: '' }])
+    expect(res).toMatchObject({ key1: '' })
+  })
+
+  test('a null input should throw', () => {
+    const func = () => utils.createKeyValueObjectFromArray([null])
+    expect(func).toThrow(new Error('Please provide correct input array with key and value params in each array item'))
+  })
+
+  test('undefined input should throw', () => {
+    const func = () => utils.createKeyValueObjectFromArray([undefined])
+    expect(func).toThrow(new Error('Please provide correct input array with key and value params in each array item'))
+  })
+
+  test('more tests', () => {
+    expect(() => utils.createKeyValueObjectFromArray([{}])).toThrow('Please provide correct input array')
+    // missing key
+    expect(() => utils.createKeyValueObjectFromArray([{ value: 'keyless entry' }])).toThrow('Please provide correct input array')
+    // falsy key
+    expect(() => utils.createKeyValueObjectFromArray([{ key: 0 }])).not.toThrow()
+    // key but no value
+    expect(() => utils.createKeyValueObjectFromArray([{ key: 'a' }])).not.toThrow()
+    // falsy value, but actually a number
+    expect(() => utils.createKeyValueObjectFromArray([{ key: 'a', value: 0 }])).not.toThrow()
+    // falsy value, empty string
+    expect(() => utils.createKeyValueObjectFromArray([{ key: 'a', value: '' }])).not.toThrow()
+  })
 })
 
 describe('createKeyValueArrayFromFlag', () => {
@@ -1286,10 +1396,28 @@ describe('createKeyValueArrayFromFlag', () => {
     const res = utils.createKeyValueArrayFromFlag(['name1', 'val1', 'name2', 'val2'])
     expect(res).toMatchObject([{ key: 'name1', value: 'val1' }, { key: 'name2', value: 'val2' }])
   })
+
+  test('array of key:value (number) pairs', () => {
+    const res = utils.createKeyValueArrayFromFlag(['name1', 12, 'name2', 23])
+    expect(res).toMatchObject([{ key: 'name1', value: 12 }, { key: 'name2', value: 23 }])
+  })
+
+  test('array of key:value (numeric string) pairs', () => {
+    const res = utils.createKeyValueArrayFromFlag(['name1', '12', 'name2', '23'])
+    expect(res).toMatchObject([{ key: 'name1', value: '12' }, { key: 'name2', value: '23' }])
+  })
+
   test('array of key:value (object) pairs', () => {
     const res = utils.createKeyValueArrayFromFlag(['name1', '["val0","val1"]', 'name2', 'val2'])
     expect(typeof res[0].value).toEqual('object')
     expect(res).toMatchObject([{ key: 'name1', value: ['val0', 'val1'] }, { key: 'name2', value: 'val2' }])
+  })
+
+  test('array of key:value (looks like a json object) pairs', () => {
+    const res = utils.createKeyValueArrayFromFlag(['name1', '[this is a literal string value with brackets]', 'name2', '{literal value with curlies}'])
+    expect(typeof res[0].value).toEqual('string')
+    expect(typeof res[1].value).toEqual('string')
+    expect(res).toMatchObject([{ key: 'name1', value: '[this is a literal string value with brackets]' }, { key: 'name2', value: '{literal value with curlies}' }])
   })
 })
 
@@ -1306,6 +1434,24 @@ describe('createKeyValueObjectFromFlag', () => {
     const res = utils.createKeyValueObjectFromFlag(['name1', '["val0","val1"]', 'name2', 'val2'])
     expect(typeof res).toEqual('object')
     expect(res).toMatchObject({ name1: ['val0', 'val1'], name2: 'val2' })
+  })
+
+  test('return expected large number', () => {
+    const res = utils.createKeyValueObjectFromFlag(['foo', '4566206088344615922'])
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ foo: '4566206088344615922' })
+  })
+
+  test('bad json object', () => {
+    const res = utils.createKeyValueObjectFromFlag(['foo', '{ looks like json but its not }'])
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ foo: '{ looks like json but its not }' })
+  })
+
+  test('number is a number', () => {
+    const res = utils.createKeyValueObjectFromFlag(['num', 108])
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ num: 108 })
   })
 })
 
@@ -1756,29 +1902,18 @@ describe('getIncludesForAction', () => {
 })
 
 // todo: cover all of getActionEntryFile from here ... LN:300
-// describe('getActionEntryFile', () => {
-//   test('empty package.json', () => {
-//     global.fakeFileSystem.reset()
-//     // global.fakeFileSystem.removeKeys(['/actions/action-zip/package.json'])
-//     global.fakeFileSystem.removeKeys(['/actions/action-zip/index.js'])
-//     global.fakeFileSystem.addJson({
-//       'actions/action-zip/sample.js': global.fixtureFile('/sample-app/actions/action-zip/index.js')
-//     })
-//     const res = utils.getActionEntryFile('actions/action-zip/package.json')
-//     expect(res).toBe('index.js')
-//   })
-// })
-
-/*
-
-  function urlJoin (...args) {
-    let start = ''
-    if (args[0] && args[0].startsWith('/')) start = '/'
-    return start + args.map(a => a && a.replace(/(^\/|\/$)/g, ''))
-      .filter(a => a) // remove empty strings / nulls
-      .join('/')
-  }
-  */
+describe('getActionEntryFile', () => {
+  test('empty package.json', () => {
+    const ffs = global.fakeFileSystem
+    ffs.reset()
+    ffs.removeKeys(['/actions/action-zip/package.json'])
+    ffs.addJson({
+      'actions/action-zip/sample.js': global.fixtureFile('/sample-app/actions/action-zip/index.js')
+    })
+    const res = utils.getActionEntryFile('actions/action-zip/package.json')
+    expect(res).toBe('index.js')
+  })
+})
 
 describe('urlJoin', () => {
   test('a', () => {
@@ -1841,7 +1976,9 @@ describe('zip', () => {
   // })
 
   test('should fail if file does not exists', async () => {
-    await expect(utils.zip('/notexist.js', '/out.zip')).rejects.toEqual(expect.objectContaining({ message: expect.stringContaining('ENOENT') }))
+    await expect(utils.zip('/notexist.js', '/out.zip')).rejects.toEqual(expect.objectContaining({
+      message: expect.stringContaining('ENOENT')
+    }))
     expect(archiver.mockFile).toHaveBeenCalledTimes(0)
     expect(archiver.mockDirectory).toHaveBeenCalledTimes(0)
     expect(fs.existsSync('/out.zip')).toEqual(false)
@@ -1862,14 +1999,14 @@ describe('validateActionRuntime', () => {
   })
 
   test('all good', async () => {
-    const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:12' } })
-    expect(func).not.toThrow()
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:12' } })).not.toThrow()
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })).not.toThrow()
   })
 
   test('invalid nodejs version', async () => {
     const supportedEngines = require('../package.json').engines
 
-    const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })
+    const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:16' } })
     expect(func).toThrowError(`Unsupported node version in action undefined. Supported versions are ${supportedEngines.node}`)
   })
 })

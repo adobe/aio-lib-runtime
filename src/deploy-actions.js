@@ -36,7 +36,6 @@ const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...package
  */
 async function deployActions (config, deployConfig = {}, logFunc) {
   if (!config.app.hasBackend) throw new Error('cannot deploy actions, app has no backend')
-  // TODO: Should we still support emitting events (start, progress, end ... )
 
   const isLocalDev = deployConfig.isLocalDev
   const log = logFunc || console.log
@@ -166,15 +165,25 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
   /* BEGIN temporary workaround for handling require-adobe-auth */
   // Note this is a tmp workaround and should be removed once the app-registry validator can be used for headless applications
   if (scriptConfig.app.hasFrontend && Array.isArray(entities.actions)) {
+    const { getCliEnv, DEFAULT_ENV, PROD_ENV, STAGE_ENV } = require('@adobe/aio-lib-env')
+    const env = getCliEnv() || DEFAULT_ENV
     // if the app has a frontend we need to switch to the the app registry validator
-    const DEFAULT_VALIDATOR = '/adobeio/shared-validators-v1/headless'
-    const APP_REGISTRY_VALIDATOR = '/adobeio/shared-validators-v1/app-registry'
+    const DEFAULT_VALIDATORS = {
+      [PROD_ENV]: '/adobeio/shared-validators-v1/headless',
+      [STAGE_ENV]: '/adobeio/shared-validators-v1/headless-stage'
+    }
+    const APP_REGISTRY_VALIDATORS = {
+      [PROD_ENV]: '/adobeio/shared-validators-v1/app-registry',
+      [STAGE_ENV]: '/adobeio/shared-validators-v1/app-registry-stage'
+    }
+    const DEFAULT_VALIDATOR = DEFAULT_VALIDATORS[env]
+    const APP_REGISTRY_VALIDATOR = APP_REGISTRY_VALIDATORS[env]
 
     const replaceValidator = { [DEFAULT_VALIDATOR]: APP_REGISTRY_VALIDATOR }
     entities.actions.forEach(a => {
       const needsReplacement = a.exec && a.exec.kind === 'sequence' && a.exec.components && a.exec.components.includes(DEFAULT_VALIDATOR)
       if (needsReplacement) {
-        aioLogger.debug(`replacing headless auth validator with app registry validator for action ${a.name}`)
+        aioLogger.debug(`replacing headless auth validator ${DEFAULT_VALIDATOR} with app registry validator ${APP_REGISTRY_VALIDATOR} for action ${a.name} and cli env = ${env}`)
         a.exec.components = a.exec.components.map(a => replaceValidator[a] || a) // eslint-disable-line no-param-reassign
       }
     })
