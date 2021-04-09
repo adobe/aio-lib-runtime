@@ -17,6 +17,7 @@ const globby = require('globby')
 const utils = require('./utils')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:action-builder', { provider: 'debug' })
 const cloneDeep = require('lodash.clonedeep')
+const { getCliEnv } = require('@adobe/aio-lib-env')
 
 const uniqueArr = (items) => {
   return [...new Set(items)]
@@ -26,6 +27,7 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
   let parentDir = path.dirname(actionPath)
   const rootParent = path.normalize(path.dirname(root))
   let configPath = null
+  const cliEnv = getCliEnv()
 
   do {
     const paths = await globby([path.join(parentDir, '*webpack-config.js')])
@@ -82,7 +84,10 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
 
   // we have 1 required plugin to make sure is present
   config.plugins = config.plugins || []
-  config.plugins.push(new webpack.DefinePlugin({ WEBPACK_ACTION_BUILD: 'true' }))
+  config.plugins.push(new webpack.DefinePlugin({
+    WEBPACK_ACTION_BUILD: 'true',
+    'process.env.AIO_CLI_ENV': `"${cliEnv}"`
+  }))
   // NOTE: no need to make the array unique here, all plugins are different and created via new
 
   aioLogger.debug(`merged webpack config : ${JSON.stringify(config, 0, 2)}`)
