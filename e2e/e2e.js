@@ -23,7 +23,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') })
 let sdkClient = {}
 let config = {}
 const apiKey = process.env['RuntimeAPI_API_KEY']
-const apihost = process.env['RuntimeAPI_APIHOST']
+const apihost = process.env['RuntimeAPI_APIHOST'] || 'https://adobeioruntime.net'
 const namespace = process.env['RuntimeAPI_NAMESPACE']
 // console.log(apiKey)
 
