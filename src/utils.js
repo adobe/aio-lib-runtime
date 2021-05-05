@@ -1672,17 +1672,14 @@ async function addManagedProjectAnnotations (entities, manifestPath, projectName
 }
 
 /**
- * Compute the project hash based on the manifest content and manifest path. This is used
+ * Compute the project hash based on the manifest content string. This is used
  * for syncing managed projects.
  *
  * @param {string} manifestContent the manifest content
- * @param {string} manifestPath the manifest path
  * @returns {string} the project hash
  */
-function getProjectHash (manifestContent, manifestPath) {
-  const stats = fs.statSync(manifestPath)
-  const fileSize = stats.size.toString()
-  const hashString = `Runtime ${fileSize}\0${manifestContent}`
+function getProjectHash (manifestContent) {
+  const hashString = `Runtime ${manifestContent.length}\0${manifestContent}`
   const projectHash = sha1(hashString)
   return projectHash
 }

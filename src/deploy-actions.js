@@ -55,7 +55,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   // 1. rewrite wskManifest config
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const manifest = modifiedConfig.manifest.full
-  const relDist = utils._relApp(config.root, config.actions.dist)
+  const relDist = utils._relApp(config.appRoot, config.actions.dist)
   for (const [pkgName, pkg] of Object.entries(manifest.packages)) {
     pkg.version = config.app.version
     for (const [name, action] of Object.entries(pkg.actions || {})) {
