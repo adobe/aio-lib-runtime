@@ -1352,9 +1352,9 @@ describe('createKeyValueObjectFromArray', () => {
     expect(res).toMatchObject({ key1: 0 })
   })
 
-  test('a value of false should be passed through', () => {
-    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: false }])
-    expect(res).toMatchObject({ key1: false })
+  test('a value of true/false should be passed through', () => {
+    const res = utils.createKeyValueObjectFromArray([{ key: 'key1', value: 'true' }, { key: 'key2', value: 'false' }])
+    expect(res).toMatchObject({ key1: true, key2: false })
   })
 
   test('a value of empty string should be passed through', () => {
@@ -1407,6 +1407,11 @@ describe('createKeyValueArrayFromFlag', () => {
     expect(res).toMatchObject([{ key: 'name1', value: '12' }, { key: 'name2', value: '23' }])
   })
 
+  test('array of key:value (boolean string) pairs', () => {
+    const res = utils.createKeyValueArrayFromFlag(['yes', 'true', 'no', 'false'])
+    expect(res).toMatchObject([{ key: 'yes', value: true }, { key: 'no', value: false }])
+  })
+
   test('array of key:value (object) pairs', () => {
     const res = utils.createKeyValueArrayFromFlag(['name1', '["val0","val1"]', 'name2', 'val2'])
     expect(typeof res[0].value).toEqual('object')
@@ -1452,6 +1457,18 @@ describe('createKeyValueObjectFromFlag', () => {
     const res = utils.createKeyValueObjectFromFlag(['num', 108])
     expect(typeof res).toEqual('object')
     expect(res).toMatchObject({ num: 108 })
+  })
+
+  test('true is true', () => {
+    const res = utils.createKeyValueObjectFromFlag(['num', true])
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ num: true })
+  })
+
+  test('false is false', () => {
+    const res = utils.createKeyValueObjectFromFlag(['num', false])
+    expect(typeof res).toEqual('object')
+    expect(res).toMatchObject({ num: false })
   })
 })
 
