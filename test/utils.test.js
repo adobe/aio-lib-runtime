@@ -653,7 +653,7 @@ describe('undeployPackage', () => {
 
 describe('processPackage', () => {
   const HEADLESS_VALIDATOR = '/adobeio/shared-validators-v1/headless'
-  const HEADLESS_VALIDATOR_STAGE = '/adobeio/shared-validators-v1/headless-stage'
+  const HEADLESS_VALIDATOR_STAGE = '/adobeio-stage/shared-validators-v1/headless'
   const basicPackage = {
     pkg1: {
       actions: {

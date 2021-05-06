@@ -1040,7 +1040,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
   // do not modify those
   const ADOBE_AUTH_ACTIONS = {
     [PROD_ENV]: '/adobeio/shared-validators-v1/headless',
-    [STAGE_ENV]: '/adobeio/shared-validators-v1/headless-stage'
+    [STAGE_ENV]: '/adobeio-stage/shared-validators-v1/headless'
   }
   const ADOBE_AUTH_ANNOTATION = 'require-adobe-auth'
   const ADOBE_AUTH_ACTION = ADOBE_AUTH_ACTIONS[env]
