@@ -495,11 +495,14 @@ function createKeyValueArrayFromObject (object) {
  */
 function safeParse (val) {
   let resultVal = val
-  if (typeof val === 'string' && ['{', '['].indexOf(val.charAt(0)) > -1) {
-    try {
-      resultVal = JSON.parse(val)
-    } catch (ex) {
-      debugLogger.debug(`JSON parse threw exception for value ${val}`)
+  if (typeof val === 'string') {
+    if ((['true', 'false'].indexOf(val) > -1) ||
+        (['{', '['].indexOf(val.charAt(0)) > -1)) {
+      try {
+        resultVal = JSON.parse(val)
+      } catch (ex) {
+        debugLogger.debug(`JSON parse threw exception for value ${val}`)
+      }
     }
   }
   return resultVal
