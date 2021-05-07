@@ -12,7 +12,7 @@ governing permissions and limitations under the License.
 const sdk = require('../src/index')
 const path = require('path')
 const deepClone = require('lodash.clonedeep')
-const fs = require.requireActual('fs-extra')
+const fs = jest.requireActual('fs-extra')
 jest.unmock('openwhisk')
 jest.unmock('archiver')
 jest.setTimeout(30000)
