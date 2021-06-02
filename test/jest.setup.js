@@ -11,7 +11,7 @@ governing permissions and limitations under the License.
 */
 
 const { stdout } = require('stdout-stderr')
-const fs = require.requireActual('fs')
+const fs = jest.requireActual('fs')
 const eol = require('eol')
 
 const fetch = require('jest-fetch-mock')

@@ -12,7 +12,7 @@ governing permissions and limitations under the License.
 const sdk = require('../src/index')
 const path = require('path')
 const deepClone = require('lodash.clonedeep')
-const fs = require.requireActual('fs-extra')
+const fs = jest.requireActual('fs-extra')
 jest.unmock('openwhisk')
 jest.unmock('archiver')
 jest.setTimeout(30000)
@@ -23,7 +23,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') })
 let sdkClient = {}
 let config = {}
 const apiKey = process.env['RuntimeAPI_API_KEY']
-const apihost = process.env['RuntimeAPI_APIHOST']
+const apihost = process.env['RuntimeAPI_APIHOST'] || 'https://adobeioruntime.net'
 const namespace = process.env['RuntimeAPI_NAMESPACE']
 // console.log(apiKey)
 

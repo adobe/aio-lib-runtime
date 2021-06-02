@@ -495,11 +495,14 @@ function createKeyValueArrayFromObject (object) {
  */
 function safeParse (val) {
   let resultVal = val
-  if (typeof val === 'string' && ['{', '['].indexOf(val.charAt(0)) > -1) {
-    try {
-      resultVal = JSON.parse(val)
-    } catch (ex) {
-      debugLogger.debug(`JSON parse threw exception for value ${val}`)
+  if (typeof val === 'string') {
+    if ((['true', 'false'].indexOf(val) > -1) ||
+        (['{', '['].indexOf(val.charAt(0)) > -1)) {
+      try {
+        resultVal = JSON.parse(val)
+      } catch (ex) {
+        debugLogger.debug(`JSON parse threw exception for value ${val}`)
+      }
     }
   }
   return resultVal
@@ -1040,7 +1043,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
   // do not modify those
   const ADOBE_AUTH_ACTIONS = {
     [PROD_ENV]: '/adobeio/shared-validators-v1/headless',
-    [STAGE_ENV]: '/adobeio/shared-validators-v1/headless-stage'
+    [STAGE_ENV]: '/adobeio-stage/shared-validators-v1/headless'
   }
   const ADOBE_AUTH_ANNOTATION = 'require-adobe-auth'
   const ADOBE_AUTH_ACTION = ADOBE_AUTH_ACTIONS[env]
