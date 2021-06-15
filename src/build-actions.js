@@ -152,7 +152,7 @@ const buildAction = async (zipFileName, action, root, dist) => {
           aioLogger.warn(`webpack compilation warnings:\n${info.warnings}`)
         }
         if (stats.hasErrors()) {
-          reject(new Error(`action build failed, webpack compilation errors:\n${info.errors}`))
+          reject(new Error(`action build failed, webpack compilation errors:\n${JSON.stringify(info.errors, null, '\t')}`))
         }
         return resolve(stats)
       })
