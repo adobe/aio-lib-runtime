@@ -457,7 +457,8 @@ describe('build by bundling js action file with webpack', () => {
     webpackStatsMock.toJson.mockReturnValue({
       errors: 'fake errors'
     })
-    await expect(buildActions(config)).rejects.toThrow('action build failed, webpack compilation errors:\nfake errors')
+    // eslint-disable-next-line no-useless-escape
+    await expect(buildActions(config)).rejects.toThrow('action build failed, webpack compilation errors:\n\"fake errors\"')
   })
 
   test('should both write a debug message and fail if webpack returns a warning and an error', async () => {
@@ -467,7 +468,20 @@ describe('build by bundling js action file with webpack', () => {
       errors: 'fake errors',
       warnings: 'fake warnings'
     })
-    await expect(buildActions(config)).rejects.toThrow('action build failed, webpack compilation errors:\nfake errors')
+    // eslint-disable-next-line no-useless-escape
+    await expect(buildActions(config)).rejects.toThrow('action build failed, webpack compilation errors:\n\"fake errors\"')
+    expect(mockLogger.warn).toHaveBeenCalledWith('webpack compilation warnings:\nfake warnings')
+  })
+
+  test('should print error objects when webpack fails', async () => {
+    webpackStatsMock.hasErrors.mockReturnValue(true)
+    webpackStatsMock.hasWarnings.mockReturnValue(true)
+    webpackStatsMock.toJson.mockReturnValue({
+      errors: { code: 42, message: 'it happens' },
+      warnings: 'fake warnings'
+    })
+    // eslint-disable-next-line no-useless-escape
+    await expect(buildActions(config)).rejects.toThrowError('action build failed, webpack compilation errors:')
     expect(mockLogger.warn).toHaveBeenCalledWith('webpack compilation warnings:\nfake warnings')
   })
 })
