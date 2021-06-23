@@ -4,8 +4,8 @@ on:
     inputs:
       level:
         description: '<newversion> | major | minor | patch | premajor | preminor | prepatch | prerelease'
-        required: true
-        default: 'patch'
+        required: false
+        default: ''
       tag:
         description: 'The tag to publish to.'
         required: false
