@@ -234,7 +234,7 @@ const stripLog = (elem) => {
   // `2019-10-11T19:08:57.298Z       stdout: login-success ::  { code: ...`
   // should become: `login-success ::  { code: ...`
   const found = elem.match(dtsRegex)
-  if (found && found.length > 3 && found[3].length > 0) {
+  if (found && found.length > 3) {
     return found[3]
   }
   return elem

@@ -1320,6 +1320,11 @@ describe('printLogs', () => {
     utils.printLogs({ logs: ['logged from action code'] }, true, mockLogger)
     expect(mockLogger).toHaveBeenCalledWith('logged from action code')
   })
+  test('activation logs with --strip no text', () => {
+    const mockLogger = jest.fn()
+    utils.printLogs({ logs: ['2020-06-25T05:50:23.641Z       stdout: '] }, true, mockLogger)
+    expect(mockLogger).toHaveBeenCalledWith('')
+  })
 })
 
 describe('createKeyValueObjectFromArray', () => {
