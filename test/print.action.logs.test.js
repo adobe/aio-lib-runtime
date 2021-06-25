@@ -409,7 +409,22 @@ describe('printActionLogs', () => {
     expect(logger).toHaveBeenCalledTimes(2)
     expect(logger).toHaveBeenNthCalledWith(1, 'ns/pkg2/two:456')
     expect(logger).toHaveBeenNthCalledWith(2, 'two A ')
-    // expect(logger).toHaveBeenNthCalledWith(4) // new line
+  })
+
+  test('strip should not alter order', async () => {
+    owListActivationMock.mockResolvedValue([
+      { activationId: 123, start: 555555, name: 'one', annotations: [{ key: 'path', value: 'ns/pkg1/one' }] }
+    ])
+    owLogsActivationMock.mockImplementation(a => {
+      return { logs: ['2019-10-11T19:08:57.298Z       stdout: B', '2019-10-11T19:08:57.299Z       stdout: A'] }
+    })
+
+    await printActionLogs(fakeConfig, logger, 45, [], true)
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0 })
+    expect(owLogsActivationMock).toHaveBeenCalledTimes(1)
+    expect(logger).toHaveBeenCalledTimes(3)
+    expect(logger).toHaveBeenNthCalledWith(2, 'B')
+    expect(logger).toHaveBeenNthCalledWith(3, 'A')
   })
 
   test('error from activation logs call', async () => {
