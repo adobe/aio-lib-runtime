@@ -234,7 +234,7 @@ const stripLog = (elem) => {
   // `2019-10-11T19:08:57.298Z       stdout: login-success ::  { code: ...`
   // should become: `login-success ::  { code: ...`
   const found = elem.match(dtsRegex)
-  if (found && found.length > 3 && found[3].length > 0) {
+  if (found && found.length > 3) {
     return found[3]
   }
   return elem
@@ -335,7 +335,6 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
    * @param {object} runtime runtime object
    */
   async function printActivationLogs (activation, runtime) {
-    const results = []
     let retValue
     try {
       if (activationsLogged.includes(activation.activationId)) {
@@ -354,24 +353,19 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
       }
 
       if (retValue.logs.length > 0) {
+        retValue.logs.sort()
         retValue.logs.forEach(function (logMsg) {
           if (strip) {
-            results.push(stripLog(logMsg))
+            logFunc(stripLog(logMsg))
           } else {
-            results.push(logMsg)
+            logFunc(logMsg)
           }
         })
       }
     } catch (err) { // Happens in some cases such as trying to get logs of a trigger activation
       // TODO: Trigger logs can be obtained from activation result but will need some formatting for the timestamp
       // retValue = await runtime.activations.get({ activationId: activation.activationId })
-      return
     }
-    results.sort()
-    results.forEach((logMsg) => {
-      logFunc(logMsg)
-      // logFunc()  // new line ?
-    })
   }
 
   /**
