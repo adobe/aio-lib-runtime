@@ -25,7 +25,7 @@ const uniqueArr = (items) => {
 
 const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename) => {
   let parentDir = path.dirname(actionPath)
-  const rootParent = path.normalize(path.dirname(root))
+  const rootParent = path.resolve(path.dirname(root))
   let configPath = null
   const cliEnv = getCliEnv()
 
