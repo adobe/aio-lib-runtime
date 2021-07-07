@@ -249,7 +249,7 @@ describe('build by bundling js action file with webpack', () => {
     await buildActions(config)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-      entry: [path.normalize('/actions/action.js')],
+      entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
         path: path.normalize('/dist/actions/action-temp'),
         filename: 'index.js'
@@ -263,7 +263,7 @@ describe('build by bundling js action file with webpack', () => {
     await buildActions(config)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-      entry: [path.normalize('/actions/action.js')],
+      entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
         path: path.normalize('/dist/actions/action-temp'),
         filename: 'index.js'
@@ -286,7 +286,7 @@ describe('build by bundling js action file with webpack', () => {
     await buildActions(global.sampleAppIncludesConfig)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-      entry: [path.normalize('/actions/action.js')],
+      entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
         path: path.normalize('/dist/actions/action-temp'),
         filename: 'index.js'
@@ -328,7 +328,7 @@ describe('build by bundling js action file with webpack', () => {
     await buildActions(global.sampleAppIncludesConfig)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith({
-      entry: [path.resolve('actions/file.js'), path.normalize('/actions/action.js')],
+      entry: [path.resolve('actions/file.js'), path.resolve('/actions/action.js')],
       mode: 'none',
       optimization: { minimize: false, somefakefield: true },
       output: { fake: false, filename: 'index.js', libraryTarget: 'commonjs2', path: path.normalize('/dist/actions/action-temp') },
@@ -340,7 +340,7 @@ describe('build by bundling js action file with webpack', () => {
       },
       target: 'node'
     })
-    expect(globby).toHaveBeenCalledWith(expect.arrayContaining([path.normalize('/actions/*webpack-config.js')]))
+    expect(globby).toHaveBeenCalledWith(expect.arrayContaining([path.resolve('/actions/*webpack-config.js')]))
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/action-temp'),
       path.normalize('/dist/actions/action.zip'))
     expect(Object.keys(global.fakeFileSystem.files())).toEqual(expect.arrayContaining(['/includeme.txt']))
@@ -379,7 +379,7 @@ describe('build by bundling js action file with webpack', () => {
     await buildActions(clonedConfig)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith({
-      entry: [path.resolve('actions/actionname/file.js'), path.normalize('/actions/actionname/action.js')],
+      entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'none',
       optimization: { minimize: true, somefakefield: true },
       output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/action-temp') },
@@ -412,7 +412,7 @@ describe('build by bundling js action file with webpack', () => {
     await buildActions(global.namedPackageConfig)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-      entry: [path.normalize('/actions/action.js')],
+      entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
         path: path.normalize('/dist/actions/action-temp'),
         filename: 'index.js'
@@ -427,7 +427,7 @@ describe('build by bundling js action file with webpack', () => {
     await buildActions(config)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-      entry: [path.normalize('/actions/action.js')],
+      entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
         path: path.normalize('/dist/actions/action-temp'),
         filename: 'index.js'
@@ -503,7 +503,7 @@ test('should build 1 zip action and 1 bundled action in one go', async () => {
 
   expect(webpackMock.run).toHaveBeenCalledTimes(1)
   expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-    entry: [path.normalize('/actions/action.js')],
+    entry: [path.resolve('/actions/action.js')],
     output: expect.objectContaining({
       path: expect.stringContaining(path.normalize('/dist/actions/action-temp')),
       filename: 'index.js'
@@ -530,7 +530,7 @@ test('use buildConfig.filterActions to build only action called `action`', async
 
   expect(webpackMock.run).toHaveBeenCalledTimes(1)
   expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
-    entry: [path.normalize('/actions/action.js')],
+    entry: [path.resolve('/actions/action.js')],
     output: expect.objectContaining({
       path: path.normalize('/dist/actions/action-temp'),
       filename: 'index.js'

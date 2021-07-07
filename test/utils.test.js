@@ -1571,7 +1571,7 @@ describe('getProjectHash', () => {
     fs.statSync = jest.fn(() => ({ size: () => 1 }))
     global.fakeFileSystem.addJson({ 'deploy/app.boo': 'fake' })
     const result = utils.getProjectHash('content', 'deploy/app.boo')
-    expect(result).toBe('24bfd6809c3d11723ec10681c09a15e886f2b55f')
+    expect(result).toBe('39dd19238aee745328b860ecbeea23e774dfbcc2')
   })
 })
 
