@@ -995,7 +995,7 @@ function createActionObject (fullName, manifestAction) {
 /**
  * This is a temporary function that implements the support for the `require-adobe-auth`
  * annotation for web actions by rewriting the action to a sequence that first executes
- * the /adobeio/shared-validators-v1/headless validator.
+ * the /adobeio/shared-validators-v1/headless-v2 validator.
  *
  * As an example, the following manifest:
  * ```
@@ -1017,7 +1017,7 @@ function createActionObject (fullName, manifestAction) {
  * function: path/to/hello.js
  * sequences:
  * hello:
- * actions: '/adobeio/shared-validators-v1/headless,helloworld/__secured_hello'
+ * actions: '/adobeio/shared-validators-v1/headless-v2,helloworld/__secured_hello'
  * web: 'yes'
  * ```
  *
@@ -1036,8 +1036,8 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
 
   // do not modify those
   const ADOBE_AUTH_ACTIONS = {
-    [PROD_ENV]: '/adobeio/shared-validators-v1/headless',
-    [STAGE_ENV]: '/adobeio-stage/shared-validators-v1/headless'
+    [PROD_ENV]: '/adobeio/shared-validators-v1/headless-v2',
+    [STAGE_ENV]: '/adobeio-stage/shared-validators-v1/headless-v2'
   }
   const ADOBE_AUTH_ANNOTATION = 'require-adobe-auth'
   const ADOBE_AUTH_ACTION = ADOBE_AUTH_ACTIONS[env]
@@ -1396,8 +1396,11 @@ function setPaths (flags = {}) {
  * @param {string} imsOrgId the IMS Org Id
  */
 async function setupAdobeAuth (actions, owOptions, imsOrgId) {
+  // NOTE: this is usefull only with the legacy headless ims-org validator that needs the ims org stored in state lib
+  // the code is kept in case of need to rollback
+
   // do not modify those
-  const ADOBE_HEADLESS_AUTH_ACTION = '/adobeio/shared-validators-v1/headless'
+  const ADOBE_HEADLESS_AUTH_ACTION = '/adobeio/shared-validators-v1/headless-v2'
   const AIO_STATE_KEY = '__aio'
   const AIO_STATE_PUT_ENDPOINT = 'https://adobeio.adobeioruntime.net/api/v1/web/state/put'
 

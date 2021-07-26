@@ -109,7 +109,7 @@
             },
             "exec": {
                 "components": [
-                    "/adobeio/shared-validators-v1/headless",
+                    "/adobeio/shared-validators-v1/headless-v2",
                     "hello/helloAction"
                 ],
                 "kind": "sequence"

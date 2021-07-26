@@ -169,8 +169,8 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
     const env = getCliEnv() || DEFAULT_ENV
     // if the app has a frontend we need to switch to the the app registry validator
     const DEFAULT_VALIDATORS = {
-      [PROD_ENV]: '/adobeio/shared-validators-v1/headless',
-      [STAGE_ENV]: '/adobeio-stage/shared-validators-v1/headless'
+      [PROD_ENV]: '/adobeio/shared-validators-v1/headless-v2',
+      [STAGE_ENV]: '/adobeio-stage/shared-validators-v1/headless-v2'
     }
     const APP_REGISTRY_VALIDATORS = {
       [PROD_ENV]: '/adobeio/shared-validators-v1/app-registry',

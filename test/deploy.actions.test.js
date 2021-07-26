@@ -667,7 +667,7 @@ test('if actions are deployed with the headless validator and there is a UI it s
   runtimeLibUtils.processPackage.mockReturnValue({
     actions: [
       { name: 'pkg/sequence', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] } },
-      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless', 'pkg/action'] } }
+      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless-v2', 'pkg/action'] } }
     ]
   })
 
@@ -699,7 +699,7 @@ test('if actions are deployed with the headless validator and there is no UI it 
   runtimeLibUtils.processPackage.mockReturnValue({
     actions: [
       { name: 'pkg/sequence', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] } },
-      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless', 'pkg/action'] } }
+      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless-v2', 'pkg/action'] } }
     ]
   })
 
@@ -718,7 +718,7 @@ test('if actions are deployed with the headless validator and there is no UI it 
       },
       {
         name: 'pkg/sequenceToReplace',
-        exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless', 'pkg/action'] }
+        exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless-v2', 'pkg/action'] }
       }
     ]
   })
@@ -731,7 +731,7 @@ test('if actions are deployed with the headless validator and custom package and
   runtimeLibUtils.processPackage.mockReturnValue({
     actions: [
       { name: 'pkg/sequence', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] } },
-      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless', 'pkg/action'] } }
+      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless-v2', 'pkg/action'] } }
     ]
   })
 
@@ -764,7 +764,7 @@ test('default ims env = prod: if actions are deployed with the headless validato
   runtimeLibUtils.processPackage.mockReturnValue({
     actions: [
       { name: 'pkg/sequence', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] } },
-      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless', 'pkg/action'] } }
+      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/headless-v2', 'pkg/action'] } }
     ]
   })
 
@@ -797,7 +797,7 @@ test('stage ims env: if actions are deployed with the headless validator and the
   runtimeLibUtils.processPackage.mockReturnValue({
     actions: [
       { name: 'pkg/sequence', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] } },
-      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio-stage/shared-validators-v1/headless', 'pkg/action'] } }
+      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio-stage/shared-validators-v1/headless-v2', 'pkg/action'] } }
     ]
   })
 
@@ -830,7 +830,7 @@ test('ims stage: if actions are deployed with the headless validator and there i
   runtimeLibUtils.processPackage.mockReturnValue({
     actions: [
       { name: 'pkg/sequence', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] } },
-      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio-stage/shared-validators-v1/headless', 'pkg/action'] } }
+      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio-stage/shared-validators-v1/headless-v2', 'pkg/action'] } }
     ]
   })
 
@@ -849,7 +849,7 @@ test('ims stage: if actions are deployed with the headless validator and there i
       },
       {
         name: 'pkg/sequenceToReplace',
-        exec: { kind: 'sequence', components: ['/adobeio-stage/shared-validators-v1/headless', 'pkg/action'] }
+        exec: { kind: 'sequence', components: ['/adobeio-stage/shared-validators-v1/headless-v2', 'pkg/action'] }
       }
     ]
   })
@@ -863,7 +863,7 @@ test('ims stage: if actions are deployed with the headless validator and custom 
   runtimeLibUtils.processPackage.mockReturnValue({
     actions: [
       { name: 'pkg/sequence', exec: { kind: 'sequence', components: ['/adobeio/shared-validators-v1/not-headless', 'pkg/action'] } },
-      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio-stage/shared-validators-v1/headless', 'pkg/action'] } }
+      { name: 'pkg/sequenceToReplace', exec: { kind: 'sequence', components: ['/adobeio-stage/shared-validators-v1/headless-v2', 'pkg/action'] } }
     ]
   })
 
