@@ -50,7 +50,7 @@
                 "actions": "helloAction, goodbyeAction"
             },
             "headless_sequence": {
-                "actions": "/adobeio/shared-validators-v1/headless, helloAction"
+                "actions": "/adobeio/shared-validators-v1/headless-v2, helloAction"
             }
         },
         "apis": {
