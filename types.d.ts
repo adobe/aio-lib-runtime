@@ -52,6 +52,8 @@ declare class RuntimeAPI {
 
 /**
  * runs the command
+ * @param config - app config
+ * @param [deployConfig = {}] - deployment config
  * @param [deployConfig.filterEntities] - add filters to deploy only specified OpenWhisk entities
  * @param [deployConfig.filterEntities.actions] - filter list of actions to deploy, e.g. ['name1', ..]
  * @param [deployConfig.filterEntities.sequences] - filter list of sequences to deploy, e.g. ['name1', ..]
@@ -59,9 +61,10 @@ declare class RuntimeAPI {
  * @param [deployConfig.filterEntities.rules] - filter list of rules to deploy, e.g. ['name1', ..]
  * @param [deployConfig.filterEntities.apis] - filter list of apis to deploy, e.g. ['name1', ..]
  * @param [deployConfig.filterEntities.dependencies] - filter list of package dependencies to deploy, e.g. ['name1', ..]
+ * @param [logFunc] - custom logger function
  * @returns deployedEntities
  */
-declare function deployActions(config?: any, deployConfig?: {
+declare function deployActions(config: any, deployConfig?: {
     filterEntities?: {
         actions?: any[];
         sequences?: any[];
@@ -70,9 +73,53 @@ declare function deployActions(config?: any, deployConfig?: {
         apis?: any[];
         dependencies?: any[];
     };
-}, eventEmitter: any, logFunc: any): Promise<object>;
+}, logFunc?: any): Promise<object>;
 
+/**
+ * @param scriptConfig - config
+ * @param manifestContent - manifest
+ * @param logFunc - custom logger function
+ * @param filterEntities - entities (actions, sequences, triggers, rules etc) to be filtered
+ */
 declare function deployWsk(scriptConfig: any, manifestContent: any, logFunc: any, filterEntities: any): void;
+
+/**
+ * @property apihost - Hostname and optional port for openwhisk platform
+ * @property api_key - Authorisation key
+ * @property [api] - Full API URL
+ * @property [apiversion] - Api version
+ * @property [namespace] - Namespace for resource requests
+ * @property [ignore_certs] - Turns off server SSL/TLS certificate verification
+ * @property [key] - Client key to use when connecting to the apihost
+ */
+declare type OpenwhiskOptions = {
+    apihost: string;
+    api_key: string;
+    api?: string;
+    apiversion?: string;
+    namespace?: string;
+    ignore_certs?: boolean;
+    key?: string;
+};
+
+/**
+ * @property actions - actions
+ * @property activations - activations
+ * @property namespaces - namespaces
+ * @property packages - packages
+ * @property rules - rules
+ * @property triggers - triggers
+ * @property routes - routes
+ */
+declare type OpenwhiskClient = {
+    actions: ow.Actions;
+    activations: ow.Activations;
+    namespaces: ow.Namespaces;
+    packages: ow.Packages;
+    rules: ow.Rules;
+    triggers: ow.Triggers;
+    routes: ow.Routes;
+};
 
 /**
  * Returns a Promise that resolves with a new RuntimeAPI object.
@@ -116,9 +163,19 @@ declare class Triggers {
     delete(options: any): Promise<object>;
 }
 
-declare function undeployActions(config: any, logFunc: any): void;
+/**
+ * @param config - app config
+ * @param [logFunc] - custom logger function
+ */
+declare function undeployActions(config: any, logFunc?: any): void;
 
-declare function undeployWsk(packageName: any, manifestContent: any, owOptions: any, logger: any): void;
+/**
+ * @param packageName - name of the package to be undeployed
+ * @param manifestContent - manifest
+ * @param owOptions - openwhisk options
+ * @param logger - custom logger function
+ */
+declare function undeployWsk(packageName: string, manifestContent: any, owOptions: any, logger: any): void;
 
 /**
  * The entry point to the information read from the manifest, this can be extracted using
@@ -145,7 +202,7 @@ declare type ManifestPackage = {
     triggers?: ManifestTrigger[];
     rules?: ManifestRule[];
     dependencies?: ManifestDependency[];
-    apis?: ManifestApi[];
+    apis?: object[];
 };
 
 /**
@@ -171,43 +228,12 @@ declare type ManifestAction = {
     runtime: string;
     main?: string;
     inputs?: any;
-    limits?: ManifestActionLimits;
+    limits?: object[];
     web?: string;
     web-export?: string;
     raw-http?: boolean;
     docker?: string;
-    annotations?: ManifestActionAnnotations;
-};
-
-/**
- * The manifest action definition
- * @property [version] - the manifest action version
- * @property function - the path to the action code
- * @property runtime - the runtime environment or kind in which the action
- *                    executes, e.g. 'nodejs:12'
- * @property [main] - the entry point to the function
- * @property [inputs] - the list of action default parameters
- * @property [limits] - limits for the action
- * @property [web] - indicate if an action should be exported as web, can take the
- *                    value of: true | false | yes | no | raw
- * @property [web-export] - same as web
- * @property [raw-http] - indicate if an action should be exported as raw web action, this
- *                     option is only valid if `web` or `web-export` is set to true
- * @property [docker] - the docker container to run the action into
- * @property [annotations] - the manifest action annotations
- */
-declare type ManifestAction = {
-    version?: string;
-    function: string;
-    runtime: string;
-    main?: string;
-    inputs?: any;
-    limits?: ManifestActionLimits;
-    web?: string;
-    web-export?: string;
-    raw-http?: boolean;
-    docker?: string;
-    annotations?: ManifestActionAnnotations;
+    annotations?: object[];
 };
 
 /**
@@ -222,50 +248,53 @@ declare type IncludeEntry = {
 /**
  * Gets the list of files matching the patterns defined by action.include
  * @param action - action object from manifest which defines includes
+ * @returns list of files matching the patterns defined by action.include
  */
-declare function getIncludesForAction(action: ManifestAction): any[];
+declare function getIncludesForAction(action: ManifestAction): Promise<IncludeEntry[]>;
 
 /**
  * The manifest sequence definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md
+ * @property actions - Comma separated list of actions in the sequence
  */
-declare type ManifestSequence = any;
+declare type ManifestSequence = {
+    actions: string;
+};
 
 /**
  * The manifest trigger definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_triggers.md
+ * @property [inputs] - inputs like cron and trigger_payload
+ * @property [feed] - feed associated with the trigger.
+ * @property [annotations] - annotations
  */
-declare type ManifestTrigger = any;
+declare type ManifestTrigger = {
+    inputs?: any;
+    feed?: string;
+    annotations?: any;
+};
 
 /**
  * The manifest rule definition
  * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_rules.md
+ * @property trigger - trigger name
+ * @property action - action name
  */
-declare type ManifestRule = any;
-
-/**
- * The manifest api definition
- * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_apis.md
- */
-declare type ManifestApi = any;
+declare type ManifestRule = {
+    trigger: string;
+    action: string;
+};
 
 /**
  * The manifest dependency definition
  * TODO
+ * @property location - package to bind to
+ * @property [inputs] - package parameters
  */
-declare type ManifestDependency = any;
-
-/**
- * The manifest action limits definition
- * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#valid-limit-keys.md
- */
-declare type ManifestActionLimits = any;
-
-/**
- * The manifest action annotations definition
- * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_actions.md#action-annotations
- */
-declare type ManifestActionAnnotations = any;
+declare type ManifestDependency = {
+    location: string;
+    inputs?: any;
+};
 
 /**
  * The OpenWhisk entities definitions, which are compatible with the `openwhisk` node
@@ -305,26 +334,50 @@ declare type OpenWhiskEntitiesRoute = {
 /**
  * The action entity definition
  * TODO
+ * @property action - blank
+ * @property name - name
+ * @property exec - exec object
  */
-declare type OpenWhiskEntitiesAction = any;
+declare type OpenWhiskEntitiesAction = {
+    action: string;
+    name: string;
+    exec: any;
+};
 
 /**
  * The rule entity definition
  * TODO
+ * @property trigger - trigger name
+ * @property action - action name
  */
-declare type OpenWhiskEntitiesRule = any;
+declare type OpenWhiskEntitiesRule = {
+    trigger: string;
+    action: string;
+};
 
 /**
  * The trigger entity definition
  * TODO
+ * @property [feed] - feed associated with the trigger
+ * @property [annotations] - annotations
+ * @property [parameters] - parameters
  */
-declare type OpenWhiskEntitiesTrigger = any;
+declare type OpenWhiskEntitiesTrigger = {
+    feed?: string;
+    annotations?: any;
+    parameters?: any;
+};
 
 /**
  * The package entity definition
  * TODO
+ * @property [publish] - true for shared package
+ * @property [parameters] - parameters
  */
-declare type OpenWhiskEntitiesPackage = any;
+declare type OpenWhiskEntitiesPackage = {
+    publish?: boolean;
+    parameters?: any;
+};
 
 /**
  * The entry point to the information read from the deployment file, this can be extracted using
@@ -334,14 +387,8 @@ declare type OpenWhiskEntitiesPackage = any;
 declare type DeploymentPackages = object[];
 
 /**
- * The deployment trigger definition
- * TODO
- */
-declare type DeploymentTrigger = any;
-
-/**
  * @property packages - Packages in the manifest
- * @property deploymentTriggers - Triggers in the deployment manifest
+ * @property deploymentTriggers - Trigger names and their inputs in the deployment manifest
  * @property deploymentPackages - Packages in the deployment manifest
  * @property manifestPath - Path to manifest
  * @property manifestContent - Parsed manifest object
@@ -349,7 +396,7 @@ declare type DeploymentTrigger = any;
  */
 declare type DeploymentFileComponents = {
     packages: ManifestPackages;
-    deploymentTriggers: DeploymentTrigger[];
+    deploymentTriggers: any;
     deploymentPackages: DeploymentPackages;
     manifestPath: string;
     manifestContent: any;
@@ -367,10 +414,7 @@ declare function printLogs(activation: any, strip: boolean, logger: any): void;
 /**
  * Filters and prints action logs.
  * @param runtime - runtime (openwhisk) object
- * @param logger - an instance of a logger to emit messages to
- *    undefined = console.log
- *    logger = use this logger
- *    { logFunc?, bannerFunc? } = use given logFunc for logs and bannerFunc for activation banner
+ * @param logger - an instance of a logger to emit messages to (may optionally provide logFunc and bannerFunc to customize logging)
  * @param limit - maximum number of activations to fetch logs from
  * @param filterActions - array of actions to fetch logs from
  *    ['pkg1/'] = logs of all deployed actions under package pkg1
@@ -384,12 +428,17 @@ declare function printFilteredActionLogs(runtime: any, logger: any, limit: numbe
 /**
  * returns path to main function as defined in package.json OR default of index.js
  * note: file MUST exist, caller's responsibility, this method will throw if it does not exist
- * @param pkgJson - : path to a package.json file
+ * @param pkgJsonPath - : path to a package.json file
+ * @returns path to the entry file
  */
-declare function getActionEntryFile(pkgJson: any): string;
+declare function getActionEntryFile(pkgJsonPath: string): string;
 
 /**
  * Zip a file/folder using archiver
+ * @param filePath - path of file.folder to zip
+ * @param out - output path
+ * @param pathInZip - internal path in zip
+ * @returns returns with a blank promise when done
  */
 declare function zip(filePath: string, out: string, pathInZip: boolean): Promise;
 
@@ -406,6 +455,13 @@ declare function createKeyValueObjectFromArray(inputsArray: any[]): any;
  * @returns An array of key value pairs in this format : [{key : 'Your key 1' , value: 'Your value 1'}, {key : 'Your key 2' , value: 'Your value 2'} ]
  */
 declare function createKeyValueArrayFromObject(object: any): any[];
+
+/**
+ * returns JSON.parse of passed object, but handles exceptions, and numeric strings
+ * @param val - value to parse
+ * @returns the parsed object
+ */
+declare function safeParse(val: string): any;
 
 /**
  * returns key value array from the parameters supplied. Used to create --param and --annotation key value pairs
@@ -463,7 +519,14 @@ declare function createKeyValueObjectFromFile(file: string): any;
  * @param sequenceAction - the sequence action array
  * @returns the object representation of the sequence
  */
-declare function createComponentsfromSequence(sequenceAction: any[]): any;
+declare function createComponentsFromSequence(sequenceAction: any[]): any;
+
+/**
+ * Creates an object representation of a sequence.
+ * @param sequenceAction - the sequence action array
+ * @returns the object representation of the sequence
+ */
+declare function createComponentsFromSequence(sequenceAction: any[]): any;
 
 /**
  * Creates a union of two objects
@@ -568,7 +631,7 @@ declare function createActionObject(fullName: string, manifestAction: ManifestAc
  * @param [owOptions = {}] - additional OpenWhisk options
  * @returns deployment entities
  */
-declare function processPackage(packages: ManifestPackages, deploymentPackages: DeploymentPackages, deploymentTriggers: DeploymentTrigger, params: any, namesOnly?: boolean, owOptions?: any): OpenWhiskEntities;
+declare function processPackage(packages: ManifestPackages, deploymentPackages: DeploymentPackages, deploymentTriggers: any, params: any, namesOnly?: boolean, owOptions?: any): OpenWhiskEntities;
 
 /**
  * Get the deployment file components.
@@ -656,13 +719,12 @@ declare function getProjectEntities(project: string, isProjectHash: boolean, ow:
 declare function addManagedProjectAnnotations(entities: OpenWhiskEntities, manifestPath: string, projectName: string, projectHash: string): void;
 
 /**
- * Compute the project hash based on the manifest content and manifest path. This is used
+ * Compute the project hash based on the manifest content string. This is used
  * for syncing managed projects.
  * @param manifestContent - the manifest content
- * @param manifestPath - the manifest path
  * @returns the project hash
  */
-declare function getProjectHash(manifestContent: string, manifestPath: string): string;
+declare function getProjectHash(manifestContent: string): string;
 
 /**
  * Retrieve the project hash from a deployed managed project.
@@ -670,21 +732,86 @@ declare function getProjectHash(manifestContent: string, manifestPath: string): 
  * @param projectName - the project name
  * @returns the project hash, or '' if not found
  */
-declare function findProjectHashonServer(ow: any, projectName: string): Promise<string>;
+declare function findProjectHashOnServer(ow: any, projectName: string): Promise<string>;
 
-declare function _relApp(root: any, p: any): void;
+/**
+ * Retrieve the project hash from a deployed managed project.
+ * @param ow - the OpenWhisk client object
+ * @param projectName - the project name
+ * @returns the project hash, or '' if not found
+ */
+declare function findProjectHashOnServer(ow: any, projectName: string): Promise<string>;
 
-declare function _absApp(root: any, p: any): void;
+/**
+ * Path relative to the root
+ * @param root - root path
+ * @param p - path
+ * @returns relative path
+ */
+declare function _relApp(root: string, p: string): string;
 
+/**
+ * Absolute path
+ * @param root - root path
+ * @param p - path
+ * @returns absolute path
+ */
+declare function _absApp(root: string, p: string): string;
+
+/**
+ * Checks the existence of required openwhisk credentials
+ * @param config - openwhisk config
+ */
 declare function checkOpenWhiskCredentials(config: any): void;
 
-declare function getActionUrls(config: any, isRemoteDev: any, isLocalDev: any): void;
+/**
+ * Returns action URLs based on the manifest config
+ * @param appConfig - app config
+ * @param isRemoteDev - remote dev
+ * @param isLocalDev - local dev
+ * @returns urls of actions
+ */
+declare function getActionUrls(appConfig: any, isRemoteDev: boolean, isLocalDev: boolean): any;
 
 /**
  * Joins url path parts
  * @param args - url parts
+ * @returns joined url
  */
 declare function urlJoin(...args: string[]): string;
 
-declare function removeProtocolFromURL(url: any): void;
+/**
+ * @param url - url
+ * @returns url
+ */
+declare function removeProtocolFromURL(url: string): string;
+
+/**
+ * @param config - config
+ * @returns sanitized config
+ */
+declare function replacePackagePlaceHolder(config: any): any;
+
+/**
+ * Checks the validity of nodejs version in action definition and throws an error if invalid.
+ * @param action - action object
+ */
+declare function validateActionRuntime(action: any): void;
+
+/**
+ * Returns the action's build file name without the .zip extension
+ * @param pkgName - name of the package
+ * @param actionName - name of the action
+ * @param defaultPkg - true if pkgName is the default/first package
+ * @returns name of zip file for the action contents
+ */
+declare function getActionZipFileName(pkgName: string, actionName: string, defaultPkg: boolean): string;
+
+/**
+ * Creates an info banner for an activation.
+ * @param logFunc - custom logger function
+ * @param activation - activation metadata
+ * @param activationLogs - the logs of the activation (may selectively suppress banner if there are no log lines)
+ */
+declare function activationLogBanner(logFunc: any, activation: any, activationLogs: string[]): void;
 
