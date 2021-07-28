@@ -25,7 +25,7 @@ const uniqueArr = (items) => {
 
 const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename) => {
   let parentDir = path.dirname(actionPath)
-  const rootParent = path.normalize(path.dirname(root))
+  const rootParent = path.resolve(path.dirname(root))
   let configPath = null
   const cliEnv = getCliEnv()
 
@@ -96,9 +96,8 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
 // need config.root
 // config.actions.dist
 const buildAction = async (zipFileName, action, root, dist) => {
-  // const actionPath = path.isAbsolute(action.function) ? action.function : path.join(root, action.function)
-  // note: it does not seem to be possible to get here with an absolute path ...
-  const actionPath = path.join(root, action.function)
+  // path.resolve supports both relative and absolut action.function
+  const actionPath = path.resolve(root, action.function)
 
   const outPath = path.join(dist, `${zipFileName}.zip`)
   const tempBuildDir = path.join(dist, `${zipFileName}-temp`) // build all to tempDir first

@@ -216,8 +216,8 @@ hence are not managed as part of a project.</p>
 <dd><p>Add the <code>whisk-managed</code> annotation to processed entities. This is needed for syncing
 managed projects.</p>
 </dd>
-<dt><a href="#getProjectHash">getProjectHash(manifestContent, manifestPath)</a> ⇒ <code>string</code></dt>
-<dd><p>Compute the project hash based on the manifest content and manifest path. This is used
+<dt><a href="#getProjectHash">getProjectHash(manifestContent)</a> ⇒ <code>string</code></dt>
+<dd><p>Compute the project hash based on the manifest content string. This is used
 for syncing managed projects.</p>
 </dd>
 <dt><a href="#findProjectHashOnServer">findProjectHashOnServer(ow, projectName)</a> ⇒ <code>Promise.&lt;string&gt;</code></dt>
@@ -1037,8 +1037,8 @@ managed projects.
 
 <a name="getProjectHash"></a>
 
-## getProjectHash(manifestContent, manifestPath) ⇒ <code>string</code>
-Compute the project hash based on the manifest content and manifest path. This is used
+## getProjectHash(manifestContent) ⇒ <code>string</code>
+Compute the project hash based on the manifest content string. This is used
 for syncing managed projects.
 
 **Kind**: global function  
@@ -1047,7 +1047,6 @@ for syncing managed projects.
 | Param | Type | Description |
 | --- | --- | --- |
 | manifestContent | <code>string</code> | the manifest content |
-| manifestPath | <code>string</code> | the manifest path |
 
 <a name="findProjectHashOnServer"></a>
 
