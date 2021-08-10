@@ -32,7 +32,7 @@ const sdk = require('@adobe/aio-lib-runtime')
 
 async function sdkTest() {
   //initialize sdk
-  const client = await sdk.init({ apihost: 'apihost', api_key: 'api_key'})
+  const client = await sdk.init('<tenant>', 'x-api-key', '<valid auth token>')
 }
 ```
 
@@ -43,7 +43,7 @@ const sdk = require('@adobe/aio-lib-runtime')
 
 async function sdkTest() {
   // initialize sdk
-  const client = await sdk.init({ apihost: 'apihost', api_key: 'api_key'})
+  const client = await sdk.init('<tenant>', 'x-api-key', '<valid auth token>')
 
   // call methods
   try {
