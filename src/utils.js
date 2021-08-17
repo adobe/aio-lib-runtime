@@ -270,9 +270,10 @@ function printLogs (activation, strip, logger) {
  *    ['pkg1/action'] = logs of action 'action' under package 'pkg1'
  *    [] = logs of all actions in the namespace
  * @param {boolean} strip if true, strips the timestamp which prefixes every log line
+ * @param {boolean} cleanLogs if false, print old logs occurrence, if true, show only new logs occurrence.
  * @param {number} startTime time in milliseconds. Only logs after this time will be fetched
  */
-async function printFilteredActionLogs (runtime, logger, limit, filterActions = [], strip = false, startTime = 0) {
+async function printFilteredActionLogs (runtime, logger, limit, filterActions = [], strip = false, cleanLogs = false, startTime = 0) {
   // Get activations
   const listOptions = { limit: limit, skip: 0 }
   const logFunc = logger ? logger.logFunc || logger : console.log
@@ -309,7 +310,8 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
   for (let i = (activations.length - 1); i >= 0; i--) {
     const activation = activations[i]
     lastActivationTime = activation.start
-    if (lastActivationTime > startTime) {
+    const shouldPrintLogs = cleanLogs ? startTime && startTime < lastActivationTime : startTime < lastActivationTime
+    if (shouldPrintLogs) {
       await printLogs(activation, runtime)
     }
   }

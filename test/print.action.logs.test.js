@@ -2,9 +2,9 @@
 const runtimeLibUtils = require('../src/utils')
 const printFilteredActionLogsOriginal = runtimeLibUtils.printFilteredActionLogs
 runtimeLibUtils.checkOpenWhiskCredentials = jest.fn()
-const mockPrintFilteredActionLogs = jest.fn(async (runtime, logger, limit, filterActions, strip, startTime) => {
+const mockPrintFilteredActionLogs = jest.fn(async (runtime, logger, limit, filterActions, strip, cleanLogs, startTime) => {
   // console.log('in mocked filterprint')
-  return printFilteredActionLogsOriginal(runtime, logger, limit, filterActions, strip, startTime)
+  return printFilteredActionLogsOriginal(runtime, logger, limit, filterActions, strip, cleanLogs, startTime)
 })
 runtimeLibUtils.printFilteredActionLogs = mockPrintFilteredActionLogs
 const printActionLogs = require('../src/print-action-logs')
@@ -447,7 +447,7 @@ describe('printActionLogs', () => {
   test('with filterActions (single action) and tail', async () => {
     runtimeLibUtils.printFilteredActionLogs.mockClear()
     // This will be called exactly 2 times because we are making it fail the second time
-    const mockPrintFilteredActionLogs = runtimeLibUtils.printFilteredActionLogs.mockImplementation(async (runtime, logger, limit, filterActions = [], strip = false, startTime = 0) => {
+    const mockPrintFilteredActionLogs = runtimeLibUtils.printFilteredActionLogs.mockImplementation(async (runtime, logger, limit, filterActions = [], strip = false, cleanLogs = true, startTime = 0) => {
       if (startTime !== 0) {
         // console.log('in custom mock')
         return
@@ -458,7 +458,7 @@ describe('printActionLogs', () => {
     await expect(promiseCall).rejects.toThrowError('Cannot read property \'lastActivationTime\' of undefined')
 
     expect(mockPrintFilteredActionLogs).toHaveBeenCalledTimes(2)
-    expect(mockPrintFilteredActionLogs.mock.calls[1][5]).toBe(1)
+    expect(mockPrintFilteredActionLogs.mock.calls[1][6]).toBe(1)
     // expect(logger).toHaveBeenNthCalledWith(4) // new line
   })
 })

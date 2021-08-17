@@ -421,9 +421,10 @@ declare function printLogs(activation: any, strip: boolean, logger: any): void;
  *    ['pkg1/action'] = logs of action 'action' under package 'pkg1'
  *    [] = logs of all actions in the namespace
  * @param strip - if true, strips the timestamp which prefixes every log line
+ * @param cleanLogs if false, print old logs occurrence, if true, show only new logs occurrence.
  * @param startTime - time in milliseconds. Only logs after this time will be fetched
  */
-declare function printFilteredActionLogs(runtime: any, logger: any, limit: number, filterActions: any[], strip: boolean, startTime: number): void;
+declare function printFilteredActionLogs(runtime: any, logger: any, limit: number, filterActions: any[], strip: boolean, cleanLogs:boolean, startTime: number): void;
 
 /**
  * returns path to main function as defined in package.json OR default of index.js
