@@ -43,7 +43,7 @@ async function printActionLogs (config, logger, limit, filterActions, strip, tai
 
   let lastActivationTime = startTime
   while (true) {
-    const ret = await printFilteredActionLogs(runtime, logger, limit, filterActions, strip, tail, lastActivationTime)
+    const ret = await printFilteredActionLogs(runtime, logger, limit, filterActions, strip, lastActivationTime)
     lastActivationTime = ret.lastActivationTime
     if (tail) {
       await sleep(fetchLogsInterval)
