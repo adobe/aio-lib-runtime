@@ -511,7 +511,7 @@ Prints activation logs messages.
 
 <a name="printFilteredActionLogs"></a>
 
-## printFilteredActionLogs(runtime, logger, limit, filterActions, strip, cleanLogs, startTime)
+## printFilteredActionLogs(runtime, logger, limit, filterActions, strip, startTime)
 Filters and prints action logs.
 
 **Kind**: global function  
@@ -523,11 +523,10 @@ Filters and prints action logs.
 | limit | <code>number</code> |  | maximum number of activations to fetch logs from |
 | filterActions | <code>Array</code> |  | array of actions to fetch logs from    ['pkg1/'] = logs of all deployed actions under package pkg1    ['pkg1/action'] = logs of action 'action' under package 'pkg1'    [] = logs of all actions in the namespace |
 | strip | <code>boolean</code> | <code>false</code> | if true, strips the timestamp which prefixes every log line |
-| cleanLogs | <code>boolean</code> | <code>false</code> | if false, will print old logs occurrence, if true show only new logs occurrence. |
 | startTime | <code>number</code> | <code>0</code> | time in milliseconds. Only logs after this time will be fetched |
 
 
-* [printFilteredActionLogs(runtime, logger, limit, filterActions, strip, cleanLogs, startTime)](#printFilteredActionLogs)
+* [printFilteredActionLogs(runtime, logger, limit, filterActions, strip, startTime)](#printFilteredActionLogs)
     * [~isSequenceActivation(activation)](#printFilteredActionLogs..isSequenceActivation) ⇒ <code>boolean</code>
     * [~printActivationLogs(activation, runtime)](#printFilteredActionLogs..printActivationLogs)
     * [~printSequenceLogs(activation, runtime)](#printFilteredActionLogs..printSequenceLogs)
