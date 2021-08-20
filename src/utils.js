@@ -281,7 +281,7 @@ async function printFilteredActionLogs (runtime, logger, limit, filterActions = 
     listOptions.name = filterActions[0]
   }
   let activations = await runtime.activations.list(listOptions)
-  let lastActivationTime = startTime
+  let lastActivationTime = 0
   // Filter the activations
   const actionFilterFunc = (actionPath, annotationValue) => {
     // For logs of all deployed actions under a package

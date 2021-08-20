@@ -9,6 +9,11 @@ const mockPrintFilteredActionLogs = jest.fn(async (runtime, logger, limit, filte
 runtimeLibUtils.printFilteredActionLogs = mockPrintFilteredActionLogs
 const printActionLogs = require('../src/print-action-logs')
 
+jest.mock('util', () => ({
+  promisify: jest.fn(),
+  inherits: jest.fn()
+}))
+
 jest.mock('../src/RuntimeAPI')
 const ioruntime = require('../src/RuntimeAPI')
 const owListActivationMock = jest.fn()
@@ -311,8 +316,8 @@ describe('printActionLogs', () => {
     expect(owLogsActivationMock).toHaveBeenCalledTimes(1)
     // reverse order
     expect(owLogsActivationMock).toHaveBeenNthCalledWith(1, { activationId: 123 })
-    expect(spy).toHaveBeenCalledTimes(1)
-    expect(spy).toHaveBeenNthCalledWith(1, 'one A')
+    expect(spy).toHaveBeenCalledTimes(2)
+    expect(spy).toHaveBeenNthCalledWith(2, 'one A')
     // expect(spy).toHaveBeenNthCalledWith(3) // new line
 
     spy.mockRestore()
@@ -446,19 +451,11 @@ describe('printActionLogs', () => {
 
   test('with filterActions (single action) and tail', async () => {
     runtimeLibUtils.printFilteredActionLogs.mockClear()
-    // This will be called exactly 2 times because we are making it fail the second time
     const mockPrintFilteredActionLogs = runtimeLibUtils.printFilteredActionLogs.mockImplementation(async (runtime, logger, limit, filterActions = [], strip = false, startTime = 0) => {
-      if (startTime !== 0) {
-        // console.log('in custom mock')
-        return
-      }
       return { lastActivationTime: 1 }
     })
     const promiseCall = printActionLogs(fakeConfig, logger, 2, ['pkg2/two'], false, true, 1)
-    await expect(promiseCall).rejects.toThrowError('Cannot read property \'lastActivationTime\' of undefined')
-
-    expect(mockPrintFilteredActionLogs).toHaveBeenCalledTimes(2)
-    expect(mockPrintFilteredActionLogs.mock.calls[1][5]).toBe(1)
-    // expect(logger).toHaveBeenNthCalledWith(4) // new line
+    await expect(promiseCall).rejects.toThrowError('sleep is not a function')
+    expect(mockPrintFilteredActionLogs).toHaveBeenCalledTimes(1)
   })
 })
