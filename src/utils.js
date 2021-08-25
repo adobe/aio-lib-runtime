@@ -274,7 +274,7 @@ function printLogs (activation, strip, logger) {
  */
 async function printFilteredActionLogs (runtime, logger, limit, filterActions = [], strip = false, startTime = 0) {
   // Get activations
-  const listOptions = { limit: limit, skip: 0 }
+  const listOptions = { limit: limit, skip: 0, since: startTime }
   const logFunc = logger ? logger.logFunc || logger : console.log
   // This will narrow down the activation list to specific action
   if (filterActions.length === 1 && !filterActions[0].endsWith('/')) {

@@ -9,6 +9,11 @@ const mockPrintFilteredActionLogs = jest.fn(async (runtime, logger, limit, filte
 runtimeLibUtils.printFilteredActionLogs = mockPrintFilteredActionLogs
 const printActionLogs = require('../src/print-action-logs')
 
+jest.mock('util', () => ({
+  promisify: jest.fn(),
+  inherits: jest.fn()
+}))
+
 jest.mock('../src/RuntimeAPI')
 const ioruntime = require('../src/RuntimeAPI')
 const owListActivationMock = jest.fn()
@@ -62,7 +67,7 @@ describe('printActionLogs', () => {
     owLogsActivationMock.mockResolvedValue({ logs: [] })
     await printActionLogs(fakeConfig, logger, 1)
     expect(ioruntime).toHaveBeenCalled()
-    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 1, skip: 0 })
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 1, skip: 0, since: 0 })
     expect(owLogsActivationMock).not.toHaveBeenCalled()
     expect(logger).not.toHaveBeenCalled()
   })
@@ -107,7 +112,7 @@ describe('printActionLogs', () => {
     ])
     owLogsActivationMock.mockResolvedValue({ logs: [] })
     await printActionLogs(fakeConfig, logger, 3)
-    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 3, skip: 0 })
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 3, skip: 0, since: 0 })
     expect(owLogsActivationMock).toHaveBeenCalledTimes(3)
     // reverse order
     expect(owLogsActivationMock).toHaveBeenNthCalledWith(1, { activationId: 100 })
@@ -153,7 +158,7 @@ describe('printActionLogs', () => {
 
     owLogsActivationMock.mockResolvedValue({ logs: [] })
     await printActionLogs(fakeConfig, logger, 3)
-    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 3, skip: 0 })
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 3, skip: 0, since: 0 })
     expect(owGetActivationMock).toHaveBeenCalledTimes(2)
     expect(owLogsActivationMock).toHaveBeenCalledTimes(1)
     // reverse order
@@ -179,7 +184,7 @@ describe('printActionLogs', () => {
 
     // owLogsActivationMock.mockResolvedValue({ logs: [] })
     await printActionLogs(fakeConfig, logger, 3)
-    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 3, skip: 0 })
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 3, skip: 0, since: 0 })
     expect(owGetActivationMock).toHaveBeenCalledTimes(1)
   })
 
@@ -229,7 +234,7 @@ describe('printActionLogs', () => {
 
     owLogsActivationMock.mockResolvedValue({ logs: [] })
     await printActionLogs(fakeConfig, logger, 3)
-    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 3, skip: 0 })
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 3, skip: 0, since: 0 })
     expect(owGetActivationMock).toHaveBeenCalledTimes(2)
     expect(owLogsActivationMock).toHaveBeenCalledTimes(1) // Only once
   })
@@ -250,7 +255,7 @@ describe('printActionLogs', () => {
     })
 
     await printActionLogs(fakeConfig, logger, 45)
-    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0 })
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0, since: 0 })
     expect(owLogsActivationMock).toHaveBeenCalledTimes(3)
     // reverse order
     expect(owLogsActivationMock).toHaveBeenNthCalledWith(1, { activationId: 100 })
@@ -281,7 +286,7 @@ describe('printActionLogs', () => {
     })
 
     await printActionLogs(fakeConfig, logger, 45, [], false, false, undefined, 666665)
-    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0 })
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0, since: 666665 })
     expect(owLogsActivationMock).toHaveBeenCalledTimes(1)
     // reverse order
     expect(owLogsActivationMock).toHaveBeenNthCalledWith(1, { activationId: 100 })
@@ -307,7 +312,7 @@ describe('printActionLogs', () => {
     })
 
     await printActionLogs(fakeConfig, undefined, 45)
-    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0 })
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0, since: 0 })
     expect(owLogsActivationMock).toHaveBeenCalledTimes(1)
     // reverse order
     expect(owLogsActivationMock).toHaveBeenNthCalledWith(1, { activationId: 123 })
@@ -336,7 +341,7 @@ describe('printActionLogs', () => {
     })
 
     await printActionLogs(fakeConfig, logger, 45, ['pkg1/one', 'pkg2/two'])
-    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0 })
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0, since: 0 })
     expect(owLogsActivationMock).toHaveBeenCalledTimes(2)
     // reverse order
     expect(owLogsActivationMock).toHaveBeenNthCalledWith(1, { activationId: 456 })
@@ -368,7 +373,7 @@ describe('printActionLogs', () => {
     })
 
     await printActionLogs(fakeConfig, logger, 45, ['pkg1/', '/pkg/'])
-    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0 })
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0, since: 0 })
     expect(owLogsActivationMock).toHaveBeenCalledTimes(2)
     // reverse order
     expect(owLogsActivationMock).toHaveBeenNthCalledWith(1, { activationId: 100 })
@@ -402,7 +407,7 @@ describe('printActionLogs', () => {
     })
 
     await printActionLogs(fakeConfig, logger, 45, ['pkg2/two'], true)
-    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, name: 'pkg2/two', skip: 0 })
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, name: 'pkg2/two', skip: 0, since: 0 })
     expect(owLogsActivationMock).toHaveBeenCalledTimes(1)
     // reverse order
     expect(owLogsActivationMock).toHaveBeenNthCalledWith(1, { activationId: 456 })
@@ -420,7 +425,7 @@ describe('printActionLogs', () => {
     })
 
     await printActionLogs(fakeConfig, logger, 45, [], true)
-    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0 })
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0, since: 0 })
     expect(owLogsActivationMock).toHaveBeenCalledTimes(1)
     expect(logger).toHaveBeenCalledTimes(3)
     expect(logger).toHaveBeenNthCalledWith(2, 'B')
@@ -436,7 +441,7 @@ describe('printActionLogs', () => {
     owLogsActivationMock.mockRejectedValue(new Error('fake'))
 
     await printActionLogs(fakeConfig, logger, 45, ['pkg1/'], true)
-    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0 })
+    expect(owListActivationMock).toHaveBeenCalledWith({ limit: 45, skip: 0, since: 0 })
     expect(owLogsActivationMock).toHaveBeenCalledTimes(2)
     // reverse order
     expect(owLogsActivationMock).toHaveBeenNthCalledWith(1, { activationId: 100 })
@@ -446,19 +451,11 @@ describe('printActionLogs', () => {
 
   test('with filterActions (single action) and tail', async () => {
     runtimeLibUtils.printFilteredActionLogs.mockClear()
-    // This will be called exactly 2 times because we are making it fail the second time
     const mockPrintFilteredActionLogs = runtimeLibUtils.printFilteredActionLogs.mockImplementation(async (runtime, logger, limit, filterActions = [], strip = false, startTime = 0) => {
-      if (startTime !== 0) {
-        // console.log('in custom mock')
-        return
-      }
       return { lastActivationTime: 1 }
     })
     const promiseCall = printActionLogs(fakeConfig, logger, 2, ['pkg2/two'], false, true, 1)
-    await expect(promiseCall).rejects.toThrowError('Cannot read property \'lastActivationTime\' of undefined')
-
-    expect(mockPrintFilteredActionLogs).toHaveBeenCalledTimes(2)
-    expect(mockPrintFilteredActionLogs.mock.calls[1][5]).toBe(1)
-    // expect(logger).toHaveBeenNthCalledWith(4) // new line
+    await expect(promiseCall).rejects.toThrowError('sleep is not a function')
+    expect(mockPrintFilteredActionLogs).toHaveBeenCalledTimes(1)
   })
 })
