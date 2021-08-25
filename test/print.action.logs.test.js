@@ -316,8 +316,8 @@ describe('printActionLogs', () => {
     expect(owLogsActivationMock).toHaveBeenCalledTimes(1)
     // reverse order
     expect(owLogsActivationMock).toHaveBeenNthCalledWith(1, { activationId: 123 })
-    expect(spy).toHaveBeenCalledTimes(2)
-    expect(spy).toHaveBeenNthCalledWith(2, 'one A')
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy).toHaveBeenNthCalledWith(1, 'one A')
     // expect(spy).toHaveBeenNthCalledWith(3) // new line
 
     spy.mockRestore()
