@@ -12,6 +12,7 @@ governing permissions and limitations under the License.
 const ow = require('openwhisk')
 const { codes } = require('./SDKErrors')
 const Triggers = require('./triggers')
+const { getProxyOptionsFromConfig, ProxyFetch } = require('@adobe/aio-lib-core-networking')
 
 /**
  * @typedef {object} OpenwhiskOptions
@@ -59,6 +60,11 @@ class RuntimeAPI {
     if (initErrors.length) {
       const sdkDetails = { options }
       throw new codes.ERROR_SDK_INITIALIZATION({ sdkDetails, messageValues: `${initErrors.join(', ')}` })
+    }
+    
+    const proxyOptions = getProxyOptionsFromConfig()
+    if (proxyOptions) {
+      options.agent = new ProxyFetch(proxyOptions).proxyAgent()
     }
 
     this.ow = ow(options)
