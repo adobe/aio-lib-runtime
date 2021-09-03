@@ -157,7 +157,7 @@ describe('print logs', () => {
       const retResult = await sdk.printActionLogs(config, storeLogs, 1, [], false, false)
       // expect(logs[1]).toEqual(expect.stringContaining('stdout: hello'))
       expect(typeof retResult).toEqual('object')
-    } catch(err) {
+    } catch (err) {
       // If the request was not successful, it has to be a 503 from Runtime.
       expect(typeof err).toEqual('object')
       expect(err.message).toEqual(expect.stringContaining('503'))
