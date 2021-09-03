@@ -9,7 +9,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const needle = require('needle')
+const fetch = require('cross-fetch')
 
 class LogForwarding {
   constructor (namespace, apiHost, apiKey) {
@@ -21,7 +21,7 @@ class LogForwarding {
   async get () {
     try {
       const res = await this.request('get')
-      return res.body
+      return await res.json()
     } catch (e) {
       throw new Error(`Could not get log forwarding settings for namespace '${this.namespace}': ${e.message}`)
     }
@@ -57,22 +57,22 @@ class LogForwarding {
   async set (data) {
     try {
       const res = await this.request('put', data)
-      return res.body
+      return await res.text()
     } catch (e) {
       throw new Error(`Could not update log forwarding settings for namespace '${this.namespace}': ${e.message}`)
     }
   }
 
   async request (method, data) {
-    return needle(
-      method,
+    return fetch(
       this.apiHost + '/runtime/namespaces/' + this.namespace + '/logForwarding',
-      data,
       {
+        method: method,
+        body: JSON.stringify(data),
         headers: {
+          'Content-Type': 'application/json',
           Authorization: 'Basic ' + Buffer.from(this.auth).toString('base64')
-        },
-        json: true
+        }
       }
     )
   }
