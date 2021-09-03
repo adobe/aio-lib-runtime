@@ -151,9 +151,19 @@ describe('print logs', () => {
   test('basic', async () => {
     const logs = []
     const storeLogs = (str) => { logs.push(str) }
-    const retResult = await sdk.printActionLogs(config, storeLogs, 1, [], false, false)
-    // expect(logs[1]).toEqual(expect.stringContaining('stdout: hello'))
-    expect(typeof retResult).toEqual('object')
+    // Runtime waits for about 60 secs to return a 503 when it cannot serve the request.
+    jest.setTimeout(100000)
+    try {
+      const retResult = await sdk.printActionLogs(config, storeLogs, 1, [], false, false)
+      // expect(logs[1]).toEqual(expect.stringContaining('stdout: hello'))
+      expect(typeof retResult).toEqual('object')
+    } catch(err) {
+      // If the request was not successful, it has to be a 503 from Runtime.
+      expect(typeof err).toEqual('object')
+      expect(err.message).toEqual(expect.stringContaining('503'))
+      expect(err.message).toEqual(expect.stringContaining('Service Unavailable'))
+    }
+    jest.setTimeout(30000)
   })
 })
 
