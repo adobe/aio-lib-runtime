@@ -34,6 +34,7 @@ declare type OpenwhiskClient = {
     rules: ow.Rules;
     triggers: ow.Triggers;
     routes: ow.Routes;
+    logForwarding: LogForwarding;
 };
 
 /**
@@ -48,6 +49,41 @@ declare class RuntimeAPI {
      * @returns a RuntimeAPI object
      */
     init(options: OpenwhiskOptions): Promise<OpenwhiskClient>;
+}
+
+/**
+ * Log forwarding management API
+ */
+declare class LogForwarding {
+    /**
+     * Get log forwarding configuration for the current namespace
+     */
+    get(): Promise<any>;
+
+    /**
+     * Set log forwarding to Adobe I/O Runtime (default)
+     * Logs can be retrieved via wsk and aio CLI commands
+     */
+    setAdobeIoRuntime(): Promise<string>;
+
+    /**
+     * Set log forwarding to Azure Log Analytics
+     *
+     * @param customerId
+     * @param sharedKey
+     * @param logType
+     */
+    setAzureLogAnalytics(customerId: string, sharedKey: string, logType: string): Promise<string>;
+
+    /**
+     * Set log forwarding to Splunk HEC
+     *
+     * @param host
+     * @param port
+     * @param index
+     * @param hecToken
+     */
+    setSplunkHec(host: string, port: string, index: string, hecToken: string): Promise<string>;
 }
 
 /**
@@ -82,44 +118,6 @@ declare function deployActions(config: any, deployConfig?: {
  * @param filterEntities - entities (actions, sequences, triggers, rules etc) to be filtered
  */
 declare function deployWsk(scriptConfig: any, manifestContent: any, logFunc: any, filterEntities: any): void;
-
-/**
- * @property apihost - Hostname and optional port for openwhisk platform
- * @property api_key - Authorisation key
- * @property [api] - Full API URL
- * @property [apiversion] - Api version
- * @property [namespace] - Namespace for resource requests
- * @property [ignore_certs] - Turns off server SSL/TLS certificate verification
- * @property [key] - Client key to use when connecting to the apihost
- */
-declare type OpenwhiskOptions = {
-    apihost: string;
-    api_key: string;
-    api?: string;
-    apiversion?: string;
-    namespace?: string;
-    ignore_certs?: boolean;
-    key?: string;
-};
-
-/**
- * @property actions - actions
- * @property activations - activations
- * @property namespaces - namespaces
- * @property packages - packages
- * @property rules - rules
- * @property triggers - triggers
- * @property routes - routes
- */
-declare type OpenwhiskClient = {
-    actions: ow.Actions;
-    activations: ow.Activations;
-    namespaces: ow.Namespaces;
-    packages: ow.Packages;
-    rules: ow.Rules;
-    triggers: ow.Triggers;
-    routes: ow.Routes;
-};
 
 /**
  * Returns a Promise that resolves with a new RuntimeAPI object.

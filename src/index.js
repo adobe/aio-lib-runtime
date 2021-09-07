@@ -16,7 +16,6 @@ const deployActions = require('./deploy-actions')
 const undeployActions = require('./undeploy-actions')
 const printActionLogs = require('./print-action-logs')
 const RuntimeAPI = require('./RuntimeAPI')
-const LogForwarding = require('./LogForwarding')
 
 /**
  * @typedef {object} OpenwhiskOptions
@@ -69,6 +68,5 @@ module.exports = {
   deployActions,
   undeployActions,
   printActionLogs,
-  utils,
-  LogForwarding
+  utils
 }

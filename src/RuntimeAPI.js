@@ -12,6 +12,7 @@ governing permissions and limitations under the License.
 const ow = require('openwhisk')
 const { codes } = require('./SDKErrors')
 const Triggers = require('./triggers')
+const LogForwarding = require('./LogForwarding')
 
 /**
  * @typedef {object} OpenwhiskOptions
@@ -78,7 +79,8 @@ class RuntimeAPI {
             : target[property]
         }
       }),
-      routes: this.ow.routes
+      routes: this.ow.routes,
+      logForwarding: new LogForwarding(options.namespace, options.apihost, options.api_key)
     }
   }
 }
