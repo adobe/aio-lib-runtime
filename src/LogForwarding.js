@@ -11,6 +11,9 @@ governing permissions and limitations under the License.
 
 const fetch = require('cross-fetch')
 
+/**
+ * Log Forwarding management API
+ */
 class LogForwarding {
   constructor (namespace, apiHost, apiKey) {
     this.apiHost = apiHost
@@ -18,6 +21,11 @@ class LogForwarding {
     this.namespace = namespace
   }
 
+  /**
+   * Get current Log Forwarding settings
+   *
+   * @returns {Promise<*>}
+   */
   async get () {
     try {
       const res = await this.request('get')
@@ -27,12 +35,25 @@ class LogForwarding {
     }
   }
 
+  /**
+   * Set Log Forwarding to Adobe I/O Runtime (default behavior)
+   *
+   * @returns {Promise<*|undefined>}
+   */
   async setAdobeIoRuntime () {
     return await this.set({
       adobe_io_runtime: {}
     })
   }
 
+  /**
+   * Set Log Forwarding to Azure Log Analytics
+   *
+   * @param {string} customerId
+   * @param {string} sharedKey
+   * @param {string} logType
+   * @returns {Promise<*|undefined>}
+   */
   async setAzureLogAnalytics (customerId, sharedKey, logType) {
     return await this.set({
       azure_log_analytics: {
@@ -43,6 +64,15 @@ class LogForwarding {
     })
   }
 
+  /**
+   * Set Log Forwarding to Splunk HEC
+   *
+   * @param {string} host
+   * @param {string} port
+   * @param {string} index
+   * @param {string} hecToken
+   * @returns {Promise<*|undefined>}
+   */
   async setSplunkHec (host, port, index, hecToken) {
     return await this.set({
       splunk_hec: {

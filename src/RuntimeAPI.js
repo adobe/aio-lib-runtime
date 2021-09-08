@@ -34,6 +34,7 @@ const LogForwarding = require('./LogForwarding')
  * @property {ow.Rules} rules rules
  * @property {ow.Triggers} triggers triggers
  * @property {ow.Routes} routes routes
+ * @property {LogForwarding} logForwarding Log Forwarding API
  */
 
 /**
