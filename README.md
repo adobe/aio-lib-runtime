@@ -1283,7 +1283,7 @@ Creates an info banner for an activation.
 | rules | <code>ow.Rules</code> | rules |
 | triggers | <code>ow.Triggers</code> | triggers |
 | routes | <code>ow.Routes</code> | routes |
-| routes | [<code>LogForwarding</code>](#LogForwarding) | logForwarding |
+| logForwarding | [<code>LogForwarding</code>](#LogForwarding) | Log Forwarding management API |
 
 <a name="OpenwhiskOptions"></a>
 

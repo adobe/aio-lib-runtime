@@ -37,7 +37,7 @@ const RuntimeAPI = require('./RuntimeAPI')
  * @property {ow.Rules} rules rules
  * @property {ow.Triggers} triggers triggers
  * @property {ow.Routes} routes routes
- * @property {LogForwarding} routes logForwarding
+ * @property {LogForwarding} logForwarding Log Forwarding management API
  */
 
 /**
