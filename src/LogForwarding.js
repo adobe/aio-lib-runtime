@@ -94,6 +94,9 @@ class LogForwarding {
   }
 
   async request (method, data) {
+    if (this.namespace === '_') {
+      throw new Error("Namespace '_' is not supported by log forwarding management API")
+    }
     return fetch(
       this.apiHost + '/runtime/namespaces/' + this.namespace + '/logForwarding',
       {
