@@ -45,7 +45,7 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
   config.entry = config.entry || []
   config.entry.push(actionPath)
   config.entry = uniqueArr(config.entry)
-  // make sure filepaths are resolved from the config dir
+  // make sure filePaths are resolved from the config dir
   config.entry = config.entry.map(f => {
     if (!path.isAbsolute(f)) {
       return path.resolve(path.dirname(configPath), f)
@@ -134,7 +134,7 @@ const buildAction = async (zipFileName, action, root, dist) => {
     // TODO: when we get to excludes, use a filter function here.
     fs.copySync(actionPath, tempBuildDir, { dereference: true })
   } else {
-    const outBuildFilename = 'index.js' // `${name}.tmp.js`
+    const outBuildFilename = 'index.[contenthash].js' // `${name}.tmp.js`
     // if not directory => package and minify to single file
     const webpackConfig = await getWebpackConfig(actionPath, root, tempBuildDir, outBuildFilename)
     const compiler = webpack(webpackConfig)
@@ -160,14 +160,20 @@ const buildAction = async (zipFileName, action, root, dist) => {
 
   // todo: split out zipping
   // zip the dir
-  await utils.zip(tempBuildDir, outPath)
-  // fs.remove(tempBuildDir) // remove the build file, don't need to wait ...
-
-  // const fStats = fs.statSync(outPath)
-  // if (fStats && fStats.size > (22 * 1024 * 1024)) {
-  //   this.emit('warning', `file size exceeds 22 MB, you may not be able to deploy this action. file size is ${fStats.size} Bytes`)
-  // }
-  return outPath
+  // it should write the content hash to a file
+  const contentHash = (await fs.readdir(tempBuildDir)).toString()
+  console.log('contentHash', root)
+  const deploymentLogsPath = path.join(root, 'dist', 'deploymentLogs.txt')
+  const builtBefore = await utils.trackDeploymentLogs(contentHash, deploymentLogsPath)
+  if (!builtBefore) {
+    await utils.zip(tempBuildDir, outPath)
+    // fs.remove(tempBuildDir) // remove the build file, don't need to wait ...
+    // const fStats = fs.statSync(outPath)
+    // if (fStats && fStats.size > (22 * 1024 * 1024)) {
+    //   this.emit('warning', `file size exceeds 22 MB, you may not be able to deploy this action. file size is ${fStats.size} Bytes`)
+    // }
+    return outPath
+  }
 }
 
 const buildActions = async (config, filterActions) => {
@@ -181,7 +187,7 @@ const buildActions = async (config, filterActions) => {
 
   if (sanitizedFilterActions) {
     // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
-    sanitizedFilterActions = sanitizedFilterActions.map((actionName) => actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
+    sanitizedFilterActions = sanitizedFilterActions.map(actionName => actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
   }
 
   // clear out dist dir
@@ -205,6 +211,7 @@ const buildActions = async (config, filterActions) => {
       builtList.push(await buildAction(zipFileName, action, config.root, config.actions.dist))
     }
   }
+  console.log('builtList', builtList)
   return builtList
 }
 

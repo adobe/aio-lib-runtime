@@ -954,42 +954,46 @@ function checkWebFlags (flag) {
  * @returns {OpenWhiskEntitiesAction} the action entity object
  */
 function createActionObject (fullName, manifestAction) {
-  const objAction = { name: fullName }
-  if (manifestAction.function.endsWith('.zip')) {
-    if (!manifestAction.runtime && !manifestAction.docker) {
-      throw (new Error(`Invalid or missing property "runtime" in the manifest for this action: ${objAction && objAction.name}`))
+  try {
+    const objAction = { name: fullName }
+    if (manifestAction.function.endsWith('.zip')) {
+      if (!manifestAction.runtime && !manifestAction.docker) {
+        throw (new Error(`Invalid or missing property "runtime" in the manifest for this action: ${objAction && objAction.name}`))
+      }
+      objAction.action = fs.readFileSync(manifestAction.function)
+    } else {
+      objAction.action = fs.readFileSync(manifestAction.function, { encoding: 'utf8' })
     }
-    objAction.action = fs.readFileSync(manifestAction.function)
-  } else {
-    objAction.action = fs.readFileSync(manifestAction.function, { encoding: 'utf8' })
-  }
 
-  if (manifestAction.main || manifestAction.docker || manifestAction.runtime) {
-    objAction.exec = {}
-    if (manifestAction.main) {
-      objAction.exec.main = manifestAction.main
+    if (manifestAction.main || manifestAction.docker || manifestAction.runtime) {
+      objAction.exec = {}
+      if (manifestAction.main) {
+        objAction.exec.main = manifestAction.main
+      }
+      if (manifestAction.docker) {
+        objAction.exec.kind = 'blackbox'
+        objAction.exec.image = manifestAction.docker
+      } else if (manifestAction.runtime) {
+        objAction.exec.kind = manifestAction.runtime
+      }
     }
-    if (manifestAction.docker) {
-      objAction.exec.kind = 'blackbox'
-      objAction.exec.image = manifestAction.docker
-    } else if (manifestAction.runtime) {
-      objAction.exec.kind = manifestAction.runtime
-    }
-  }
 
-  if (manifestAction.limits) {
-    const limits = {
-      memory: manifestAction.limits.memorySize || 256,
-      logs: manifestAction.limits.logSize || 10,
-      timeout: manifestAction.limits.timeout || 60000
+    if (manifestAction.limits) {
+      const limits = {
+        memory: manifestAction.limits.memorySize || 256,
+        logs: manifestAction.limits.logSize || 10,
+        timeout: manifestAction.limits.timeout || 60000
+      }
+      if (manifestAction.limits.concurrency) {
+        limits.concurrency = manifestAction.limits.concurrency
+      }
+      objAction.limits = limits
     }
-    if (manifestAction.limits.concurrency) {
-      limits.concurrency = manifestAction.limits.concurrency
-    }
-    objAction.limits = limits
+    objAction.annotations = returnAnnotations(manifestAction)
+    return objAction
+  } catch (e) {
+    logger.debug(e)
   }
-  objAction.annotations = returnAnnotations(manifestAction)
-  return objAction
 }
 
 /**
@@ -1225,13 +1229,15 @@ function processPackage (packages,
           }
           const allInputs = returnUnion(packageInputs, deploymentInputs)
           // if parameter is provided as key : 'data type' , process it to set default values before deployment
-          if (Object.entries(allInputs).length !== 0) {
+          if (Object.entries(allInputs).length !== 0 && objAction) {
             const processedInput = processInputs(allInputs, params)
             objAction.params = processedInput
           }
           ruleAction.push(actionName)
         }
-        actions.push(objAction)
+        if (objAction) {
+          actions.push(objAction)
+        }
       })
     }
 
@@ -1977,6 +1983,20 @@ function getActionZipFileName (pkgName, actionName, defaultPkg) {
 }
 
 /**
+ * Returns the action name based on the zipFile name.
+ *
+ * @param {string} zipFile name of the zip file
+ * @param {string} pkgName name of the package, optional
+ * @returns {string} name of the action
+ */
+function getActionNameFromZipFile (zipFile, pkgName) {
+  const ZIP_EXTENSION = '.zip'
+  if (!zipFile || !zipFile.includes(ZIP_EXTENSION)) return ''
+  const [action] = zipFile.split('.')
+  return pkgName ? `${pkgName}/${action}` : action
+}
+
+/**
  * Creates an info banner for an activation.
  *
  * @param {object} logFunc custom logger function
@@ -1990,6 +2010,32 @@ function activationLogBanner (logFunc, activation, activationLogs) {
         logFunc(annotation.value + ':' + activation.activationId)
       }
     })
+  }
+}
+
+/**
+ * Create the deployments log file which keeps track of the already built packages.
+ *
+ * @param {string} contentHash Content hash
+ * @param {string} deploymentLogsPath Path to the deployments logs
+ * @returns {Promise<boolean>} If the contentHash already belongs to the deploymentLogs file
+ */
+async function trackDeploymentLogs (contentHash, deploymentLogsPath) {
+  if (!fs.existsSync(deploymentLogsPath)) {
+    logger.debug('Deployments log file not found, creating a new one...')
+    await fs.createFileSync(deploymentLogsPath)
+  }
+  try {
+    let found = false
+    const data = await fs.readFileSync(deploymentLogsPath, 'utf8')
+    if (!data || !data.toString().includes(contentHash)) {
+      fs.appendFile(deploymentLogsPath, contentHash)
+    } else {
+      found = true
+    }
+    return found
+  } catch (e) {
+    logger.error('Something went wrong' + e)
   }
 }
 
@@ -2041,5 +2087,7 @@ module.exports = {
   zip,
   replacePackagePlaceHolder,
   validateActionRuntime,
-  getActionZipFileName
+  getActionZipFileName,
+  trackDeploymentLogs,
+  getActionNameFromZipFile
 }

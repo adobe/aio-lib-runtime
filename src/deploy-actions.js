@@ -24,6 +24,7 @@ const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...package
  *
  * @param {object} config app config
  * @param {object} [deployConfig={}] deployment config
+ * @param {boolean} [deployConfig.isLocalDev] local dev flag
  * @param {object} [deployConfig.filterEntities] add filters to deploy only specified OpenWhisk entities
  * @param {Array} [deployConfig.filterEntities.actions] filter list of actions to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.sequences] filter list of sequences to deploy, e.g. ['name1', ..]
@@ -65,17 +66,38 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     }
   }
 
-  const filterEntities = deployConfig.filterEntities
-  if (deployConfig.filterEntities) {
-    // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
+  // 1.1 Filter out the Entities
+  let filterEntities = deployConfig.filterEntities
+  const _getBuiltActions = async () => {
+    const arr = []
+    const distFiles = fs.readdirSync(dist)
+
+    const validateAction = (file) => {
+      const actionName = utils.getActionNameFromZipFile(file)
+      if (actionName) {
+        arr.push(actionName)
+      }
+    }
+
+    distFiles.forEach(validateAction)
+    return arr
+  }
+
+  if (!deployConfig.filterEntities) {
+    // we should deploy only the built actions
+    const filteredActions = await _getBuiltActions()
+    filterEntities = {}
+    filterEntities.actions = filteredActions
+  }
+  // If using old format of <actionName>, convert it to <package>/<actionName> using default/first package in the manifest
+  if (filterEntities) {
     packageItems.forEach((k) => {
-      if (deployConfig.filterEntities[k]) {
-        filterEntities[k] = deployConfig.filterEntities[k].map((actionName) =>
+      if (filterEntities[k]) {
+        filterEntities[k] = filterEntities[k].map((actionName) =>
           actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
       }
     })
   }
-
   // 2. deploy manifest
   const deployedEntities = await deployWsk(
     modifiedConfig,
@@ -83,7 +105,6 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     log,
     filterEntities
   )
-
   // enrich actions array with urls
   if (Array.isArray(deployedEntities.actions)) {
     const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
@@ -123,7 +144,7 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
    * @param {object} pkgName name of the package
    * @param {object} pkgEntity package object from the manifest
    * @param {object} filterItems items (actions, sequences, triggers, rules etc) to be filtered
-   * @param {object} fullNameCheck true of the items are part of packages (actions and sequences)
+   * @param {boolean} fullNameCheck true of the items are part of packages (actions and sequences)
    * @returns {object} package object containing only the filterItems
    */
   function _filterOutPackageEntity (pkgName, pkgEntity, filterItems, fullNameCheck) {
@@ -132,7 +153,7 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
     }
     // We check the full name (<packageName>/<actionName>) for actions and sequences
     return Object.keys(pkgEntity)
-      .filter(name => fullNameCheck ? filterItems.includes(pkgName + '/' + name) : filterItems.includes(name))
+      .filter(entityName => fullNameCheck ? filterItems.includes(`${pkgName}/${entityName}`) : filterItems.includes(entityName))
       .reduce((obj, key) => {
         obj[key] = pkgEntity[key] // eslint-disable-line no-param-reassign
         return obj
