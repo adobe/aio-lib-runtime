@@ -41,10 +41,10 @@ async function printActionLogs (config, logger, limit, filterActions, strip, tai
     namespace: config.ow.namespace
   })
 
-  let lastActivationTime = startTime
+  let lastActivationTime = tail ? Date.now() : startTime
   while (true) {
     const ret = await printFilteredActionLogs(runtime, logger, limit, filterActions, strip, lastActivationTime)
-    lastActivationTime = ret.lastActivationTime
+    lastActivationTime = ret.lastActivationTime || lastActivationTime
     if (tail) {
       await sleep(fetchLogsInterval)
     } else {
