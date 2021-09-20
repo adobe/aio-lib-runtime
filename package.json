@@ -10,6 +10,7 @@
   "repository": "https://github.com/adobe/aio-lib-runtime",
   "bundleDependencies": false,
   "dependencies": {
+    "@adobe/aio-lib-core-networking": "github:adobe/aio-lib-core-networking#proxy-support",
     "@adobe/aio-lib-core-errors": "^3.0.0",
     "@adobe/aio-lib-core-logging": "^1.1.2",
     "@adobe/aio-lib-env": "^1.0.0",
@@ -41,23 +42,25 @@
     "eslint-plugin-import": "^2.18.0",
     "eslint-plugin-jest": "^23.1.1",
     "eslint-plugin-jsdoc": "^25.0.0",
+    "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.0",
-    "eslint-plugin-node": "^11.1.0",
     "jest": "^26.6.3",
     "jest-fetch-mock": "^3.0.2",
     "jest-junit": "^10.0.0",
     "jest-plugin-fs": "^2.9.0",
     "jsdoc": "^3.6.3",
     "jsdoc-to-markdown": "^5.0.0",
+    "mockttp": "^2.2.3",
     "stdout-stderr": "^0.1.9",
+    "syswide-cas": "^5.3.0",
     "tsd-jsdoc": "^2.4.0"
   },
   "engines": {
     "node": "^10 || ^12 || ^14"
   },
   "scripts": {
-    "e2e": "jest --config e2e/jest.config.js",
+    "e2e": "jest --config e2e/jest.config.js --runInBand",
     "generate-docs": "npm run typings && npm run jsdoc",
     "jsdoc": "jsdoc2md -t ./docs/readme_template.md src/**/*.js > README.md",
     "lint": "eslint src test e2e",

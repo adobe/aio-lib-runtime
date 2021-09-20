@@ -13,6 +13,7 @@ const ow = require('openwhisk')
 const { codes } = require('./SDKErrors')
 const Triggers = require('./triggers')
 const { getProxyOptionsFromConfig, ProxyFetch } = require('@adobe/aio-lib-core-networking')
+const deepCopy = require('lodash.clonedeep')
 
 /**
  * @typedef {object} OpenwhiskOptions
@@ -49,25 +50,27 @@ class RuntimeAPI {
    * @returns {Promise<OpenwhiskClient>} a RuntimeAPI object
    */
   async init (options) {
+    const clonedOptions = deepCopy(options)
+
     const initErrors = []
-    if (!options || !options.api_key) {
+    if (!clonedOptions || !clonedOptions.api_key) {
       initErrors.push('api_key')
     }
-    if (!options || !options.apihost) {
+    if (!clonedOptions || !clonedOptions.apihost) {
       initErrors.push('apihost')
     }
 
     if (initErrors.length) {
-      const sdkDetails = { options }
+      const sdkDetails = { clonedOptions }
       throw new codes.ERROR_SDK_INITIALIZATION({ sdkDetails, messageValues: `${initErrors.join(', ')}` })
     }
-    
+
     const proxyOptions = getProxyOptionsFromConfig()
     if (proxyOptions) {
-      options.agent = new ProxyFetch(proxyOptions).proxyAgent()
+      clonedOptions.agent = new ProxyFetch(proxyOptions).proxyAgent()
     }
 
-    this.ow = ow(options)
+    this.ow = ow(clonedOptions)
     const self = this
 
     return {

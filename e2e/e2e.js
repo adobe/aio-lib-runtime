@@ -13,6 +13,8 @@ const sdk = require('../src/index')
 const path = require('path')
 const deepClone = require('lodash.clonedeep')
 const fs = jest.requireActual('fs-extra')
+const { createHttpsProxy } = require('@adobe/aio-lib-core-networking/test/server/proxy')
+
 jest.unmock('openwhisk')
 jest.unmock('archiver')
 jest.setTimeout(30000)
@@ -20,15 +22,28 @@ jest.setTimeout(30000)
 // load .env values in the e2e folder, if any
 require('dotenv').config({ path: path.join(__dirname, '.env') })
 
+let proxyServer
 let sdkClient = {}
 let config = {}
 const apiKey = process.env['RuntimeAPI_API_KEY']
 const apihost = process.env['RuntimeAPI_APIHOST'] || 'https://adobeioruntime.net'
 const namespace = process.env['RuntimeAPI_NAMESPACE']
-// console.log(apiKey)
+const USE_PROXY = process.env.E2E_USE_PROXY
 
 beforeAll(async () => {
+  if (USE_PROXY) {
+    proxyServer = await createHttpsProxy()
+    process.env.AIO_PROXY_URL = proxyServer.url
+  }
+
   sdkClient = await sdk.init({ api_key: apiKey, apihost })
+})
+
+afterAll(() => {
+  if (proxyServer) {
+    proxyServer.stop()
+  }
+  delete process.env.AIO_PROXY_URL
 })
 
 beforeEach(() => {
