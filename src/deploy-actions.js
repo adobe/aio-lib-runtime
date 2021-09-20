@@ -55,6 +55,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
 
   // 1. rewrite wskManifest config
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
+  console.log('modifiedConfig', modifiedConfig)
   const manifest = modifiedConfig.manifest.full
   const relDist = utils._relApp(config.root, config.actions.dist)
   for (const [pkgName, pkg] of Object.entries(manifest.packages)) {
@@ -82,13 +83,14 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     distFiles.forEach(validateAction)
     return arr
   }
-
   if (!deployConfig.filterEntities) {
     // we should deploy only the built actions
-    const filteredActions = await _getBuiltActions()
     filterEntities = {}
-    filterEntities.actions = filteredActions
+    filterEntities.actions = await _getBuiltActions()
+    filterEntities.sequences = manifest.packages.sequences
   }
+
+  /* currently I am skipping the sequence package, I should not */
   // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
   if (filterEntities) {
     packageItems.forEach((k) => {
@@ -105,6 +107,8 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     log,
     filterEntities
   )
+
+  console.log('deployedEntities', filterEntities)
   // enrich actions array with urls
   if (Array.isArray(deployedEntities.actions)) {
     const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
@@ -144,13 +148,14 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
    * @param {object} pkgName name of the package
    * @param {object} pkgEntity package object from the manifest
    * @param {object} filterItems items (actions, sequences, triggers, rules etc) to be filtered
-   * @param {boolean} fullNameCheck true of the items are part of packages (actions and sequences)
+   * @param {boolean} fullNameCheck true if the items are part of packages (actions and sequences)
    * @returns {object} package object containing only the filterItems
    */
   function _filterOutPackageEntity (pkgName, pkgEntity, filterItems, fullNameCheck) {
     if (pkgEntity === undefined || filterItems === undefined) {
       return {}
     }
+    console.log('pkgEntity', Object.keys(pkgEntity))
     // We check the full name (<packageName>/<actionName>) for actions and sequences
     return Object.keys(pkgEntity)
       .filter(entityName => fullNameCheck ? filterItems.includes(`${pkgName}/${entityName}`) : filterItems.includes(entityName))
@@ -170,11 +175,11 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
   if (typeof filterEntities === 'object') {
     deleteOldEntities = false // don't delete any deployed entity
 
-    filterableItems.forEach(k => {
-      Object.entries(packages).forEach(([pkgName, pkg]) => {
-        pkg[k] = _filterOutPackageEntity(pkgName, pkg[k], filterEntities[k], packageItems.includes(k)) // eslint-disable-line no-param-reassign
+    filterableItems.forEach(filterableItemKey => {
+      Object.entries(packages).forEach(([pkgName, packageEntity]) => {
+        packageEntity[filterableItemKey] = _filterOutPackageEntity(pkgName, packageEntity[filterableItemKey], filterEntities[filterableItemKey], packageItems.includes(filterableItemKey)) // eslint-disable-line no-param-reassign
         // cleanup empty entities
-        if (Object.keys(pkg[k]).length === 0) delete pkg[k] // eslint-disable-line no-param-reassign
+        if (Object.keys(packageEntity[filterableItemKey]).length === 0) delete packageEntity[filterableItemKey] // eslint-disable-line no-param-reassign
       })
     })
     // todo filter out packages, like auth package
@@ -201,11 +206,11 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
     const APP_REGISTRY_VALIDATOR = APP_REGISTRY_VALIDATORS[env]
 
     const replaceValidator = { [DEFAULT_VALIDATOR]: APP_REGISTRY_VALIDATOR }
-    entities.actions.forEach(a => {
-      const needsReplacement = a.exec && a.exec.kind === 'sequence' && a.exec.components && a.exec.components.includes(DEFAULT_VALIDATOR)
+    entities.actions.forEach(action => {
+      const needsReplacement = action.exec && action.exec.kind === 'sequence' && action.exec.components && action.exec.components.includes(DEFAULT_VALIDATOR)
       if (needsReplacement) {
         aioLogger.debug(`replacing headless auth validator ${DEFAULT_VALIDATOR} with app registry validator ${APP_REGISTRY_VALIDATOR} for action ${a.name} and cli env = ${env}`)
-        a.exec.components = a.exec.components.map(a => replaceValidator[a] || a) // eslint-disable-line no-param-reassign
+        action.exec.components = action.exec.components.map(a => replaceValidator[a] || a) // eslint-disable-line no-param-reassign
       }
     })
   }

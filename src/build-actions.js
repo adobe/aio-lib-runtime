@@ -101,6 +101,7 @@ const buildAction = async (zipFileName, action, root, dist) => {
 
   const outPath = path.join(dist, `${zipFileName}.zip`)
   const tempBuildDir = path.join(dist, `${zipFileName}-temp`) // build all to tempDir first
+
   const actionFileStats = fs.lstatSync(actionPath)
 
   // make sure temp/ exists
@@ -160,10 +161,9 @@ const buildAction = async (zipFileName, action, root, dist) => {
 
   // todo: split out zipping
   // zip the dir
-  // it should write the content hash to a file
-  const contentHash = (await fs.readdir(tempBuildDir)).toString()
+  const [contentHashedFileName] = await fs.readdir(tempBuildDir)
   const deploymentLogsPath = path.join(root, 'dist', 'deploymentLogs.txt')
-  const builtBefore = await utils.trackDeploymentLogs(contentHash, deploymentLogsPath)
+  const builtBefore = await utils.trackDeploymentLogs(contentHashedFileName, deploymentLogsPath)
   if (!builtBefore) {
     await utils.zip(tempBuildDir, outPath)
     // fs.remove(tempBuildDir) // remove the build file, don't need to wait ...
@@ -179,11 +179,9 @@ const buildActions = async (config, filterActions) => {
   if (!config.app.hasBackend) {
     throw new Error('cannot build actions, app has no backend')
   }
-
   // rewrite config
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
   let sanitizedFilterActions = cloneDeep(filterActions)
-
   if (sanitizedFilterActions) {
     // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
     sanitizedFilterActions = sanitizedFilterActions.map(actionName => actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
@@ -208,6 +206,7 @@ const buildActions = async (config, filterActions) => {
       // <pkgName>/<actionName>.zip for non default packages for backward compatibility
       const zipFileName = utils.getActionZipFileName(pkgName, actionName, modifiedConfig.ow.package === pkgName)
       builtList.push(await buildAction(zipFileName, action, config.root, config.actions.dist))
+      console.log('builtList', builtList)
     }
   }
   return builtList

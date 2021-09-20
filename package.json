@@ -58,6 +58,7 @@
   },
   "scripts": {
     "e2e": "jest --config e2e/jest.config.js",
+    "debug-e2e": "node --inspect-brk ./node_modules/jest/bin/jest.js --config e2e/jest.config.js -runInBand e2e/e2e.js",
     "generate-docs": "npm run typings && npm run jsdoc",
     "jsdoc": "jsdoc2md -t ./docs/readme_template.md src/**/*.js > README.md",
     "lint": "eslint src test e2e",

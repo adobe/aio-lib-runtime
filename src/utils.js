@@ -2031,7 +2031,7 @@ async function trackDeploymentLogs (contentHash, deploymentLogsPath) {
     }
     return found
   } catch (e) {
-    logger.error('Something went wrong' + e)
+    logger.error('Something went wrong ' + e)
   }
 }
 
