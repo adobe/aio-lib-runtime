@@ -14,11 +14,14 @@ const fs = require('fs-extra')
 const cloneDeep = require('lodash.clonedeep')
 const os = require('os')
 const path = require('path')
-
 const archiver = require('archiver')
-jest.mock('archiver')
+const networking = require('@adobe/aio-lib-core-networking')
+networking.createFetch = jest.fn()
+const mockFetch = jest.fn()
+networking.createFetch.mockReturnValue(mockFetch)
 
-jest.mock('cross-fetch')
+jest.mock('archiver')
+jest.mock('@adobe/aio-lib-core-networking')
 jest.mock('globby')
 
 const utils = require('../src/utils')
@@ -50,6 +53,7 @@ beforeEach(() => {
     'basic_manifest_res_namesonly.json': global.fixtureFile('/deploy/basic_manifest_res_namesonly.json')
   }
   global.fakeFileSystem.addJson(json)
+  mockFetch.mockReset()
 })
 
 afterEach(() => {
@@ -581,12 +585,10 @@ describe('deployPackage', () => {
     const cmdRule = ow.mockResolved(owRules, '')
     ow.mockResolvedProperty('actions.client.options', { apiKey: 'my-key', namespace: 'my-namespace' })
 
-    const rp = require('cross-fetch')
-    rp.mockImplementation(() => ({
+    mockFetch.mockResolvedValue({
       ok: true,
       json: jest.fn()
-    }))
-
+    })
     await utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, imsOrgId)
     expect(cmdPkg).toHaveBeenCalledWith(expect.objectContaining({ name: 'hello' }))
     expect(cmdPkg).toHaveBeenCalledWith(expect.objectContaining({ name: 'mypackage', package: { binding: { name: 'oauth', namespace: 'adobeio' } } }))
@@ -596,7 +598,6 @@ describe('deployPackage', () => {
     expect(cmdRule).toHaveBeenCalled()
 
     // this assertion is specific to the tmp implementation of the require-adobe-annotation
-    const mockFetch = require('cross-fetch')
     expect(mockFetch).toHaveBeenCalledWith(
       'https://adobeio.adobeioruntime.net/api/v1/web/state/put',
       {
@@ -612,13 +613,12 @@ describe('deployPackage', () => {
     const mockLogger = jest.fn()
     ow.mockResolvedProperty('actions.client.options', { apiKey: 'my-key', namespace: 'my-namespace' })
 
-    const rp = require('cross-fetch')
     const res = {
       ok: false,
       status: 403,
       json: jest.fn()
     }
-    rp.mockImplementation(() => res)
+    mockFetch.mockResolvedValue(res)
 
     await expect(utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, imsOrgId))
       .rejects.toThrowError(`failed setting ims_org_id=${imsOrgId} into state lib, received status=${res.status}, please make sure your runtime credentials are correct`)
