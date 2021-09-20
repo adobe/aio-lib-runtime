@@ -252,7 +252,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
         path: path.normalize('/dist/actions/action-temp'),
-        filename: 'index.js'
+        filename: 'index.[contenthash].js'
       })
     }))
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/action-temp'),
@@ -266,7 +266,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
         path: path.normalize('/dist/actions/action-temp'),
-        filename: 'index.js'
+        filename: 'index.[contenthash].js'
       })
     }))
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/action-temp'),
@@ -289,7 +289,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
         path: path.normalize('/dist/actions/action-temp'),
-        filename: 'index.js'
+        filename: 'index.[contenthash].js'
       })
     }))
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/action-temp'),
@@ -382,7 +382,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'none',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/action-temp') },
+      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -415,7 +415,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
         path: path.normalize('/dist/actions/action-temp'),
-        filename: 'index.js'
+        filename: 'index.[contenthash].js'
       })
     }))
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/action-temp'),
@@ -430,7 +430,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
         path: path.normalize('/dist/actions/action-temp'),
-        filename: 'index.js'
+        filename: 'index.[contenthash].js'
       })
     }))
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/action-temp'),
@@ -506,7 +506,7 @@ test('should build 1 zip action and 1 bundled action in one go', async () => {
     entry: [path.resolve('/actions/action.js')],
     output: expect.objectContaining({
       path: expect.stringContaining(path.normalize('/dist/actions/action-temp')),
-      filename: 'index.js'
+      filename: 'index.[contenthash].js'
     })
   }))
   expect(utils.zip).toHaveBeenCalledTimes(2)
@@ -533,7 +533,7 @@ test('use buildConfig.filterActions to build only action called `action`', async
     entry: [path.resolve('/actions/action.js')],
     output: expect.objectContaining({
       path: path.normalize('/dist/actions/action-temp'),
-      filename: 'index.js'
+      filename: 'index.[contenthash].js'
     })
   }))
   expect(utils.zip).toHaveBeenCalledTimes(1)

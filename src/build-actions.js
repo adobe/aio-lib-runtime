@@ -162,7 +162,6 @@ const buildAction = async (zipFileName, action, root, dist) => {
   // zip the dir
   // it should write the content hash to a file
   const contentHash = (await fs.readdir(tempBuildDir)).toString()
-  console.log('contentHash', root)
   const deploymentLogsPath = path.join(root, 'dist', 'deploymentLogs.txt')
   const builtBefore = await utils.trackDeploymentLogs(contentHash, deploymentLogsPath)
   if (!builtBefore) {
@@ -211,7 +210,6 @@ const buildActions = async (config, filterActions) => {
       builtList.push(await buildAction(zipFileName, action, config.root, config.actions.dist))
     }
   }
-  console.log('builtList', builtList)
   return builtList
 }
 

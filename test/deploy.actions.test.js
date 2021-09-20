@@ -122,6 +122,7 @@ test('deploy full manifest', async () => {
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
+
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
 })
 

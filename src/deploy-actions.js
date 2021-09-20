@@ -73,7 +73,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     const distFiles = fs.readdirSync(dist)
 
     const validateAction = (file) => {
-      const actionName = utils.getActionNameFromZipFile(file)
+      const actionName = utils.getActionNameFromZipFile(file, modifiedConfig.ow.package)
       if (actionName) {
         arr.push(actionName)
       }
@@ -89,7 +89,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     filterEntities = {}
     filterEntities.actions = filteredActions
   }
-  // If using old format of <actionName>, convert it to <package>/<actionName> using default/first package in the manifest
+  // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
   if (filterEntities) {
     packageItems.forEach((k) => {
       if (filterEntities[k]) {

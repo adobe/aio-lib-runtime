@@ -954,46 +954,42 @@ function checkWebFlags (flag) {
  * @returns {OpenWhiskEntitiesAction} the action entity object
  */
 function createActionObject (fullName, manifestAction) {
-  try {
-    const objAction = { name: fullName }
-    if (manifestAction.function.endsWith('.zip')) {
-      if (!manifestAction.runtime && !manifestAction.docker) {
-        throw (new Error(`Invalid or missing property "runtime" in the manifest for this action: ${objAction && objAction.name}`))
-      }
-      objAction.action = fs.readFileSync(manifestAction.function)
-    } else {
-      objAction.action = fs.readFileSync(manifestAction.function, { encoding: 'utf8' })
+  const objAction = { name: fullName }
+  if (manifestAction.function.endsWith('.zip')) {
+    if (!manifestAction.runtime && !manifestAction.docker) {
+      throw (new Error(`Invalid or missing property "runtime" in the manifest for this action: ${objAction && objAction.name}`))
     }
-
-    if (manifestAction.main || manifestAction.docker || manifestAction.runtime) {
-      objAction.exec = {}
-      if (manifestAction.main) {
-        objAction.exec.main = manifestAction.main
-      }
-      if (manifestAction.docker) {
-        objAction.exec.kind = 'blackbox'
-        objAction.exec.image = manifestAction.docker
-      } else if (manifestAction.runtime) {
-        objAction.exec.kind = manifestAction.runtime
-      }
-    }
-
-    if (manifestAction.limits) {
-      const limits = {
-        memory: manifestAction.limits.memorySize || 256,
-        logs: manifestAction.limits.logSize || 10,
-        timeout: manifestAction.limits.timeout || 60000
-      }
-      if (manifestAction.limits.concurrency) {
-        limits.concurrency = manifestAction.limits.concurrency
-      }
-      objAction.limits = limits
-    }
-    objAction.annotations = returnAnnotations(manifestAction)
-    return objAction
-  } catch (e) {
-    logger.debug(e)
+    objAction.action = fs.readFileSync(manifestAction.function)
+  } else {
+    objAction.action = fs.readFileSync(manifestAction.function, { encoding: 'utf8' })
   }
+
+  if (manifestAction.main || manifestAction.docker || manifestAction.runtime) {
+    objAction.exec = {}
+    if (manifestAction.main) {
+      objAction.exec.main = manifestAction.main
+    }
+    if (manifestAction.docker) {
+      objAction.exec.kind = 'blackbox'
+      objAction.exec.image = manifestAction.docker
+    } else if (manifestAction.runtime) {
+      objAction.exec.kind = manifestAction.runtime
+    }
+  }
+
+  if (manifestAction.limits) {
+    const limits = {
+      memory: manifestAction.limits.memorySize || 256,
+      logs: manifestAction.limits.logSize || 10,
+      timeout: manifestAction.limits.timeout || 60000
+    }
+    if (manifestAction.limits.concurrency) {
+      limits.concurrency = manifestAction.limits.concurrency
+    }
+    objAction.limits = limits
+  }
+  objAction.annotations = returnAnnotations(manifestAction)
+  return objAction
 }
 
 /**
