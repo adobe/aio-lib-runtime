@@ -13,7 +13,7 @@ const sdk = require('../src/index')
 const path = require('path')
 const deepClone = require('lodash.clonedeep')
 const fs = jest.requireActual('fs-extra')
-const { createHttpsProxy } = require('@adobe/aio-lib-core-networking/test/server/proxy')
+const { createHttpsProxy } = require('@adobe/aio-lib-test-proxy')
 
 jest.unmock('openwhisk')
 jest.unmock('archiver')
@@ -28,10 +28,10 @@ let config = {}
 const apiKey = process.env['RuntimeAPI_API_KEY']
 const apihost = process.env['RuntimeAPI_APIHOST'] || 'https://adobeioruntime.net'
 const namespace = process.env['RuntimeAPI_NAMESPACE']
-const USE_PROXY = process.env.E2E_USE_PROXY
+const E2E_USE_PROXY = process.env.E2E_USE_PROXY
 
 beforeAll(async () => {
-  if (USE_PROXY) {
+  if (E2E_USE_PROXY) {
     proxyServer = await createHttpsProxy()
     process.env.AIO_PROXY_URL = proxyServer.url
   }
