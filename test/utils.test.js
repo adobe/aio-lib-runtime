@@ -1988,15 +1988,6 @@ describe('zip', () => {
     expect(fs.existsSync('/out.zip')).toEqual(true)
   })
 
-  // test('should fail if symlink', async () => {
-  //   global.addFakeFiles(vol, '/indir', ['fake1.js'])
-  //   vol.symlinkSync('/indir/fake1.js', '/indir/symlink.js')
-  //   await expect(utils.zip('/indir/symlink.js', '/out.zip')).rejects.toThrow('symlink.js is not a valid dir or file')
-  //   expect(archiver.mockFile).toHaveBeenCalledTimes(0)
-  //   expect(archiver.mockDirectory).toHaveBeenCalledTimes(0)
-  //   expect(vol.existsSync('/out.zip')).toEqual(false)
-  // })
-
   test('should fail if file does not exists', async () => {
     await expect(utils.zip('/notexist.js', '/out.zip')).rejects.toEqual(expect.objectContaining({
       message: expect.stringContaining('ENOENT')

@@ -272,6 +272,7 @@ function printLogs (activation, strip, logger) {
  *    [] = logs of all actions in the namespace
  * @param {boolean} strip if true, strips the timestamp which prefixes every log line
  * @param {number} startTime time in milliseconds. Only logs after this time will be fetched
+ * @returns {object} returns an object with the lastActivationTime property
  */
 async function printFilteredActionLogs (runtime, logger, limit, filterActions = [], strip = false, startTime = 0) {
   // Get activations

@@ -106,6 +106,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
  * @param {object} manifestContent manifest
  * @param {object} logFunc custom logger function
  * @param {object} filterEntities entities (actions, sequences, triggers, rules etc) to be filtered
+ * @returns {utils.OpenWhiskEntities} the openwhisk entities
  */
 async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities) {
   const packageName = scriptConfig.ow.package
