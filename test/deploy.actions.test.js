@@ -29,6 +29,7 @@ ioruntime.mockImplementation(() => {
 const deepCopy = require('lodash.clonedeep')
 
 const libEnv = require('@adobe/aio-lib-env')
+const sdk = require('../src/index')
 const { STAGE_ENV, PROD_ENV } = jest.requireActual('@adobe/aio-lib-env')
 jest.mock('@adobe/aio-lib-env')
 
@@ -895,6 +896,28 @@ test('No backend is present', async () => {
   global.sampleAppConfig.app.hasBackend = false
 
   await expect(deployActions(global.sampleAppConfig)).rejects.toThrow('cannot deploy actions, app has no backend')
+})
+
+test('', ()=> {
+  it('it should build & deploy 1 of two.', async () => {
+    const fileData = JSON.stringify({ 'action-zip': 1632317755882 })
+    fs.readFile = jest.fn(() => (fileData))
+    const deployConfig = {
+      filterEntities: {
+        byBuiltActions: true
+      }
+    }
+    expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
+      expect.stringContaining('action.zip')
+    ]))
+
+    config.root = path.resolve('./')
+    const deployedEntities = await sdk.deployActions(config, deployConfig)
+    expect(deployedEntities.actions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'sample-app-1.0.0/action' }),
+      expect.objectContaining({ name: 'sample-app-1.0.0/action-sequence' })
+    ]))
+  })
 })
 
 /**

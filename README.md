@@ -251,8 +251,19 @@ for syncing managed projects.</p>
 <dt><a href="#getActionZipFileName">getActionZipFileName(pkgName, actionName, defaultPkg)</a> ⇒ <code>string</code></dt>
 <dd><p>Returns the action&#39;s build file name without the .zip extension</p>
 </dd>
+<dt><a href="#getActionNameFromZipFile">getActionNameFromZipFile(zipFile, pkgName)</a> ⇒ <code>string</code></dt>
+<dd><p>Returns the action name based on the zipFile name.</p>
+</dd>
 <dt><a href="#activationLogBanner">activationLogBanner(logFunc, activation, activationLogs)</a></dt>
 <dd><p>Creates an info banner for an activation.</p>
+</dd>
+<dt><a href="#tryParseString">tryParseString(stringData)</a> ⇒ <code>object</code></dt>
+<dd></dd>
+<dt><a href="#actionBuiltBefore">actionBuiltBefore(lastBuildsData, actionBuildData)</a> ⇒ <code>boolean</code></dt>
+<dd><p>Will tell if the action was built before based on it&#39;s contentHash.</p>
+</dd>
+<dt><a href="#dumpActionsBuiltInfo">dumpActionsBuiltInfo(lastBuiltActionsPath, actionBuildData, prevBuildData)</a> ⇒ <code>Promise.&lt;boolean&gt;</code></dt>
+<dd><p>Will dump the previously actions built data information.</p>
 </dd>
 </dl>
 
@@ -398,8 +409,10 @@ runs the command
 | --- | --- | --- | --- |
 | config | <code>object</code> |  | app config |
 | [deployConfig] | <code>object</code> | <code>{}</code> | deployment config |
+| [deployConfig.isLocalDev] | <code>boolean</code> |  | local dev flag |
 | [deployConfig.filterEntities] | <code>object</code> |  | add filters to deploy only specified OpenWhisk entities |
-| [deployConfig.filterEntities.actions] | <code>Array</code> |  | filter list of actions to deploy, e.g. ['name1', ..] |
+| [deployConfig.filterEntities.actions] | <code>Array</code> |  | filter list of actions to deploy by provided array, e.g. ['name1', ..] |
+| [deployConfig.filterEntities.byBuiltActions] | <code>Array</code> |  | if true, trim actions from the manifest based on the already built actions |
 | [deployConfig.filterEntities.sequences] | <code>Array</code> |  | filter list of sequences to deploy, e.g. ['name1', ..] |
 | [deployConfig.filterEntities.triggers] | <code>Array</code> |  | filter list of triggers to deploy, e.g. ['name1', ..] |
 | [deployConfig.filterEntities.rules] | <code>Array</code> |  | filter list of rules to deploy, e.g. ['name1', ..] |
@@ -430,7 +443,7 @@ runs the command
 | pkgName | <code>object</code> | name of the package |
 | pkgEntity | <code>object</code> | package object from the manifest |
 | filterItems | <code>object</code> | items (actions, sequences, triggers, rules etc) to be filtered |
-| fullNameCheck | <code>object</code> | true of the items are part of packages (actions and sequences) |
+| fullNameCheck | <code>boolean</code> | true if the items are part of packages (actions and sequences) |
 
 <a name="init"></a>
 
@@ -1184,6 +1197,19 @@ Returns the action's build file name without the .zip extension
 | actionName | <code>string</code> | name of the action |
 | defaultPkg | <code>boolean</code> | true if pkgName is the default/first package |
 
+<a name="getActionNameFromZipFile"></a>
+
+## getActionNameFromZipFile(zipFile, pkgName) ⇒ <code>string</code>
+Returns the action name based on the zipFile name.
+
+**Kind**: global function  
+**Returns**: <code>string</code> - name of the action  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| zipFile | <code>string</code> | name of the zip file |
+| pkgName | <code>string</code> | name of the package, optional |
+
 <a name="activationLogBanner"></a>
 
 ## activationLogBanner(logFunc, activation, activationLogs)
@@ -1196,6 +1222,43 @@ Creates an info banner for an activation.
 | logFunc | <code>object</code> | custom logger function |
 | activation | <code>object</code> | activation metadata |
 | activationLogs | <code>Array.&lt;string&gt;</code> | the logs of the activation (may selectively suppress banner if there are no log lines) |
+
+<a name="tryParseString"></a>
+
+## tryParseString(stringData) ⇒ <code>object</code>
+**Kind**: global function  
+**Returns**: <code>object</code> - parsedData  
+
+| Param |
+| --- |
+| stringData | 
+
+<a name="actionBuiltBefore"></a>
+
+## actionBuiltBefore(lastBuildsData, actionBuildData) ⇒ <code>boolean</code>
+Will tell if the action was built before based on it's contentHash.
+
+**Kind**: global function  
+**Returns**: <code>boolean</code> - true if the action was built before  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| lastBuildsData | <code>string</code> | Data with the last builds |
+| actionBuildData | <code>object</code> | Object which contains action name and contentHash. |
+
+<a name="dumpActionsBuiltInfo"></a>
+
+## dumpActionsBuiltInfo(lastBuiltActionsPath, actionBuildData, prevBuildData) ⇒ <code>Promise.&lt;boolean&gt;</code>
+Will dump the previously actions built data information.
+
+**Kind**: global function  
+**Returns**: <code>Promise.&lt;boolean&gt;</code> - If the contentHash already belongs to the deploymentLogs file  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| lastBuiltActionsPath | <code>string</code> | Path to the deployments logs |
+| actionBuildData | <code>object</code> | Object which contains action name and contentHash. |
+| prevBuildData | <code>object</code> | Object which contains info about all the previously built actions |
 
 <a name="OpenwhiskOptions"></a>
 

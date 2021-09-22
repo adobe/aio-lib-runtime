@@ -246,6 +246,7 @@ describe('build by bundling js action file with webpack', () => {
   }) */
 
   test('should fail for invalid file or directory', async () => {
+    utils.actionBuiltBefore = jest.fn(() => false)
     await buildActions(config)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
@@ -260,6 +261,7 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it', async () => {
+    utils.actionBuiltBefore = jest.fn(() => false)
     await buildActions(config)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.objectContaining({
@@ -299,6 +301,7 @@ describe('build by bundling js action file with webpack', () => {
 
   test('should bundle a single action file using webpack and zip it with includes using webpack-config.js in actions root', async () => {
     // global.loadFs(vol, 'sample-app-includes')
+    utils.actionBuiltBefore = jest.fn(() => false)
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
       'actions/action.js': global.fixtureFile('/sample-app-includes/actions/action.js'),
@@ -331,7 +334,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/file.js'), path.resolve('/actions/action.js')],
       mode: 'none',
       optimization: { minimize: false, somefakefield: true },
-      output: { fake: false, filename: 'index.js', libraryTarget: 'commonjs2', path: path.normalize('/dist/actions/action-temp') },
+      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'commonjs2', path: path.normalize('/dist/actions/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],

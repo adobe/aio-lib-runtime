@@ -58,7 +58,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
 
   /* Filter manifest actions based on the already built actions */
   const _filterManifestActions = () => {
-    if (deployConfig.filterEntities.byBuiltActions) {
+    if (deployConfig.filterEntities && deployConfig.filterEntities.byBuiltActions) {
       aioLogger.debug('Trimming out the manifest\'s actions...')
       filterEntities = undefined
       const manifestPackageName = modifiedConfig.ow.package

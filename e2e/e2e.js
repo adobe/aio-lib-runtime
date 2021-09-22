@@ -42,24 +42,29 @@ beforeEach(() => {
   config.manifest.src = path.resolve(config.root + '/' + 'manifest.yml')
 })
 
-// describe('build-actions', () => {
-//   utils.trackDeploymentLogs = jest.fn(() => false)
-//   test('full config', async () => {
-//     expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
-//       expect.stringContaining('action.zip'),
-//       expect.stringContaining('action-zip.zip')
-//     ]))
-//     expect(fs.readdirSync(path.resolve(config.actions.dist))).toEqual(expect.arrayContaining(['action-temp', 'action-zip-temp', 'action-zip.zip', 'action.zip']))
-//     fs.emptydirSync(config.actions.dist)
-//     fs.rmdirSync(config.actions.dist)
-//   })
-// })
+describe('build-actions', () => {
+  test('full config', async () => {
+    /* skip checking previously built actions */
+    utils.dumpActionsBuiltInfo = jest.fn(() => false)
+    utils.actionBuiltBefore = jest.fn(() => false)
+
+    expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
+      expect.stringContaining('action.zip'),
+      expect.stringContaining('action-zip.zip')
+    ]))
+    expect(fs.readdirSync(path.resolve(config.actions.dist))).toEqual(expect.arrayContaining(['action-temp', 'action-zip-temp', 'action-zip.zip', 'action.zip']))
+    fs.emptydirSync(config.actions.dist)
+    fs.rmdirSync(config.actions.dist)
+  })
+})
 
 describe('build, deploy, invoke and undeploy of actions', () => {
   test('basic manifest', async () => {
+    /* skip checking previously built actions */
+    utils.dumpActionsBuiltInfo = jest.fn(() => false)
+    utils.actionBuiltBefore = jest.fn(() => false)
     // console.log(config)
     // Build
-    utils.trackDeploymentLogs = jest.fn(() => false)
     expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
       expect.stringContaining('action.zip'),
       expect.stringContaining('action-zip.zip')
@@ -91,103 +96,125 @@ describe('build, deploy, invoke and undeploy of actions', () => {
     }
   })
 
-  // test('manifest with includes', async () => {
-  //   config = deepClone(global.sampleAppIncludesConfig)
-  //   config.ow.namespace = namespace
-  //   config.ow.auth = apiKey
-  //   config.root = path.resolve('./test/__fixtures__/sample-app-includes')
-  //   config.actions.src = path.resolve(config.root + '/' + config.actions.src)
-  //   config.actions.dist = path.resolve(config.root + '/' + config.actions.dist)
-  //   config.manifest.src = path.resolve(config.root + '/' + 'manifest.yml')
-  //   // console.log(config)
-  //   // Build
-  //   expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
-  //     expect.stringContaining('action.zip')
-  //   ]))
-  //
-  //   // Deploy
-  //   config.root = path.resolve('./')
-  //   const deployedEntities = await sdk.deployActions(config)
-  //   expect(deployedEntities.actions[0].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-include-1.0.0/action')).toEqual(true)
-  //
-  //   // Cleanup build files
-  //   fs.emptydirSync(config.actions.dist)
-  //   fs.rmdirSync(config.actions.dist)
-  //
-  //   // Verify actions created in openwhisk
-  //   let actions = await sdkClient.actions.list({ limit: 3 })
-  //   expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'action', namespace: expect.stringContaining('/sample-app-include-1.0.0') })]))
-  //   await sdkClient.actions.invoke('sample-app-include-1.0.0/action')
-  //
-  //   // Undeploy
-  //   await sdk.undeployActions(config)
-  //   actions = await sdkClient.actions.list({ limit: 1 })
-  //   if (actions.length > 0) {
-  //     expect(actions[0].name).not.toEqual('action')
-  //   }
-  // })
+  test('manifest with includes', async () => {
+    config = deepClone(global.sampleAppIncludesConfig)
+    config.ow.namespace = namespace
+    config.ow.auth = apiKey
+    config.root = path.resolve('./test/__fixtures__/sample-app-includes')
+    config.actions.src = path.resolve(config.root + '/' + config.actions.src)
+    config.actions.dist = path.resolve(config.root + '/' + config.actions.dist)
+    config.manifest.src = path.resolve(config.root + '/' + 'manifest.yml')
+    // console.log(config)
+    // Build
+    expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
+      expect.stringContaining('action.zip')
+    ]))
 
-  // test('basic manifest with filter', async () => {
-  //   // console.log(config)
-  //   // Build
-  //   expect(await sdk.buildActions(config, ['action'])).toEqual([expect.stringContaining('action.zip')])
-  //
-  //   // Deploy
-  //   config.root = path.resolve('./')
-  //   const deployedEntities = await sdk.deployActions(config, { filterEntities: { actions: ['action'] } })
-  //   expect(deployedEntities.actions.length).toBe(1)
-  //   expect(deployedEntities.actions[0].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-1.0.0/action')).toEqual(true)
-  //
-  //   // Cleanup build files
-  //   fs.emptydirSync(config.actions.dist)
-  //   fs.rmdirSync(config.actions.dist)
-  //
-  //   // Verify actions created in openwhisk
-  //   const actions = await sdkClient.actions.list({ limit: 3 })
-  //   expect(actions).toEqual(expect.arrayContaining([
-  //     expect.objectContaining({ name: 'action', namespace: expect.stringContaining('/sample-app-1.0.0') })]))
-  //   await sdkClient.actions.invoke('sample-app-1.0.0/action')
-  // })
+    // Deploy
+    config.root = path.resolve('./')
+    const deployedEntities = await sdk.deployActions(config)
+    expect(deployedEntities.actions[0].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-include-1.0.0/action')).toEqual(true)
+
+    // Cleanup build files
+    fs.emptydirSync(config.actions.dist)
+    fs.rmdirSync(config.actions.dist)
+
+    // Verify actions created in openwhisk
+    let actions = await sdkClient.actions.list({ limit: 3 })
+    expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'action', namespace: expect.stringContaining('/sample-app-include-1.0.0') })]))
+    await sdkClient.actions.invoke('sample-app-include-1.0.0/action')
+
+    // Undeploy
+    await sdk.undeployActions(config)
+    actions = await sdkClient.actions.list({ limit: 1 })
+    if (actions.length > 0) {
+      expect(actions[0].name).not.toEqual('action')
+    }
+  })
+
+  test('basic manifest with filter', async () => {
+    // console.log(config)
+    // Build
+    expect(await sdk.buildActions(config, ['action'])).toEqual([expect.stringContaining('action.zip')])
+
+    // Deploy
+    config.root = path.resolve('./')
+    const deployedEntities = await sdk.deployActions(config, { filterEntities: { actions: ['action'] } })
+    expect(deployedEntities.actions.length).toBe(1)
+    expect(deployedEntities.actions[0].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-1.0.0/action')).toEqual(true)
+
+    // Cleanup build files
+    fs.emptydirSync(config.actions.dist)
+    fs.rmdirSync(config.actions.dist)
+
+    // Verify actions created in openwhisk
+    const actions = await sdkClient.actions.list({ limit: 3 })
+    expect(actions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'action', namespace: expect.stringContaining('/sample-app-1.0.0') })]))
+    await sdkClient.actions.invoke('sample-app-1.0.0/action')
+  })
 })
 
-// describe('print logs', () => {
-//   test('basic', async () => {
-//     const logs = []
-//     const storeLogs = (str) => { logs.push(str) }
-//     // Runtime waits for about 60 secs to return a 503 when it cannot serve the request.
-//     jest.setTimeout(100000)
-//     try {
-//       const retResult = await sdk.printActionLogs(config, storeLogs, 1, [], false, false)
-//       // expect(logs[1]).toEqual(expect.stringContaining('stdout: hello'))
-//       expect(typeof retResult).toEqual('object')
-//     } catch (err) {
-//       // If the request was not successful, it has to be a 503 from Runtime.
-//       expect(typeof err).toEqual('object')
-//       expect(err.message).toEqual(expect.stringContaining('503'))
-//       expect(err.message).toEqual(expect.stringContaining('Service Unavailable'))
-//     }
-//     jest.setTimeout(30000)
-//   })
-// })
-//
-// test('triggers', async () => {
-//   // Delete non existing trigger
-//   const call = sdkClient.triggers.delete({ name: 'e2eTrigger' })
-//   await expect(call).rejects.toThrow('The requested resource does not exist')
-//
-//   // Create
-//   expect(await sdkClient.triggers.create({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
-//   // Get
-//   expect(await sdkClient.triggers.get({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
-//   // Delete
-//   expect(await sdkClient.triggers.delete({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
-// })
-//
-// test('triggers with feed', async () => {
-//   // Create
-//   expect(await sdkClient.triggers.create({ name: 'e2eTrigger', trigger: { feed: '/whisk.system/alarms/alarm', parameters: [{ key: 'cron', value: '* * * * *' }] } })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1', annotations: expect.arrayContaining([expect.objectContaining({ key: 'feed' })]) }))
-//   // Get
-//   expect(await sdkClient.triggers.get({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
-//   // Delete
-//   expect(await sdkClient.triggers.delete({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
-// })
+describe('print logs', () => {
+  test('basic', async () => {
+    const logs = []
+    const storeLogs = (str) => { logs.push(str) }
+    // Runtime waits for about 60 secs to return a 503 when it cannot serve the request.
+    jest.setTimeout(100000)
+    try {
+      const retResult = await sdk.printActionLogs(config, storeLogs, 1, [], false, false)
+      // expect(logs[1]).toEqual(expect.stringContaining('stdout: hello'))
+      expect(typeof retResult).toEqual('object')
+    } catch (err) {
+      // If the request was not successful, it has to be a 503 from Runtime.
+      expect(typeof err).toEqual('object')
+      expect(err.message).toEqual(expect.stringContaining('503'))
+      expect(err.message).toEqual(expect.stringContaining('Service Unavailable'))
+    }
+    jest.setTimeout(30000)
+  })
+})
+
+test('triggers', async () => {
+  // Delete non existing trigger
+  const call = sdkClient.triggers.delete({ name: 'e2eTrigger' })
+  await expect(call).rejects.toThrow('The requested resource does not exist')
+
+  // Create
+  expect(await sdkClient.triggers.create({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
+  // Get
+  expect(await sdkClient.triggers.get({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
+  // Delete
+  expect(await sdkClient.triggers.delete({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
+})
+
+test('triggers with feed', async () => {
+  // Create
+  expect(await sdkClient.triggers.create({ name: 'e2eTrigger', trigger: { feed: '/whisk.system/alarms/alarm', parameters: [{ key: 'cron', value: '* * * * *' }] } })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1', annotations: expect.arrayContaining([expect.objectContaining({ key: 'feed' })]) }))
+  // Get
+  expect(await sdkClient.triggers.get({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
+  // Delete
+  expect(await sdkClient.triggers.delete({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
+})
+
+describe('filter manifest based on built actions', () => {
+  test('it should build & deploy 1 of two.', async () => {
+    const fileData = JSON.stringify({ 'action-zip': 1632317755882 })
+    fs.readFile = jest.fn(() => (fileData))
+    const deployConfig = {
+      filterEntities: {
+        byBuiltActions: true
+      }
+    }
+    expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
+      expect.stringContaining('action.zip')
+    ]))
+
+    config.root = path.resolve('./')
+    const deployedEntities = await sdk.deployActions(config, deployConfig)
+    expect(deployedEntities.actions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'sample-app-1.0.0/action' }),
+      expect.objectContaining({ name: 'sample-app-1.0.0/action-sequence' })
+    ]))
+  })
+})

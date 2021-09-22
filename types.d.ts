@@ -54,8 +54,10 @@ declare class RuntimeAPI {
  * runs the command
  * @param config - app config
  * @param [deployConfig = {}] - deployment config
+ * @param [deployConfig.isLocalDev] - local dev flag
  * @param [deployConfig.filterEntities] - add filters to deploy only specified OpenWhisk entities
- * @param [deployConfig.filterEntities.actions] - filter list of actions to deploy, e.g. ['name1', ..]
+ * @param [deployConfig.filterEntities.actions] - filter list of actions to deploy by provided array, e.g. ['name1', ..]
+ * @param [deployConfig.filterEntities.byBuiltActions] - if true, trim actions from the manifest based on the already built actions
  * @param [deployConfig.filterEntities.sequences] - filter list of sequences to deploy, e.g. ['name1', ..]
  * @param [deployConfig.filterEntities.triggers] - filter list of triggers to deploy, e.g. ['name1', ..]
  * @param [deployConfig.filterEntities.rules] - filter list of rules to deploy, e.g. ['name1', ..]
@@ -65,8 +67,10 @@ declare class RuntimeAPI {
  * @returns deployedEntities
  */
 declare function deployActions(config: any, deployConfig?: {
+    isLocalDev?: boolean;
     filterEntities?: {
         actions?: any[];
+        byBuiltActions?: any[];
         sequences?: any[];
         triggers?: any[];
         rules?: any[];
@@ -808,10 +812,40 @@ declare function validateActionRuntime(action: any): void;
 declare function getActionZipFileName(pkgName: string, actionName: string, defaultPkg: boolean): string;
 
 /**
+ * Returns the action name based on the zipFile name.
+ * @param zipFile - name of the zip file
+ * @param pkgName - name of the package, optional
+ * @returns name of the action
+ */
+declare function getActionNameFromZipFile(zipFile: string, pkgName: string): string;
+
+/**
  * Creates an info banner for an activation.
  * @param logFunc - custom logger function
  * @param activation - activation metadata
  * @param activationLogs - the logs of the activation (may selectively suppress banner if there are no log lines)
  */
 declare function activationLogBanner(logFunc: any, activation: any, activationLogs: string[]): void;
+
+/**
+ * @returns parsedData
+ */
+declare function tryParseString(stringData: any): any;
+
+/**
+ * Will tell if the action was built before based on it's contentHash.
+ * @param lastBuildsData - Data with the last builds
+ * @param actionBuildData - Object which contains action name and contentHash.
+ * @returns true if the action was built before
+ */
+declare function actionBuiltBefore(lastBuildsData: string, actionBuildData: any): boolean;
+
+/**
+ * Will dump the previously actions built data information.
+ * @param lastBuiltActionsPath - Path to the deployments logs
+ * @param actionBuildData - Object which contains action name and contentHash.
+ * @param prevBuildData - Object which contains info about all the previously built actions
+ * @returns If the contentHash already belongs to the deploymentLogs file
+ */
+declare function dumpActionsBuiltInfo(lastBuiltActionsPath: string, actionBuildData: any, prevBuildData: any): Promise<boolean>;
 

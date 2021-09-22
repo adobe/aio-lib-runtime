@@ -1985,11 +1985,11 @@ function getActionZipFileName (pkgName, actionName, defaultPkg) {
  * @param {string} pkgName name of the package, optional
  * @returns {string} name of the action
  */
-function getActionNameFromZipFile (zipFile, pkgName) {
+function getActionNameFromZipFile (zipFile) {
   const ZIP_EXTENSION = '.zip'
   if (!zipFile || !zipFile.includes(ZIP_EXTENSION)) return ''
   const [action] = zipFile.split('.')
-  return pkgName ? `${pkgName}/${action}` : action
+  return action
 }
 
 /**
@@ -2029,14 +2029,9 @@ function tryParseString (stringData) {
  * @returns {boolean} true if the action was built before
  */
 function actionBuiltBefore (lastBuildsData, actionBuildData) {
-  try {
-    const [actionName, contenthash] = Object.entries(actionBuildData)[0]
-    const storedData = tryParseString(lastBuildsData)
-    return storedData[actionName] === contenthash
-  } catch (e) {
-    logger.debug('Probably the log file is missing ' + e)
-    return false
-  }
+  const [actionName, contenthash] = Object.entries(actionBuildData)[0]
+  const storedData = tryParseString(lastBuildsData)
+  return storedData[actionName] === contenthash
 }
 
 /**
@@ -2059,6 +2054,7 @@ async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prev
     }
   } catch (e) {
     logger.error('Something went wrong ' + e)
+    throw e
   }
 }
 

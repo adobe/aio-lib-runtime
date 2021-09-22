@@ -96,15 +96,16 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
 // need config.root
 // config.actions.dist
 const prepareToBuildAction = async (zipFileName, action, root, dist) => {
-  // path.resolve supports both relative and absolut action.function
+  // path.resolve supports both relative and absolute action.function
   const actionPath = path.resolve(root, action.function)
   const outPath = path.join(dist, `${zipFileName}.zip`)
   const tempBuildDir = path.join(dist, `${zipFileName}-temp`) // build all to tempDir first
   const actionFileStats = fs.lstatSync(actionPath)
+  let isDirectory = false
 
   // make sure temp/ exists
   fs.ensureDirSync(tempBuildDir)
-  // Process include(d) files
+  // Process included files
   const includeFiles = await utils.getIncludesForAction(action)
   includeFiles.forEach(incFile => {
     const dest = path.join(tempBuildDir, incFile.dest)
@@ -116,6 +117,7 @@ const prepareToBuildAction = async (zipFileName, action, root, dist) => {
   })
 
   if (actionFileStats.isDirectory()) {
+    isDirectory = true
     // make sure package.json exists OR index.js
     const packageJsonPath = path.join(actionPath, 'package.json')
     if (!fs.existsSync(packageJsonPath)) {
@@ -156,17 +158,19 @@ const prepareToBuildAction = async (zipFileName, action, root, dist) => {
       })
     })
   }
-
-  const [contentHashedFileName] = await fs.readdir(tempBuildDir)
-  const contentHash = contentHashedFileName.split('.')[1]
-  const actionBuildData = { [zipFileName]: contentHash }
-
-  const actionBuildInfo = {
+  let actionBuildData
+  if (isDirectory) {
+    actionBuildData = { [zipFileName]: actionFileStats.mtime.valueOf() }
+  } else {
+    const [contentHashedFileName] = await fs.readdir(tempBuildDir)
+    const contentHash = contentHashedFileName && contentHashedFileName.split('.')[1]
+    actionBuildData = { [zipFileName]: contentHash }
+  }
+  return {
     outPath,
     actionBuildData,
     tempBuildDir
   }
-  return actionBuildInfo
 }
 
 const buildActions = async (config, filterActions, skipCheck = false) => {
@@ -228,7 +232,7 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
     const parsedLastBuiltData = utils.tryParseString(lastBuiltData)
     return { parsedLastBuiltData, builtList, dumpData }
   }
-  const { parsedLastBuiltData, dumpData, builtActions } = await _buildActions()
+  const { parsedLastBuiltData, dumpData, builtList: builtActions } = await _buildActions()
   await utils.dumpActionsBuiltInfo(lastBuiltActionsPath, dumpData, parsedLastBuiltData)
   return builtActions || []
 }
