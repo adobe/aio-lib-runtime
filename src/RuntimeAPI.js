@@ -12,8 +12,10 @@ governing permissions and limitations under the License.
 const ow = require('openwhisk')
 const { codes } = require('./SDKErrors')
 const Triggers = require('./triggers')
-const { getProxyOptionsFromConfig, ProxyFetch } = require('@adobe/aio-lib-core-networking')
+const { getProxyOptionsFromConfig } = require('@adobe/aio-lib-core-networking')
+const url = require('url')
 const deepCopy = require('lodash.clonedeep')
+const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:RuntimeAPI', { provider: 'debug', level: process.env.LOG_LEVEL })
 
 /**
  * @typedef {object} OpenwhiskOptions
@@ -50,6 +52,7 @@ class RuntimeAPI {
    * @returns {Promise<OpenwhiskClient>} a RuntimeAPI object
    */
   async init (options) {
+    aioLogger.debug(`init options: ${JSON.stringify(options, null, 2)}`)
     const clonedOptions = deepCopy(options)
 
     const initErrors = []
@@ -67,7 +70,18 @@ class RuntimeAPI {
 
     const proxyOptions = getProxyOptionsFromConfig()
     if (proxyOptions) {
-      clonedOptions.agent = new ProxyFetch(proxyOptions).proxyAgent()
+      aioLogger.debug(`proxy settings found: ${JSON.stringify(proxyOptions, null, 2)}`)
+      const { proxyUrl, username, password } = proxyOptions
+      const newUrl = new url.URL(proxyUrl)
+
+      if (username && password) {
+        newUrl.username = username
+        newUrl.password = password
+      }
+      aioLogger.debug(`using proxy url: ${newUrl.toString()}`)
+      clonedOptions.proxy = newUrl.toString()
+    } else {
+      aioLogger.debug('proxy settings not found')
     }
 
     this.ow = ow(clonedOptions)

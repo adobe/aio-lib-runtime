@@ -14,7 +14,10 @@ const path = require('path')
 const deepClone = require('lodash.clonedeep')
 const fs = jest.requireActual('fs-extra')
 const { createHttpsProxy } = require('@adobe/aio-lib-test-proxy')
+const aioConfig = require('@adobe/aio-lib-core-config')
+const realAioConfig = jest.requireActual('@adobe/aio-lib-core-config')
 
+jest.mock('@adobe/aio-lib-core-config')
 jest.unmock('openwhisk')
 jest.unmock('archiver')
 jest.setTimeout(30000)
@@ -30,10 +33,23 @@ const apihost = process.env['RuntimeAPI_APIHOST'] || 'https://adobeioruntime.net
 const namespace = process.env['RuntimeAPI_NAMESPACE']
 const E2E_USE_PROXY = process.env.E2E_USE_PROXY
 
+// we have to mock config.get because setting process.env.AIO_PROXY_URL
+// does not seem to work in this test harness (not all modules get the change)
+const createMockConfigGet = proxyServer => {
+  return key => {
+    if (key === 'proxy.url') {
+      return proxyServer.url
+    } else {
+      return realAioConfig.get(key)
+    }
+  }
+}
+
 beforeAll(async () => {
   if (E2E_USE_PROXY) {
     proxyServer = await createHttpsProxy()
-    process.env.AIO_PROXY_URL = proxyServer.url
+    aioConfig.get.mockImplementation(createMockConfigGet(proxyServer))
+    console.log(`Using test proxy at ${proxyServer.url}`)
   }
 
   sdkClient = await sdk.init({ api_key: apiKey, apihost })
@@ -43,7 +59,6 @@ afterAll(() => {
   if (proxyServer) {
     proxyServer.stop()
   }
-  delete process.env.AIO_PROXY_URL
 })
 
 beforeEach(() => {
