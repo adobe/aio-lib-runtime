@@ -2010,26 +2010,53 @@ function activationLogBanner (logFunc, activation, activationLogs) {
 }
 
 /**
- * Create the deployments log file which keeps track of the already built packages.
+ * @param stringData
+ * @returns {object} parsedData
+ */
+function tryParseString (stringData) {
+  try {
+    return JSON.parse(stringData)
+  } catch (e) {
+    return {}
+  }
+}
+
+/**
+ * Will tell if the action was built before based on it's contentHash.
  *
- * @param {string} contentHash Content hash
- * @param {string} deploymentLogsPath Path to the deployments logs
+ * @param {string} lastBuildsData Data with the last builds
+ * @param {object} actionBuildData Object which contains action name and contentHash.
+ * @returns {boolean} true if the action was built before
+ */
+function actionBuiltBefore (lastBuildsData, actionBuildData) {
+  try {
+    const [actionName, contenthash] = Object.entries(actionBuildData)[0]
+    const storedData = tryParseString(lastBuildsData)
+    return storedData[actionName] === contenthash
+  } catch (e) {
+    logger.debug('Probably the log file is missing ' + e)
+    return false
+  }
+}
+
+/**
+ * Will dump the previously actions built data information.
+ *
+ * @param {string} lastBuiltActionsPath Path to the deployments logs
+ * @param {object} actionBuildData Object which contains action name and contentHash.
+ * @param {object} prevBuildData Object which contains info about all the previously built actions
  * @returns {Promise<boolean>} If the contentHash already belongs to the deploymentLogs file
  */
-async function trackDeploymentLogs (contentHash, deploymentLogsPath) {
-  if (!fs.existsSync(deploymentLogsPath)) {
+async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prevBuildData) {
+  if (!fs.existsSync(lastBuiltActionsPath)) {
     logger.debug('Deployments log file not found, creating a new one...')
-    await fs.createFileSync(deploymentLogsPath)
+    await fs.createFile(lastBuiltActionsPath)
   }
   try {
-    let found = false
-    const data = await fs.readFileSync(deploymentLogsPath, 'utf8')
-    if (!data || !data.toString().includes(contentHash)) {
-      fs.appendFile(deploymentLogsPath, contentHash)
-    } else {
-      found = true
+    if (Object.keys(actionBuildData).length) {
+      const textData = JSON.stringify({ ...prevBuildData, ...actionBuildData })
+      await fs.writeFile(lastBuiltActionsPath, textData)
     }
-    return found
   } catch (e) {
     logger.error('Something went wrong ' + e)
   }
@@ -2084,6 +2111,8 @@ module.exports = {
   replacePackagePlaceHolder,
   validateActionRuntime,
   getActionZipFileName,
-  trackDeploymentLogs,
-  getActionNameFromZipFile
+  getActionNameFromZipFile,
+  dumpActionsBuiltInfo,
+  actionBuiltBefore,
+  tryParseString
 }

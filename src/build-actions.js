@@ -95,13 +95,11 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
 }
 // need config.root
 // config.actions.dist
-const buildAction = async (zipFileName, action, root, dist) => {
+const prepareToBuildAction = async (zipFileName, action, root, dist) => {
   // path.resolve supports both relative and absolut action.function
   const actionPath = path.resolve(root, action.function)
-
   const outPath = path.join(dist, `${zipFileName}.zip`)
   const tempBuildDir = path.join(dist, `${zipFileName}-temp`) // build all to tempDir first
-
   const actionFileStats = fs.lstatSync(actionPath)
 
   // make sure temp/ exists
@@ -159,23 +157,19 @@ const buildAction = async (zipFileName, action, root, dist) => {
     })
   }
 
-  // todo: split out zipping
-  // zip the dir
   const [contentHashedFileName] = await fs.readdir(tempBuildDir)
-  const deploymentLogsPath = path.join(root, 'dist', 'deploymentLogs.txt')
-  const builtBefore = await utils.trackDeploymentLogs(contentHashedFileName, deploymentLogsPath)
-  if (!builtBefore) {
-    await utils.zip(tempBuildDir, outPath)
-    // fs.remove(tempBuildDir) // remove the build file, don't need to wait ...
-    // const fStats = fs.statSync(outPath)
-    // if (fStats && fStats.size > (22 * 1024 * 1024)) {
-    //   this.emit('warning', `file size exceeds 22 MB, you may not be able to deploy this action. file size is ${fStats.size} Bytes`)
-    // }
-    return outPath
+  const contentHash = contentHashedFileName.split('.')[1]
+  const actionBuildData = { [zipFileName]: contentHash }
+
+  const actionBuildInfo = {
+    outPath,
+    actionBuildData,
+    tempBuildDir
   }
+  return actionBuildInfo
 }
 
-const buildActions = async (config, filterActions) => {
+const buildActions = async (config, filterActions, skipCheck = false) => {
   if (!config.app.hasBackend) {
     throw new Error('cannot build actions, app has no backend')
   }
@@ -189,7 +183,8 @@ const buildActions = async (config, filterActions) => {
 
   // clear out dist dir
   fs.emptyDirSync(config.actions.dist)
-  const builtList = []
+  const toBuildList = []
+  const lastBuiltActionsPath = path.join(config.root, 'dist', 'last-built-actions.txt')
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
     const actionsToBuild = Object.entries(pkg.actions || {})
 
@@ -205,11 +200,37 @@ const buildActions = async (config, filterActions) => {
       // zipFileName would be <actionName>.zip for default package and
       // <pkgName>/<actionName>.zip for non default packages for backward compatibility
       const zipFileName = utils.getActionZipFileName(pkgName, actionName, modifiedConfig.ow.package === pkgName)
-      builtList.push(await buildAction(zipFileName, action, config.root, config.actions.dist))
-      console.log('builtList', builtList)
+      toBuildList.push(await prepareToBuildAction(zipFileName, action, config.root, config.actions.dist))
     }
   }
-  return builtList
+
+  const _buildActions = async () => {
+    let dumpData = {}
+    const builtList = []
+    let lastBuiltData = ''
+    if (fs.existsSync(lastBuiltActionsPath)) {
+      lastBuiltData = await fs.readFile(lastBuiltActionsPath, 'utf8')
+    }
+    for (const build of toBuildList) {
+      const { outPath, actionBuildData, tempBuildDir } = build || {}
+      const builtBefore = utils.actionBuiltBefore(lastBuiltData, actionBuildData)
+      if (!builtBefore || skipCheck) {
+        dumpData = { ...dumpData, ...actionBuildData }
+        await utils.zip(tempBuildDir, outPath)
+        builtList.push(outPath)
+      // fs.remove(tempBuildDir) // remove the build file, don't need to wait ...
+      // const fStats = fs.statSync(outPath)
+      // if (fStats && fStats.size > (22 * 1024 * 1024)) {
+      //   this.emit('warning', `file size exceeds 22 MB, you may not be able to deploy this action. file size is ${fStats.size} Bytes`)
+      // }
+      }
+    }
+    const parsedLastBuiltData = utils.tryParseString(lastBuiltData)
+    return { parsedLastBuiltData, builtList, dumpData }
+  }
+  const { parsedLastBuiltData, dumpData, builtActions } = await _buildActions()
+  await utils.dumpActionsBuiltInfo(lastBuiltActionsPath, dumpData, parsedLastBuiltData)
+  return builtActions || []
 }
 
 module.exports = buildActions

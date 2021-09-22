@@ -26,7 +26,8 @@ const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...package
  * @param {object} [deployConfig={}] deployment config
  * @param {boolean} [deployConfig.isLocalDev] local dev flag
  * @param {object} [deployConfig.filterEntities] add filters to deploy only specified OpenWhisk entities
- * @param {Array} [deployConfig.filterEntities.actions] filter list of actions to deploy, e.g. ['name1', ..]
+ * @param {Array} [deployConfig.filterEntities.actions] filter list of actions to deploy by provided array, e.g. ['name1', ..]
+ * @param {Array} [deployConfig.filterEntities.byBuiltActions] if true, trim actions from the manifest based on the already built actions
  * @param {Array} [deployConfig.filterEntities.sequences] filter list of sequences to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.triggers] filter list of triggers to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.rules] filter list of rules to deploy, e.g. ['name1', ..]
@@ -40,12 +41,14 @@ async function deployActions (config, deployConfig = {}, logFunc) {
 
   const isLocalDev = deployConfig.isLocalDev
   const log = logFunc || console.log
+  let filterEntities = deployConfig.filterEntities
 
   // checks
   /// a. missing credentials
   utils.checkOpenWhiskCredentials(config)
   /// b. missing build files
   const dist = config.actions.dist
+
   if (
     (!deployConfig.filterEntities || deployConfig.filterEntities.actions) &&
     (!fs.pathExistsSync(dist) || !fs.lstatSync(dist).isDirectory() || !fs.readdirSync(dist).length === 0)
@@ -53,11 +56,33 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     throw new Error(`missing files in ${utils._relApp(config.root, dist)}, maybe you forgot to build your actions ?`)
   }
 
+  /* Filter manifest actions based on the already built actions */
+  const _filterManifestActions = () => {
+    if (deployConfig.filterEntities.byBuiltActions) {
+      aioLogger.debug('Trimming out the manifest\'s actions...')
+      filterEntities = undefined
+      const manifestPackageName = modifiedConfig.ow.package
+      const distFiles = fs.readdirSync(dist)
+      const builtActions = distFiles.flatMap(fileName => {
+        const actionName = utils.getActionNameFromZipFile(fileName)
+        return actionName || []
+      })
+      const manifestActions = manifest.packages[manifestPackageName].actions
+      manifest.packages[manifestPackageName].actions = Object.keys(manifestActions).reduce((newActions, actionKey) => {
+        if (builtActions.includes(actionKey)) {
+          // eslint-disable-next-line no-param-reassign
+          newActions[actionKey] = manifestActions[actionKey]
+        }
+        return newActions
+      }, {})
+    }
+  }
+
   // 1. rewrite wskManifest config
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
-  console.log('modifiedConfig', modifiedConfig)
   const manifest = modifiedConfig.manifest.full
   const relDist = utils._relApp(config.root, config.actions.dist)
+  _filterManifestActions()
   for (const [pkgName, pkg] of Object.entries(manifest.packages)) {
     pkg.version = config.app.version
     for (const [name, action] of Object.entries(pkg.actions || {})) {
@@ -67,30 +92,6 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     }
   }
 
-  // 1.1 Filter out the Entities
-  let filterEntities = deployConfig.filterEntities
-  const _getBuiltActions = async () => {
-    const arr = []
-    const distFiles = fs.readdirSync(dist)
-
-    const validateAction = (file) => {
-      const actionName = utils.getActionNameFromZipFile(file, modifiedConfig.ow.package)
-      if (actionName) {
-        arr.push(actionName)
-      }
-    }
-
-    distFiles.forEach(validateAction)
-    return arr
-  }
-  if (!deployConfig.filterEntities) {
-    // we should deploy only the built actions
-    filterEntities = {}
-    filterEntities.actions = await _getBuiltActions()
-    filterEntities.sequences = manifest.packages.sequences
-  }
-
-  /* currently I am skipping the sequence package, I should not */
   // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
   if (filterEntities) {
     packageItems.forEach((k) => {
@@ -107,8 +108,6 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     log,
     filterEntities
   )
-
-  console.log('deployedEntities', filterEntities)
   // enrich actions array with urls
   if (Array.isArray(deployedEntities.actions)) {
     const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
@@ -155,7 +154,6 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
     if (pkgEntity === undefined || filterItems === undefined) {
       return {}
     }
-    console.log('pkgEntity', Object.keys(pkgEntity))
     // We check the full name (<packageName>/<actionName>) for actions and sequences
     return Object.keys(pkgEntity)
       .filter(entityName => fullNameCheck ? filterItems.includes(`${pkgName}/${entityName}`) : filterItems.includes(entityName))
@@ -174,7 +172,6 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
   // support for entity filters, e.g. user wants to deploy only a single action
   if (typeof filterEntities === 'object') {
     deleteOldEntities = false // don't delete any deployed entity
-
     filterableItems.forEach(filterableItemKey => {
       Object.entries(packages).forEach(([pkgName, packageEntity]) => {
         packageEntity[filterableItemKey] = _filterOutPackageEntity(pkgName, packageEntity[filterableItemKey], filterEntities[filterableItemKey], packageItems.includes(filterableItemKey)) // eslint-disable-line no-param-reassign
@@ -206,11 +203,11 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
     const APP_REGISTRY_VALIDATOR = APP_REGISTRY_VALIDATORS[env]
 
     const replaceValidator = { [DEFAULT_VALIDATOR]: APP_REGISTRY_VALIDATOR }
-    entities.actions.forEach(action => {
-      const needsReplacement = action.exec && action.exec.kind === 'sequence' && action.exec.components && action.exec.components.includes(DEFAULT_VALIDATOR)
+    entities.actions.forEach(a => {
+      const needsReplacement = a.exec && a.exec.kind === 'sequence' && a.exec.components && a.exec.components.includes(DEFAULT_VALIDATOR)
       if (needsReplacement) {
         aioLogger.debug(`replacing headless auth validator ${DEFAULT_VALIDATOR} with app registry validator ${APP_REGISTRY_VALIDATOR} for action ${a.name} and cli env = ${env}`)
-        action.exec.components = action.exec.components.map(a => replaceValidator[a] || a) // eslint-disable-line no-param-reassign
+        a.exec.components = a.exec.components.map(a => replaceValidator[a] || a) // eslint-disable-line no-param-reassign
       }
     })
   }
