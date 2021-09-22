@@ -69,8 +69,14 @@ test('javascript proxy functionality (ow object)', async () => {
 })
 
 test('set http proxy', async () => {
-  getProxyOptionsFromConfig.mockReturnValue({ proxyUrl: 'https://localhost:8081' }) // proxy settings available
-  const sdkClient = await createSdkClient()
+  let sdkClient
+
+  getProxyOptionsFromConfig.mockReturnValue({ proxyUrl: 'https://localhost:8081' }) // proxy settings available (url only)
+  sdkClient = await createSdkClient()
+  expect(Object.keys(sdkClient)).toEqual(expect.arrayContaining(['actions', 'activations', 'namespaces', 'packages', 'rules', 'triggers', 'routes']))
+
+  getProxyOptionsFromConfig.mockReturnValue({ proxyUrl: 'https://localhost:8081', username: 'user', password: 'hunter2' }) // proxy settings available (url and auth)
+  sdkClient = await createSdkClient()
   expect(Object.keys(sdkClient)).toEqual(expect.arrayContaining(['actions', 'activations', 'namespaces', 'packages', 'rules', 'triggers', 'routes']))
 })
 
