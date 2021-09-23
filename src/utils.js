@@ -1980,7 +1980,6 @@ function getActionZipFileName (pkgName, actionName, defaultPkg) {
  * Returns the action name based on the zipFile name.
  *
  * @param {string} zipFile name of the zip file
- * @param {string} pkgName name of the package, optional
  * @returns {string} name of the action
  */
 function getActionNameFromZipFile (zipFile) {
@@ -2008,8 +2007,10 @@ function activationLogBanner (logFunc, activation, activationLogs) {
 }
 
 /**
- * @param stringData
- * @returns {object} parsedData
+ * Returns the parsed object.
+ *
+ * @param {string} stringData stringData you want to be parsed
+ * @returns {object} parsedData or empty object
  */
 function tryParseString (stringData) {
   try {

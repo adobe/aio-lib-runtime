@@ -29,7 +29,6 @@ ioruntime.mockImplementation(() => {
 const deepCopy = require('lodash.clonedeep')
 
 const libEnv = require('@adobe/aio-lib-env')
-const sdk = require('../src/index')
 const { STAGE_ENV, PROD_ENV } = jest.requireActual('@adobe/aio-lib-env')
 jest.mock('@adobe/aio-lib-env')
 
