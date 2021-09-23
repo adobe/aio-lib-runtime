@@ -1731,9 +1731,9 @@ describe('getActionUrls', () => {
 
   test('some non web actions, with ui, no dev, no custom apihost, no custom hostname', () => {
     const expected = {
-      action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
-      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
-      'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
       'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
       'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
     }
@@ -1744,11 +1744,39 @@ describe('getActionUrls', () => {
     expect(result).toEqual(expected)
   })
 
+  test('return package/name if action is in separate packages', () => {
+    /* insert extra package */
+
+    const expected = {
+      'pkg1/thisAction': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg1/thisAction',
+      'pkg1/thisSequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg1/thisSequence',
+      'pkg2/thataction': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+    }
+    const newConfig = cloneDeep(config)
+    newConfig.manifest.full.packages.pkg1 = {}
+    newConfig.manifest.full.packages.pkg1 = {
+      actions: {
+        thisAction: {
+          function: 'thisAction/thisAction.js',
+          web: 'yes',
+          runtime: 'nodejs:12'
+        }
+      },
+      sequences: {
+        thisSequence: { actions: 'thisAction', web: 'yes' }
+      }
+    }
+    delete newConfig.manifest.full.packages.__APP_PACKAGE__
+    const result = utils.getActionUrls(newConfig, false, false)
+    expect(result).toEqual(expected)
+  })
+
   test('some non web actions, with ui, no dev, no custom apihost, custom hostname => use custom hostname everywhere', () => {
     const expected = {
-      action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
-      'action-sequence': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-sequence',
-      'action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip',
       'pkg2/thataction': 'https://fake_ns.custom.net/api/v1/web/pkg2/thataction',
       'pkg2/thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thatsequence'
     }
@@ -1761,9 +1789,9 @@ describe('getActionUrls', () => {
 
   test('some non web actions, with ui, no dev, custom apihost, custom hostname => use custom hostname everywhere', () => {
     const expected = {
-      action: 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action',
-      'action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
-      'action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'sample-app-1.0.0/action': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip',
       'pkg2/thataction': 'https://fake_ns.custom.net/api/v1/web/pkg2/thataction',
       'pkg2/thatsequence': 'https://ow-custom.net/api/v1/fake_ns/pkg2/thatsequence'
     }
@@ -1777,9 +1805,9 @@ describe('getActionUrls', () => {
 
   test('some non web actions, with ui, no dev, custom apihost, no custom hostname', () => {
     const expected = {
-      action: 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
-      'action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
-      'action-zip': 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip',
+      'sample-app-1.0.0/action': 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://ow-custom.net/api/v1/web/fake_ns/sample-app-1.0.0/action-zip',
       'pkg2/thataction': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thataction',
       'pkg2/thatsequence': 'https://ow-custom.net/api/v1/web/fake_ns/pkg2/thatsequence'
     }
@@ -1791,9 +1819,9 @@ describe('getActionUrls', () => {
 
   test('some non web actions, with ui, local dev, custom apihost (localhost), no custom hostname', () => {
     const expected = {
-      action: 'http://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action',
-      'action-sequence': 'http://localhost:3030/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
-      'action-zip': 'http://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action-zip',
+      'sample-app-1.0.0/action': 'http://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'http://localhost:3030/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'http://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action-zip',
       'pkg2/thataction': 'http://localhost:3030/api/v1/web/fake_ns/pkg2/thataction',
       'pkg2/thatsequence': 'http://localhost:3030/api/v1/web/fake_ns/pkg2/thatsequence'
     }
@@ -1805,9 +1833,9 @@ describe('getActionUrls', () => {
 
   test('some non web actions, with ui, remote dev, no custom apihost, no custom hostname', () => {
     const expected = {
-      action: 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action',
-      'action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action-sequence',
-      'action-zip': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-zip',
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-zip',
       'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thataction',
       'pkg2/thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thatsequence'
     }
@@ -1818,9 +1846,9 @@ describe('getActionUrls', () => {
 
   test('some non web actions, no ui, no dev, no custom apihost, no custom hostname', () => {
     const expected = {
-      action: 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action',
-      'action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action-sequence',
-      'action-zip': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-zip',
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-zip',
       'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thataction',
       'pkg2/thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thatsequence'
     }
@@ -1832,9 +1860,9 @@ describe('getActionUrls', () => {
 
   test('some non web actions, no ui, no dev, custom apihost, custom hostname => use custom hostname', () => {
     const expected = {
-      action: 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action',
-      'action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
-      'action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'sample-app-1.0.0/action': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://ow-custom.net/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action-zip',
       'pkg2/thataction': 'https://fake_ns.custom.net/api/v1/web/pkg2/thataction',
       'pkg2/thatsequence': 'https://fake_ns.custom.net/api/v1/web/pkg2/thatsequence'
     }
@@ -1848,9 +1876,9 @@ describe('getActionUrls', () => {
 
   test('some non web actions, same apihost without protocal, same hostname without protocol', () => {
     const expected = {
-      action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
-      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
-      'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
       'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
       'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
     }
@@ -1864,9 +1892,9 @@ describe('getActionUrls', () => {
 
   test('should not fail with a package that has no actions', () => {
     const expected = {
-      action: 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
-      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
-      'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
       'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
     }
     config.ow.apihost = 'adobeioruntime.net'
@@ -1879,7 +1907,7 @@ describe('getActionUrls', () => {
 
   test('should not fail if default package has no actions', () => {
     const expected = {
-      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
       'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
       'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
     }

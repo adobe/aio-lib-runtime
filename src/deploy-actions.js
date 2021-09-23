@@ -89,9 +89,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
     deployedEntities.actions = deployedEntities.actions.map(action => {
       const retAction = deepCopy(action)
-      // the key in actionUrlsFromManifest would not have pkg name for actions in default package
-      const actionKey = action.name.replace(modifiedConfig.ow.package + '/', '')
-      const url = actionUrlsFromManifest[actionKey]
+      const url = actionUrlsFromManifest[action.name]
       if (url) {
         retAction.url = url
       }

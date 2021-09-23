@@ -1889,21 +1889,15 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   const actionsAndSequences = {}
   Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
     Object.entries(pkg.actions || {}).forEach(([actionName, action]) => {
-      actionsAndSequences[getActionZipFileName(pkgName, actionName, pkgName === config.ow.package)] = action
+      actionsAndSequences[getActionZipFileName(pkgName, actionName, false)] = action
     })
     Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
-      actionsAndSequences[getActionZipFileName(pkgName, actionName, pkgName === config.ow.package)] = action
+      actionsAndSequences[getActionZipFileName(pkgName, actionName, false)] = action
     })
   })
   const urls = {}
   Object.entries(actionsAndSequences).forEach(([pkgAndActionName, action]) => {
-    let fullNameInURL = pkgAndActionName
-    if (pkgAndActionName.indexOf('/') === -1) {
-      // pkg not included in pkgAndActionName since this is from the default package
-      // But the pkg name is required to construct the URL
-      fullNameInURL = config.ow.package + '/' + pkgAndActionName
-    }
-    urls[pkgAndActionName] = getActionUrl(fullNameInURL, action)
+    urls[pkgAndActionName] = getActionUrl(pkgAndActionName, action)
   })
   return urls
 }
