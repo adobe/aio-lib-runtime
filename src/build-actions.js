@@ -216,7 +216,7 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
       lastBuiltData = await fs.readFile(lastBuiltActionsPath, 'utf8')
     }
     for (const build of toBuildList) {
-      const { outPath, actionBuildData, tempBuildDir } = build || {}
+      const { outPath, actionBuildData, tempBuildDir } = build
       const builtBefore = utils.actionBuiltBefore(lastBuiltData, actionBuildData)
       if (!builtBefore || skipCheck) {
         dumpData = { ...dumpData, ...actionBuildData }
@@ -234,7 +234,7 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
   }
   const { parsedLastBuiltData, dumpData, builtList: builtActions } = await _buildActions()
   await utils.dumpActionsBuiltInfo(lastBuiltActionsPath, dumpData, parsedLastBuiltData)
-  return builtActions || []
+  return builtActions
 }
 
 module.exports = buildActions

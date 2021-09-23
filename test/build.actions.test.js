@@ -595,6 +595,23 @@ test('should not fail if extra package does not have actions', async () => {
     path.normalize('/dist/actions/action-zip.zip'))
 })
 
+test('should skip check for action built before while action filter', async () => {
+  addSampleAppFiles()
+  const config = deepClone(global.sampleAppConfig)
+  utils.actionBuiltBefore = jest.fn(() => true)
+  await buildActions(config, ['action'], true)
+  expect(utils.zip).toHaveBeenNthCalledWith(1, expect.stringContaining(path.normalize('/dist/actions/action-temp')),
+    path.normalize('/dist/actions/action.zip'))
+})
+
+test('should not zip files', async () => {
+  addSampleAppFiles()
+  const config = deepClone(global.sampleAppConfig)
+  utils.actionBuiltBefore = jest.fn(() => true)
+  await buildActions(config, ['action'], false)
+  expect(utils.zip).not.toHaveBeenCalled()
+})
+
 test('No backend is present', async () => {
   addSampleAppFiles()
   // global.fakeFileSystem.removeKeys(['./manifest.yml'])

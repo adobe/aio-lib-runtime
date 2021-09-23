@@ -890,34 +890,51 @@ test('ims stage: if actions are deployed with the headless validator and custom 
   })
 })
 
+it('should filter the manifest', async () => {
+  addSampleAppFiles()
+  runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
+
+  const buildDir = global.sampleAppConfig.actions.dist
+  // fake a previous build
+  const fakeFiles = {}
+  fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
+  fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
+  global.fakeFileSystem.addJson(fakeFiles)
+  await deployActions(global.sampleAppConfig, {
+    filterEntities: {
+      byBuiltActions: true
+    }
+  })
+
+  const expectedDistPackagesFiltered = {
+    'sample-app-1.0.0': {
+      license: 'Apache-2.0',
+      version: '1.0.0',
+      actions: {
+        'action-zip': {
+          function: path.normalize('dist/actions/action-zip.zip'),
+          runtime: 'nodejs:12',
+          web: 'yes'
+        }
+      },
+      apis: { api1: { base: { path: { action: { method: 'get' } } } } },
+      dependencies: { dependency1: { location: 'fake.com/package' } },
+      rules: { rule1: { action: 'action', rule: true, trigger: 'trigger1' } },
+      sequences: { 'action-sequence': { actions: 'action, action-zip', web: 'yes' } },
+      triggers: { trigger1: null }
+    }
+  }
+
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
+})
+
 test('No backend is present', async () => {
   addSampleAppFiles()
   // vol.unlinkSync('./manifest.yml')
   global.sampleAppConfig.app.hasBackend = false
 
   await expect(deployActions(global.sampleAppConfig)).rejects.toThrow('cannot deploy actions, app has no backend')
-})
-
-test('', ()=> {
-  it('it should build & deploy 1 of two.', async () => {
-    const fileData = JSON.stringify({ 'action-zip': 1632317755882 })
-    fs.readFile = jest.fn(() => (fileData))
-    const deployConfig = {
-      filterEntities: {
-        byBuiltActions: true
-      }
-    }
-    expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
-      expect.stringContaining('action.zip')
-    ]))
-
-    config.root = path.resolve('./')
-    const deployedEntities = await sdk.deployActions(config, deployConfig)
-    expect(deployedEntities.actions).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: 'sample-app-1.0.0/action' }),
-      expect.objectContaining({ name: 'sample-app-1.0.0/action-sequence' })
-    ]))
-  })
 })
 
 /**

@@ -1225,15 +1225,13 @@ function processPackage (packages,
           }
           const allInputs = returnUnion(packageInputs, deploymentInputs)
           // if parameter is provided as key : 'data type' , process it to set default values before deployment
-          if (Object.entries(allInputs).length !== 0 && objAction) {
+          if (Object.entries(allInputs).length !== 0) {
             const processedInput = processInputs(allInputs, params)
             objAction.params = processedInput
           }
           ruleAction.push(actionName)
         }
-        if (objAction) {
-          actions.push(objAction)
-        }
+        actions.push(objAction)
       })
     }
 
