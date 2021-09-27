@@ -61,20 +61,21 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     if (deployConfig.filterEntities && deployConfig.filterEntities.byBuiltActions) {
       aioLogger.debug('Trimming out the manifest\'s actions...')
       filterEntities = undefined
-      const manifestPackageName = modifiedConfig.ow.package
-      const distFiles = fs.readdirSync(dist)
+      const distFiles = fs.readdirSync(path.resolve(__dirname, dist))
       const builtActions = distFiles.flatMap(fileName => {
         const actionName = utils.getActionNameFromZipFile(fileName)
         return actionName || []
       })
-      const manifestActions = manifest.packages[manifestPackageName].actions
-      manifest.packages[manifestPackageName].actions = Object.keys(manifestActions).reduce((newActions, actionKey) => {
-        if (builtActions.includes(actionKey)) {
-          // eslint-disable-next-line no-param-reassign
-          newActions[actionKey] = manifestActions[actionKey]
-        }
-        return newActions
-      }, {})
+      Object.entries(manifest.packages).forEach(([packageName, pkg]) => {
+        const manifestActions = pkg.actions
+        manifest.packages[packageName].actions = Object.keys(manifestActions).reduce((newActions, actionKey) => {
+          if (builtActions.includes(actionKey)) {
+            // eslint-disable-next-line no-param-reassign
+            newActions[actionKey] = manifestActions[actionKey]
+          }
+          return newActions
+        }, {})
+      })
     }
   }
 
