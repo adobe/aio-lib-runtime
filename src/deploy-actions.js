@@ -62,9 +62,12 @@ async function deployActions (config, deployConfig = {}, logFunc) {
       aioLogger.debug('Trimming out the manifest\'s actions...')
       filterEntities = undefined
       const distFiles = fs.readdirSync(path.resolve(__dirname, dist))
-      const builtActions = distFiles.flatMap(fileName => {
+      const builtActions = []
+      distFiles.forEach(fileName => {
         const actionName = utils.getActionNameFromZipFile(fileName)
-        return actionName || []
+        if (actionName) {
+          builtActions.push(actionName)
+        }
       })
       Object.entries(manifest.packages).forEach(([packageName, pkg]) => {
         const manifestActions = pkg.actions
