@@ -14,10 +14,7 @@ const path = require('path')
 const deepClone = require('lodash.clonedeep')
 const fs = jest.requireActual('fs-extra')
 const { createHttpsProxy } = require('@adobe/aio-lib-test-proxy')
-const aioConfig = require('@adobe/aio-lib-core-config')
-const realAioConfig = jest.requireActual('@adobe/aio-lib-core-config')
 
-jest.mock('@adobe/aio-lib-core-config')
 jest.unmock('openwhisk')
 jest.unmock('archiver')
 jest.setTimeout(30000)
@@ -32,23 +29,11 @@ const apiKey = process.env['RuntimeAPI_API_KEY']
 const apihost = process.env['RuntimeAPI_APIHOST'] || 'https://adobeioruntime.net'
 const namespace = process.env['RuntimeAPI_NAMESPACE']
 const E2E_USE_PROXY = process.env.E2E_USE_PROXY
-
-// we have to mock config.get because setting process.env.AIO_PROXY_URL
-// does not seem to work in this test harness (not all modules get the change)
-const createMockConfigGet = proxyServer => {
-  return key => {
-    if (key === 'proxy.url') {
-      return proxyServer.url
-    } else {
-      return realAioConfig.get(key)
-    }
-  }
-}
+const HTTPS_PROXY = process.env.HTTPS_PROXY
 
 beforeAll(async () => {
   if (E2E_USE_PROXY) {
     proxyServer = await createHttpsProxy()
-    aioConfig.get.mockImplementation(createMockConfigGet(proxyServer))
     console.log(`Using test proxy at ${proxyServer.url}`)
   }
 
@@ -69,6 +54,16 @@ beforeEach(() => {
   config.actions.src = path.resolve(config.root + '/' + config.actions.src)
   config.actions.dist = path.resolve(config.root + '/' + config.actions.dist)
   config.manifest.src = path.resolve(config.root + '/' + 'manifest.yml')
+})
+
+// eslint-disable-next-line jest/expect-expect
+test('HTTPS_PROXY must be set if E2E_USE_PROXY is set', () => {
+  // jest wraps process.env, so libraries will not pick up an env change via code change, so it has to be set on the shell level
+  if (E2E_USE_PROXY) {
+    if (!HTTPS_PROXY) {
+      throw new Error(`If you set E2E_USE_PROXY, you must set the HTTPS_PROXY environment variable. Please set it to HTTPS_PROXY=${proxyServer.url}.`)
+    }
+  }
 })
 
 describe('build-actions', () => {

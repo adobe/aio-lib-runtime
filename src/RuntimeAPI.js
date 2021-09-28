@@ -12,8 +12,7 @@ governing permissions and limitations under the License.
 const ow = require('openwhisk')
 const { codes } = require('./SDKErrors')
 const Triggers = require('./triggers')
-const { getProxyOptionsFromConfig } = require('@adobe/aio-lib-core-networking')
-const url = require('url')
+const { getProxyForUrl } = require('proxy-from-env')
 const deepCopy = require('lodash.clonedeep')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:RuntimeAPI', { provider: 'debug', level: process.env.LOG_LEVEL })
 
@@ -68,18 +67,10 @@ class RuntimeAPI {
       throw new codes.ERROR_SDK_INITIALIZATION({ sdkDetails, messageValues: `${initErrors.join(', ')}` })
     }
 
-    const proxyOptions = getProxyOptionsFromConfig()
-    if (proxyOptions) {
-      aioLogger.debug(`proxy settings found: ${JSON.stringify(proxyOptions, null, 2)}`)
-      const { proxyUrl, username, password } = proxyOptions
-      const newUrl = new url.URL(proxyUrl)
-
-      if (username && password) {
-        newUrl.username = username
-        newUrl.password = password
-      }
-      aioLogger.debug(`using proxy url: ${newUrl.toString()}`)
-      clonedOptions.proxy = newUrl.toString()
+    const proxyUrl = getProxyForUrl(clonedOptions.apihost)
+    if (proxyUrl) {
+      aioLogger.debug(`using proxy url: ${proxyUrl}`)
+      clonedOptions.proxy = proxyUrl
     } else {
       aioLogger.debug('proxy settings not found')
     }

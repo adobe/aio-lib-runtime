@@ -13,9 +13,9 @@ const sdk = require('../src')
 const { codes } = require('../src/SDKErrors')
 const Triggers = require('../src/triggers')
 const ow = require('openwhisk')()
-const { getProxyOptionsFromConfig } = require('@adobe/aio-lib-core-networking')
+const { getProxyForUrl } = require('proxy-from-env')
 
-jest.mock('@adobe/aio-lib-core-networking')
+jest.mock('proxy-from-env')
 
 // /////////////////////////////////////////////
 
@@ -38,7 +38,7 @@ const createSdkClient = async () => {
 // /////////////////////////////////////////////
 
 beforeEach(() => {
-  getProxyOptionsFromConfig.mockReset()
+  getProxyForUrl.mockReset()
 })
 
 test('sdk init test', async () => {
@@ -71,11 +71,11 @@ test('javascript proxy functionality (ow object)', async () => {
 test('set http proxy', async () => {
   let sdkClient
 
-  getProxyOptionsFromConfig.mockReturnValue({ proxyUrl: 'https://localhost:8081' }) // proxy settings available (url only)
+  getProxyForUrl.mockReturnValue('https://localhost:8081') // proxy settings available (url only)
   sdkClient = await createSdkClient()
   expect(Object.keys(sdkClient)).toEqual(expect.arrayContaining(['actions', 'activations', 'namespaces', 'packages', 'rules', 'triggers', 'routes']))
 
-  getProxyOptionsFromConfig.mockReturnValue({ proxyUrl: 'https://localhost:8081', username: 'user', password: 'hunter2' }) // proxy settings available (url and auth)
+  getProxyForUrl.mockReturnValue('https://user:hunter2@localhost:8081') // proxy settings available (url and auth)
   sdkClient = await createSdkClient()
   expect(Object.keys(sdkClient)).toEqual(expect.arrayContaining(['actions', 'activations', 'namespaces', 'packages', 'rules', 'triggers', 'routes']))
 })
