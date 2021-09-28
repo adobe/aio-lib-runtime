@@ -24,7 +24,7 @@ class LogForwarding {
   /**
    * Get current Log Forwarding settings
    *
-   * @returns {Promise<*>}
+   * @returns {Promise<*>} response from get API
    */
   async get () {
     try {
@@ -38,7 +38,7 @@ class LogForwarding {
   /**
    * Set Log Forwarding to Adobe I/O Runtime (default behavior)
    *
-   * @returns {Promise<*|undefined>}
+   * @returns {Promise<*|undefined>} response from set API
    */
   async setAdobeIoRuntime () {
     return await this.set({
@@ -49,10 +49,10 @@ class LogForwarding {
   /**
    * Set Log Forwarding to Azure Log Analytics
    *
-   * @param {string} customerId
-   * @param {string} sharedKey
-   * @param {string} logType
-   * @returns {Promise<*|undefined>}
+   * @param {string} customerId customer ID
+   * @param {string} sharedKey shared key
+   * @param {string} logType log type
+   * @returns {Promise<*|undefined>}  response from set API
    */
   async setAzureLogAnalytics (customerId, sharedKey, logType) {
     return await this.set({
@@ -67,11 +67,11 @@ class LogForwarding {
   /**
    * Set Log Forwarding to Splunk HEC
    *
-   * @param {string} host
-   * @param {string} port
-   * @param {string} index
-   * @param {string} hecToken
-   * @returns {Promise<*|undefined>}
+   * @param {string} host host
+   * @param {string} port port
+   * @param {string} index index
+   * @param {string} hecToken hec token
+   * @returns {Promise<*|undefined>} response from set API
    */
   async setSplunkHec (host, port, index, hecToken) {
     return await this.set({
