@@ -73,7 +73,7 @@ test.each(dataFixtures)('set %s failed', async (destination, fnName, input) => {
     .toThrow(`Could not update log forwarding settings for namespace 'some_namespace': mocked error for ${destination}`)
 })
 
-function assertRequest (expectedMethod, expectedData) {
+const assertRequest = (expectedMethod, expectedData) => {
   expect(fetch).toBeCalledWith(apiUrl, {
     method: expectedMethod,
     body: JSON.stringify(expectedData),
