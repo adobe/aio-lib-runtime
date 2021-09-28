@@ -15,6 +15,7 @@ const Triggers = require('./triggers')
 const { getProxyForUrl } = require('proxy-from-env')
 const deepCopy = require('lodash.clonedeep')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:RuntimeAPI', { provider: 'debug', level: process.env.LOG_LEVEL })
+const LogForwarding = require('./LogForwarding')
 
 /**
  * @typedef {object} OpenwhiskOptions
@@ -36,6 +37,7 @@ const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime
  * @property {ow.Rules} rules rules
  * @property {ow.Triggers} triggers triggers
  * @property {ow.Routes} routes routes
+ * @property {LogForwarding} logForwarding Log Forwarding API
  */
 
 /**
@@ -92,7 +94,8 @@ class RuntimeAPI {
             : target[property]
         }
       }),
-      routes: this.ow.routes
+      routes: this.ow.routes,
+      logForwarding: new LogForwarding(options.namespace, options.apihost, options.api_key)
     }
   }
 }
