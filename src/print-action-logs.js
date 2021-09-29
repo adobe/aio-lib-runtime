@@ -30,6 +30,7 @@ const sleep = util.promisify(setTimeout)
  * @param {boolean} tail if true, logs are fetched continuously
  * @param {number} fetchLogsInterval number of seconds to wait before fetching logs again when tail is set to true
  * @param {number} startTime time in milliseconds. Only logs after this time will be fetched
+ * @returns {object} activation timestamp of the last retrieved activation or null
  */
 async function printActionLogs (config, logger, limit, filterActions, strip, tail = false, fetchLogsInterval = 10000, startTime) {
   // check for runtime credentials
