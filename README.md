@@ -60,6 +60,9 @@ async function sdkTest() {
 ## Classes
 
 <dl>
+<dt><a href="#LogForwarding">LogForwarding</a></dt>
+<dd><p>Log Forwarding management API</p>
+</dd>
 <dt><a href="#RuntimeAPI">RuntimeAPI</a></dt>
 <dd><p>This class provides methods to call your RuntimeAPI APIs.
 Before calling any method initialize the instance by calling the <code>init</code> method on it
@@ -337,6 +340,58 @@ TODO</p>
 <dt><a href="#DeploymentFileComponents">DeploymentFileComponents</a> : <code>object</code></dt>
 <dd></dd>
 </dl>
+
+<a name="LogForwarding"></a>
+
+## LogForwarding
+Log Forwarding management API
+
+**Kind**: global class  
+
+* [LogForwarding](#LogForwarding)
+    * [.get()](#LogForwarding+get) ⇒ <code>Promise.&lt;\*&gt;</code>
+    * [.setAdobeIoRuntime()](#LogForwarding+setAdobeIoRuntime) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>
+    * [.setAzureLogAnalytics(customerId, sharedKey, logType)](#LogForwarding+setAzureLogAnalytics) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>
+    * [.setSplunkHec(host, port, index, hecToken)](#LogForwarding+setSplunkHec) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>
+
+<a name="LogForwarding+get"></a>
+
+### logForwarding.get() ⇒ <code>Promise.&lt;\*&gt;</code>
+Get current Log Forwarding settings
+
+**Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
+<a name="LogForwarding+setAdobeIoRuntime"></a>
+
+### logForwarding.setAdobeIoRuntime() ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>
+Set Log Forwarding to Adobe I/O Runtime (default behavior)
+
+**Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
+<a name="LogForwarding+setAzureLogAnalytics"></a>
+
+### logForwarding.setAzureLogAnalytics(customerId, sharedKey, logType) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>
+Set Log Forwarding to Azure Log Analytics
+
+**Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
+
+| Param | Type |
+| --- | --- |
+| customerId | <code>string</code> | 
+| sharedKey | <code>string</code> | 
+| logType | <code>string</code> | 
+
+<a name="LogForwarding+setSplunkHec"></a>
+
+### logForwarding.setSplunkHec(host, port, index, hecToken) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>
+Set Log Forwarding to Splunk HEC
+
+**Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
+
+| Param | Type |
+| --- | --- |
+| host | <code>string</code> | 
+| port | <code>string</code> | 
+| index | <code>string</code> | 
+| hecToken | <code>string</code> | 
 
 <a name="RuntimeAPI"></a>
 
@@ -1291,6 +1346,7 @@ Will dump the previously actions built data information.
 | rules | <code>ow.Rules</code> | rules |
 | triggers | <code>ow.Triggers</code> | triggers |
 | routes | <code>ow.Routes</code> | routes |
+| logForwarding | [<code>LogForwarding</code>](#LogForwarding) | Log Forwarding management API |
 
 <a name="OpenwhiskOptions"></a>
 
@@ -1323,6 +1379,7 @@ Will dump the previously actions built data information.
 | rules | <code>ow.Rules</code> | rules |
 | triggers | <code>ow.Triggers</code> | triggers |
 | routes | <code>ow.Routes</code> | routes |
+| logForwarding | [<code>LogForwarding</code>](#LogForwarding) | Log Forwarding API |
 
 <a name="ManifestPackages"></a>
 

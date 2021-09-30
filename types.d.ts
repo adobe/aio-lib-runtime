@@ -1,4 +1,26 @@
 /**
+ * Log Forwarding management API
+ */
+declare class LogForwarding {
+    /**
+     * Get current Log Forwarding settings
+     */
+    get(): Promise<any>;
+    /**
+     * Set Log Forwarding to Adobe I/O Runtime (default behavior)
+     */
+    setAdobeIoRuntime(): Promise<any | undefined>;
+    /**
+     * Set Log Forwarding to Azure Log Analytics
+     */
+    setAzureLogAnalytics(customerId: string, sharedKey: string, logType: string): Promise<any | undefined>;
+    /**
+     * Set Log Forwarding to Splunk HEC
+     */
+    setSplunkHec(host: string, port: string, index: string, hecToken: string): Promise<any | undefined>;
+}
+
+/**
  * @property apihost - Hostname and optional port for openwhisk platform
  * @property api_key - Authorisation key
  * @property [api] - Full API URL
@@ -25,6 +47,7 @@ declare type OpenwhiskOptions = {
  * @property rules - rules
  * @property triggers - triggers
  * @property routes - routes
+ * @property logForwarding - Log Forwarding API
  */
 declare type OpenwhiskClient = {
     actions: ow.Actions;
@@ -34,6 +57,7 @@ declare type OpenwhiskClient = {
     rules: ow.Rules;
     triggers: ow.Triggers;
     routes: ow.Routes;
+    logForwarding: LogForwarding;
 };
 
 /**
@@ -114,6 +138,7 @@ declare type OpenwhiskOptions = {
  * @property rules - rules
  * @property triggers - triggers
  * @property routes - routes
+ * @property logForwarding - Log Forwarding API
  */
 declare type OpenwhiskClient = {
     actions: ow.Actions;
@@ -123,6 +148,7 @@ declare type OpenwhiskClient = {
     rules: ow.Rules;
     triggers: ow.Triggers;
     routes: ow.Routes;
+    logForwarding: LogForwarding;
 };
 
 /**

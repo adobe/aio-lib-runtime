@@ -16,8 +16,8 @@ const deployActions = require('./deploy-actions')
 const undeployActions = require('./undeploy-actions')
 const printActionLogs = require('./print-action-logs')
 const RuntimeAPI = require('./RuntimeAPI')
-const ow = require('openwhisk')
 
+/* global ow, LogForwarding */
 /**
  * @typedef {object} OpenwhiskOptions
  * @property {string} apihost Hostname and optional port for openwhisk platform
@@ -38,6 +38,7 @@ const ow = require('openwhisk')
  * @property {ow.Rules} rules rules
  * @property {ow.Triggers} triggers triggers
  * @property {ow.Routes} routes routes
+ * @property {LogForwarding} logForwarding Log Forwarding management API
  */
 
 /**
