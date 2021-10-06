@@ -1,7 +1,8 @@
-const fetch = require('cross-fetch')
 const LogForwarding = require('../src/LogForwarding')
+const { createFetch } = require('@adobe/aio-lib-core-networking')
+const mockFetch = jest.fn()
 
-jest.mock('cross-fetch')
+jest.mock('@adobe/aio-lib-core-networking')
 
 const apiUrl = 'host/runtime/namespaces/some_namespace/logForwarding'
 
@@ -24,19 +25,20 @@ let logForwarding
 
 beforeEach(async () => {
   logForwarding = new LogForwarding('some_namespace', 'host', 'key')
-  fetch.mockReset()
+  createFetch.mockReturnValue(mockFetch)
+  mockFetch.mockReset()
 })
 
 test('get', async () => {
   return new Promise(resolve => {
-    fetch.mockReturnValue(new Promise(resolve => {
+    mockFetch.mockReturnValue(new Promise(resolve => {
       resolve({
         json: jest.fn().mockResolvedValue('result')
       })
     }))
     return logForwarding.get()
       .then((res) => {
-        expect(fetch).toBeCalledTimes(1)
+        expect(mockFetch).toBeCalledTimes(1)
         expect(res).toBe('result')
         assertRequest('get')
         resolve()
@@ -45,20 +47,20 @@ test('get', async () => {
 })
 
 test('get failed', async () => {
-  fetch.mockRejectedValue(new Error('mocked error'))
+  mockFetch.mockRejectedValue(new Error('mocked error'))
   await expect(logForwarding.get()).rejects.toThrow("Could not get log forwarding settings for namespace 'some_namespace': mocked error")
 })
 
 test.each(dataFixtures)('set %s', async (destination, fnName, input) => {
   return new Promise(resolve => {
-    fetch.mockReturnValue(new Promise(resolve => {
+    mockFetch.mockReturnValue(new Promise(resolve => {
       resolve({
         text: jest.fn().mockResolvedValue(`result for ${destination}`)
       })
     }))
     return logForwarding[fnName](...Object.values(input))
       .then((res) => {
-        expect(fetch).toBeCalledTimes(1)
+        expect(mockFetch).toBeCalledTimes(1)
         expect(res).toBe(`result for ${destination}`)
         assertRequest('put', { [destination]: input })
         resolve()
@@ -67,14 +69,14 @@ test.each(dataFixtures)('set %s', async (destination, fnName, input) => {
 })
 
 test.each(dataFixtures)('set %s failed', async (destination, fnName, input) => {
-  fetch.mockRejectedValue(new Error(`mocked error for ${destination}`))
+  mockFetch.mockRejectedValue(new Error(`mocked error for ${destination}`))
   await expect(logForwarding[fnName]())
     .rejects
     .toThrow(`Could not update log forwarding settings for namespace 'some_namespace': mocked error for ${destination}`)
 })
 
 const assertRequest = (expectedMethod, expectedData) => {
-  expect(fetch).toBeCalledWith(apiUrl, {
+  expect(mockFetch).toBeCalledWith(apiUrl, {
     method: expectedMethod,
     body: JSON.stringify(expectedData),
     headers: {

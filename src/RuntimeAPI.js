@@ -12,6 +12,9 @@ governing permissions and limitations under the License.
 const ow = require('openwhisk')
 const { codes } = require('./SDKErrors')
 const Triggers = require('./triggers')
+const { getProxyForUrl } = require('proxy-from-env')
+const deepCopy = require('lodash.clonedeep')
+const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:RuntimeAPI', { provider: 'debug', level: process.env.LOG_LEVEL })
 const LogForwarding = require('./LogForwarding')
 
 /**
@@ -50,20 +53,31 @@ class RuntimeAPI {
    * @returns {Promise<OpenwhiskClient>} a RuntimeAPI object
    */
   async init (options) {
+    aioLogger.debug(`init options: ${JSON.stringify(options, null, 2)}`)
+    const clonedOptions = deepCopy(options)
+
     const initErrors = []
-    if (!options || !options.api_key) {
+    if (!clonedOptions || !clonedOptions.api_key) {
       initErrors.push('api_key')
     }
-    if (!options || !options.apihost) {
+    if (!clonedOptions || !clonedOptions.apihost) {
       initErrors.push('apihost')
     }
 
     if (initErrors.length) {
-      const sdkDetails = { options }
+      const sdkDetails = { clonedOptions }
       throw new codes.ERROR_SDK_INITIALIZATION({ sdkDetails, messageValues: `${initErrors.join(', ')}` })
     }
 
-    this.ow = ow(options)
+    const proxyUrl = getProxyForUrl(clonedOptions.apihost)
+    if (proxyUrl) {
+      aioLogger.debug(`using proxy url: ${proxyUrl}`)
+      clonedOptions.proxy = proxyUrl
+    } else {
+      aioLogger.debug('proxy settings not found')
+    }
+
+    this.ow = ow(clonedOptions)
     const self = this
 
     return {

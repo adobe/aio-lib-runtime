@@ -1,7 +1,9 @@
-const fetch = require('cross-fetch')
 const LogForwarding = require('../src/LogForwarding')
 
-jest.mock('cross-fetch')
+const { createFetch } = require('@adobe/aio-lib-core-networking')
+const mockFetch = jest.fn()
+
+jest.mock('@adobe/aio-lib-core-networking')
 
 const dataFixtures = [
   ['adobe_io_runtime', 'setAdobeIoRuntime', {}],
@@ -22,7 +24,8 @@ let logForwarding
 
 beforeEach(async () => {
   logForwarding = new LogForwarding('_', 'host', 'key')
-  fetch.mockReset()
+  createFetch.mockReturnValue(mockFetch)
+  mockFetch.mockReset()
 })
 
 test('get for namespace "_" is not supported', async () => {
