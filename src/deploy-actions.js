@@ -48,7 +48,6 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   utils.checkOpenWhiskCredentials(config)
   /// b. missing build files
   const dist = config.actions.dist
-
   if (
     (!deployConfig.filterEntities || deployConfig.filterEntities.actions) &&
     (!fs.pathExistsSync(dist) || !fs.lstatSync(dist).isDirectory() || !fs.readdirSync(dist).length === 0)
