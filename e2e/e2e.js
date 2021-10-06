@@ -14,6 +14,8 @@ const path = require('path')
 const deepClone = require('lodash.clonedeep')
 const { utils } = require('../src')
 const fs = jest.requireActual('fs-extra')
+const { createHttpsProxy } = require('@adobe/aio-lib-test-proxy')
+
 jest.unmock('openwhisk')
 jest.unmock('archiver')
 jest.setTimeout(30000)
@@ -21,15 +23,28 @@ jest.setTimeout(30000)
 // load .env values in the e2e folder, if any
 require('dotenv').config({ path: path.join(__dirname, '.env') })
 
+let proxyServer
 let sdkClient = {}
 let config = {}
 const apiKey = process.env['RuntimeAPI_API_KEY']
 const apihost = process.env['RuntimeAPI_APIHOST'] || 'https://adobeioruntime.net'
 const namespace = process.env['RuntimeAPI_NAMESPACE']
-// console.log(apiKey)
+const E2E_USE_PROXY = process.env.E2E_USE_PROXY
+const HTTPS_PROXY = process.env.HTTPS_PROXY
 
 beforeAll(async () => {
+  if (E2E_USE_PROXY) {
+    proxyServer = await createHttpsProxy()
+    console.log(`Using test proxy at ${proxyServer.url}`)
+  }
+
   sdkClient = await sdk.init({ api_key: apiKey, apihost })
+})
+
+afterAll(() => {
+  if (proxyServer) {
+    proxyServer.stop()
+  }
 })
 
 beforeEach(() => {
@@ -40,6 +55,16 @@ beforeEach(() => {
   config.actions.src = path.resolve(config.root + '/' + config.actions.src)
   config.actions.dist = path.resolve(config.root + '/' + config.actions.dist)
   config.manifest.src = path.resolve(config.root + '/' + 'manifest.yml')
+})
+
+// eslint-disable-next-line jest/expect-expect
+test('HTTPS_PROXY must be set if E2E_USE_PROXY is set', () => {
+  // jest wraps process.env, so libraries will not pick up an env change via code change, so it has to be set on the shell level
+  if (E2E_USE_PROXY) {
+    if (!HTTPS_PROXY) {
+      throw new Error(`If you set E2E_USE_PROXY, you must set the HTTPS_PROXY environment variable. Please set it to HTTPS_PROXY=${proxyServer.url}.`)
+    }
+  }
 })
 
 describe('build-actions', () => {

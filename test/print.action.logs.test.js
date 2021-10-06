@@ -8,11 +8,11 @@ const mockPrintFilteredActionLogs = jest.fn(async (runtime, logger, limit, filte
 })
 runtimeLibUtils.printFilteredActionLogs = mockPrintFilteredActionLogs
 const printActionLogs = require('../src/print-action-logs')
+const util = require('util')
 
-jest.mock('util', () => ({
-  promisify: jest.fn(),
-  inherits: jest.fn()
-}))
+jest.mock('util')
+util.promisify = jest.fn()
+util.inherits = jest.fn()
 
 jest.mock('../src/RuntimeAPI')
 const ioruntime = require('../src/RuntimeAPI')

@@ -217,13 +217,6 @@ describe('build by bundling js action file with webpack', () => {
       'manifest.yml': global.fixtureFile('/sample-app/manifest.yml'),
       'package.json': global.fixtureFile('/sample-app/package.json')
     })
-    // mockAIOConfig.get.mockReturnValue(global.fakeConfig.tvm)
-    // scripts = await AppScripts()
-    // remove folder zip action , focus on bundled js use case
-    // todo use fixtures instead
-    /* vol.unlinkSync('/actions/action-zip/index.js')
-    vol.unlinkSync('/actions/action-zip/package.json')
-    vol.rmdirSync('/actions/action-zip') */
     config = deepClone(global.sampleAppConfig)
     // delete config.manifest.package.actions['action-zip']
     delete config.manifest.full.packages.__APP_PACKAGE__.actions['action-zip']
@@ -238,12 +231,6 @@ describe('build by bundling js action file with webpack', () => {
     global.fakeFileSystem.removeKeys(['/actions/action.js'])
     await expect(buildActions(config)).rejects.toEqual(expect.objectContaining({ message: expect.stringContaining('ENOENT') }))
   })
-
-  /* test('should fail if action js file is a symlink', async () => {
-    vol.unlinkSync('/actions/action.js')
-    vol.symlinkSync('somefile', '/actions/action.js')
-    await expect(buildActions(config)).rejects.toThrow('actions/action.js is not a valid file or directory')
-  }) */
 
   test('should fail for invalid file or directory', async () => {
     utils.actionBuiltBefore = jest.fn(() => false)

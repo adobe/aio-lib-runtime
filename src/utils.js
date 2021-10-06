@@ -13,10 +13,10 @@ governing permissions and limitations under the License.
 const fs = require('fs-extra')
 const sha1 = require('sha1')
 const cloneDeep = require('lodash.clonedeep')
-const logger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:index', { level: process.env.LOG_LEVEL })
-const debugLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:utils', { provider: 'debug' })
+const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:utils', { provider: 'debug', level: process.env.LOG_LEVEL })
 const yaml = require('js-yaml')
-const fetch = require('cross-fetch')
+const { createFetch } = require('@adobe/aio-lib-core-networking')
+const fetch = createFetch()
 const globby = require('globby')
 const path = require('path')
 const archiver = require('archiver')
@@ -417,7 +417,7 @@ function getActionEntryFile (pkgJsonPath) {
       return pkgJsonContent.main
     }
   } catch (err) {
-    debugLogger.debug(`File not found or does not define 'main' : ${pkgJsonPath}`)
+    aioLogger.debug(`File not found or does not define 'main' : ${pkgJsonPath}`)
   }
   return 'index.js'
 }
@@ -431,7 +431,7 @@ function getActionEntryFile (pkgJsonPath) {
  * @returns {Promise} returns with a blank promise when done
  */
 function zip (filePath, out, pathInZip = false) {
-  debugLogger.debug(`Creating zip of file/folder ${filePath}`)
+  aioLogger.debug(`Creating zip of file/folder ${filePath}`)
   const stream = fs.createWriteStream(out)
   const archive = archiver('zip', { zlib: { level: 9 } })
 
@@ -496,7 +496,7 @@ function safeParse (val) {
       try {
         resultVal = JSON.parse(val)
       } catch (ex) {
-        debugLogger.debug(`JSON parse threw exception for value ${val}`)
+        aioLogger.debug(`JSON parse threw exception for value ${val}`)
       }
     }
   }
@@ -1060,7 +1060,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
 
         // check if the annotation is defined AND the action is a web action
         if ((isWeb || isWebExport) && thisAction.annotations && thisAction.annotations[ADOBE_AUTH_ANNOTATION]) {
-          debugLogger.debug(`found annotation '${ADOBE_AUTH_ANNOTATION}' in action '${key}/${actionName}', cli env = ${env}`)
+          aioLogger.debug(`found annotation '${ADOBE_AUTH_ANNOTATION}' in action '${key}/${actionName}', cli env = ${env}`)
 
           // 1. rename the action
           const renamedAction = REWRITE_ACTION_PREFIX + actionName
@@ -1091,7 +1091,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
           }
           delete newPackages[key].actions[renamedAction].annotations[ADOBE_AUTH_ANNOTATION]
 
-          debugLogger.debug(`renamed action '${key}/${actionName}' to '${key}/${renamedAction}'`)
+          aioLogger.debug(`renamed action '${key}/${actionName}' to '${key}/${renamedAction}'`)
 
           // 3. create the sequence
           if (newPackages[key].sequences === undefined) {
@@ -1108,7 +1108,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
             web: (isRaw && 'raw') || 'yes'
           }
 
-          debugLogger.debug(`defined new sequence '${key}/${actionName}': '${ADOBE_AUTH_ACTION},${key}/${renamedAction}'`)
+          aioLogger.debug(`defined new sequence '${key}/${actionName}': '${ADOBE_AUTH_ACTION},${key}/${renamedAction}'`)
         }
       })
     }
@@ -1330,7 +1330,7 @@ function setPaths (flags = {}) {
   } else {
     manifestPath = flags.manifest
   }
-  logger.debug(`Using manifest file: ${manifestPath}`)
+  aioLogger.debug(`Using manifest file: ${manifestPath}`)
 
   let deploymentPath
   let deploymentPackages = {}
@@ -1428,7 +1428,7 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
     if (!res.ok) {
       throw new Error(`failed setting ims_org_id=${imsOrgId} into state lib, received status=${res.status}, please make sure your runtime credentials are correct`)
     }
-    logger.debug(`set IMS org id into cloud state, response: ${JSON.stringify(await res.json())}`)
+    aioLogger.debug(`set IMS org id into cloud state, response: ${JSON.stringify(await res.json())}`)
   }
 }
 

@@ -9,7 +9,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const fetch = require('cross-fetch')
+const { createFetch } = require('@adobe/aio-lib-core-networking')
 
 /**
  * Log Forwarding management API
@@ -97,6 +97,8 @@ class LogForwarding {
     if (this.namespace === '_') {
       throw new Error("Namespace '_' is not supported by log forwarding management API")
     }
+
+    const fetch = createFetch()
     return fetch(
       this.apiHost + '/runtime/namespaces/' + this.namespace + '/logForwarding',
       {

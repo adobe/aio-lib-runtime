@@ -24,7 +24,7 @@ process.env.CI = true
 
 jest.setTimeout(30000)
 
-jest.setMock('cross-fetch', fetch)
+jest.setMock('node-fetch', fetch)
 
 // trap console log
 beforeEach(() => { stdout.start() })
