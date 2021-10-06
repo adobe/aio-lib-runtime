@@ -13,6 +13,10 @@ const sdk = require('../src')
 const { codes } = require('../src/SDKErrors')
 const Triggers = require('../src/triggers')
 const ow = require('openwhisk')()
+const { getProxyForUrl } = require('proxy-from-env')
+
+jest.mock('proxy-from-env')
+
 // /////////////////////////////////////////////
 
 const gApiHost = 'test-host'
@@ -34,6 +38,7 @@ const createSdkClient = async () => {
 // /////////////////////////////////////////////
 
 beforeEach(() => {
+  getProxyForUrl.mockReset()
 })
 
 test('sdk init test', async () => {
@@ -53,7 +58,7 @@ test('sdk init test - no api_key', async () => {
   )
 })
 
-test('proxy functionality', async () => {
+test('javascript proxy functionality (ow object)', async () => {
   const runtimeLib = await sdk.init(createOptions())
   // Call a function that is not proxied
   ow.mockResolved('triggers.list', '')
@@ -61,6 +66,18 @@ test('proxy functionality', async () => {
 
   // Proxied function
   expect(runtimeLib.triggers.create).toBe(Triggers.prototype.create)
+})
+
+test('set http proxy', async () => {
+  let sdkClient
+
+  getProxyForUrl.mockReturnValue('https://localhost:8081') // proxy settings available (url only)
+  sdkClient = await createSdkClient()
+  expect(Object.keys(sdkClient)).toEqual(expect.arrayContaining(['actions', 'activations', 'namespaces', 'packages', 'rules', 'triggers', 'routes']))
+
+  getProxyForUrl.mockReturnValue('https://user:hunter2@localhost:8081') // proxy settings available (url and auth)
+  sdkClient = await createSdkClient()
+  expect(Object.keys(sdkClient)).toEqual(expect.arrayContaining(['actions', 'activations', 'namespaces', 'packages', 'rules', 'triggers', 'routes']))
 })
 
 test('triggers.create', async () => {
