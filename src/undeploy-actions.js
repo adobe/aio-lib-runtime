@@ -48,6 +48,7 @@ async function undeployActions (config, logFunc) {
  * @param {object} manifestContent manifest
  * @param {object} owOptions openwhisk options
  * @param {object} logger custom logger function
+ * @returns {Promise<void>} void
  */
 async function undeployWsk (packageName, manifestContent, owOptions, logger) {
   const ow = await new IORuntime().init(owOptions)
