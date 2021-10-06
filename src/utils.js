@@ -2044,7 +2044,7 @@ function actionBuiltBefore (lastBuildsData, actionBuildData) {
  */
 async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prevBuildData) {
   if (!fs.existsSync(lastBuiltActionsPath)) {
-    logger.debug('Deployments log file not found, creating a new one...')
+    aioLogger.debug('Deployments log file not found, creating a new one...')
     await fs.createFile(lastBuiltActionsPath)
   }
   try {
@@ -2053,7 +2053,7 @@ async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prev
       await fs.writeFile(lastBuiltActionsPath, textData)
     }
   } catch (e) {
-    logger.error('Something went wrong ' + e)
+    aioLogger.error('Something went wrong ' + e)
     throw e
   }
 }
