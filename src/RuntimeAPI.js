@@ -77,6 +77,11 @@ class RuntimeAPI {
       aioLogger.debug('proxy settings not found')
     }
 
+    // set retry by default, 2 retres with a first timeout of 200ms (will be ~400ms on the second one)
+    if (clonedOptions.retry === undefined) {
+      clonedOptions.retry = { retries: 2, minTimeout: 200 }
+    }
+
     this.ow = ow(clonedOptions)
     const self = this
 
@@ -95,7 +100,8 @@ class RuntimeAPI {
         }
       }),
       routes: this.ow.routes,
-      logForwarding: new LogForwarding(options.namespace, options.apihost, options.api_key)
+      logForwarding: new LogForwarding(options.namespace, options.apihost, options.api_key),
+      initOptions: clonedOptions
     }
   }
 }
