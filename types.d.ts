@@ -4,18 +4,29 @@
 declare class LogForwarding {
     /**
      * Get current Log Forwarding settings
+     * @returns response from get API
      */
     get(): Promise<any>;
     /**
      * Set Log Forwarding to Adobe I/O Runtime (default behavior)
+     * @returns response from set API
      */
     setAdobeIoRuntime(): Promise<any | undefined>;
     /**
      * Set Log Forwarding to Azure Log Analytics
+     * @param customerId - customer ID
+     * @param sharedKey - shared key
+     * @param logType - log type
+     * @returns response from set API
      */
     setAzureLogAnalytics(customerId: string, sharedKey: string, logType: string): Promise<any | undefined>;
     /**
      * Set Log Forwarding to Splunk HEC
+     * @param host - host
+     * @param port - port
+     * @param index - index
+     * @param hecToken - hec token
+     * @returns response from set API
      */
     setSplunkHec(host: string, port: string, index: string, hecToken: string): Promise<any | undefined>;
 }
@@ -94,7 +105,7 @@ declare function deployActions(config: any, deployConfig?: {
     isLocalDev?: boolean;
     filterEntities?: {
         actions?: any[];
-        byBuiltActions?: any[];
+        byBuiltActions?: boolean;
         sequences?: any[];
         triggers?: any[];
         rules?: any[];
@@ -108,8 +119,9 @@ declare function deployActions(config: any, deployConfig?: {
  * @param manifestContent - manifest
  * @param logFunc - custom logger function
  * @param filterEntities - entities (actions, sequences, triggers, rules etc) to be filtered
+ * @returns deployedEntities
  */
-declare function deployWsk(scriptConfig: any, manifestContent: any, logFunc: any, filterEntities: any): void;
+declare function deployWsk(scriptConfig: any, manifestContent: any, logFunc: any, filterEntities: any): Promise<object>;
 
 /**
  * @property apihost - Hostname and optional port for openwhisk platform
@@ -172,8 +184,9 @@ declare function init(options: OpenwhiskOptions): Promise<OpenwhiskClient>;
  * @param tail - if true, logs are fetched continuously
  * @param fetchLogsInterval - number of seconds to wait before fetching logs again when tail is set to true
  * @param startTime - time in milliseconds. Only logs after this time will be fetched
+ * @returns activation timestamp of the last retrieved activation or null
  */
-declare function printActionLogs(config: any, logger: any, limit: number, filterActions: any[], strip: boolean, tail: boolean, fetchLogsInterval?: number, startTime: number): void;
+declare function printActionLogs(config: any, logger: any, limit: number, filterActions: any[], strip: boolean, tail: boolean, fetchLogsInterval?: number, startTime: number): any;
 
 /**
  * A class to manage triggers
@@ -204,8 +217,9 @@ declare function undeployActions(config: any, logFunc?: any): void;
  * @param manifestContent - manifest
  * @param owOptions - openwhisk options
  * @param logger - custom logger function
+ * @returns void
  */
-declare function undeployWsk(packageName: string, manifestContent: any, owOptions: any, logger: any): void;
+declare function undeployWsk(packageName: string, manifestContent: any, owOptions: any, logger: any): Promise<void>;
 
 /**
  * The entry point to the information read from the manifest, this can be extracted using
@@ -452,8 +466,9 @@ declare function printLogs(activation: any, strip: boolean, logger: any): void;
  *    [] = logs of all actions in the namespace
  * @param strip - if true, strips the timestamp which prefixes every log line
  * @param startTime - time in milliseconds. Only logs after this time will be fetched
+ * @returns activation timestamp of the last retrieved activation or null
  */
-declare function printFilteredActionLogs(runtime: any, logger: any, limit: number, filterActions: any[], strip: boolean, startTime: number): void;
+declare function printFilteredActionLogs(runtime: any, logger: any, limit: number, filterActions: any[], strip: boolean, startTime: number): any;
 
 /**
  * returns path to main function as defined in package.json OR default of index.js
@@ -840,10 +855,9 @@ declare function getActionZipFileName(pkgName: string, actionName: string, defau
 /**
  * Returns the action name based on the zipFile name.
  * @param zipFile - name of the zip file
- * @param pkgName - name of the package, optional
  * @returns name of the action
  */
-declare function getActionNameFromZipFile(zipFile: string, pkgName: string): string;
+declare function getActionNameFromZipFile(zipFile: string): string;
 
 /**
  * Creates an info banner for an activation.
@@ -852,11 +866,6 @@ declare function getActionNameFromZipFile(zipFile: string, pkgName: string): str
  * @param activationLogs - the logs of the activation (may selectively suppress banner if there are no log lines)
  */
 declare function activationLogBanner(logFunc: any, activation: any, activationLogs: string[]): void;
-
-/**
- * @returns parsedData
- */
-declare function tryParseString(stringData: any): any;
 
 /**
  * Will tell if the action was built before based on it's contentHash.

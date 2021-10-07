@@ -16,10 +16,10 @@ const os = require('os')
 const path = require('path')
 const archiver = require('archiver')
 const networking = require('@adobe/aio-lib-core-networking')
+const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:utils', { provider: 'debug', level: process.env.LOG_LEVEL })
 networking.createFetch = jest.fn()
 const mockFetch = jest.fn()
 networking.createFetch.mockReturnValue(mockFetch)
-
 jest.mock('archiver')
 jest.mock('@adobe/aio-lib-core-networking')
 jest.mock('globby')
@@ -102,7 +102,6 @@ describe('utils has the right functions', () => {
     expect(typeof utils.getActionNameFromZipFile).toEqual('function')
     expect(typeof utils.dumpActionsBuiltInfo).toEqual('function')
     expect(typeof utils.actionBuiltBefore).toEqual('function')
-    expect(typeof utils.tryParseString).toEqual('function')
 
     expect(utils.urlJoin).toBeDefined()
     expect(typeof utils.urlJoin).toBe('function')
@@ -2045,5 +2044,10 @@ describe('validateActionRuntime', () => {
     const actionZipName = 'actions-zip'
     const expectedOutput = ''
     await expect(utils.getActionNameFromZipFile(actionZipName)).toEqual(expectedOutput)
+  })
+  test('actionBuiltBefore would call logger on invalid data, (coverage)', () => {
+    const loggerSpy = jest.spyOn(aioLogger, 'debug')
+    utils.actionBuiltBefore(null, null)
+    expect(loggerSpy).toHaveBeenLastCalledWith('Invalid actionBuiltData')
   })
 })

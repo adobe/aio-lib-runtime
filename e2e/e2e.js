@@ -223,7 +223,8 @@ test('triggers with feed', async () => {
 })
 
 describe('filter manifest based on built actions', () => {
-  test('it should build & deploy 1 of two.', async () => {
+  test('it should build & deploy just one of two.', async () => {
+    // Prepare
     const fileData = JSON.stringify({ 'action-zip': 1632317755882 })
     fs.readFile = jest.fn(() => (fileData))
     const deployConfig = {
@@ -231,15 +232,24 @@ describe('filter manifest based on built actions', () => {
         byBuiltActions: true
       }
     }
+    // Build
     expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
       expect.stringContaining('action.zip')
     ]))
 
+    // Deploy
     config.root = path.resolve('./')
     const deployedEntities = await sdk.deployActions(config, deployConfig)
     expect(deployedEntities.actions).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: 'sample-app-1.0.0/action' }),
       expect.objectContaining({ name: 'sample-app-1.0.0/action-sequence' })
     ]))
+
+    // Undeploy
+    await sdk.undeployActions(config)
+    const actions = await sdkClient.actions.list({ limit: 1 })
+    if (actions.length > 0) {
+      expect(actions[0].name).not.toEqual('action-sequence')
+    }
   })
 })

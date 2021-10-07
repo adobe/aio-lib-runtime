@@ -224,7 +224,7 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
         builtList.push(outPath)
       }
     }
-    const parsedLastBuiltData = utils.tryParseString(lastBuiltData)
+    const parsedLastBuiltData = utils.safeParse(lastBuiltData)
     return { parsedLastBuiltData, builtList, dumpData }
   }
   const { parsedLastBuiltData, dumpData, builtList: builtActions } = await _buildActions()

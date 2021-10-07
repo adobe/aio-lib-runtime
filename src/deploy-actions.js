@@ -27,7 +27,7 @@ const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...package
  * @param {boolean} [deployConfig.isLocalDev] local dev flag
  * @param {object} [deployConfig.filterEntities] add filters to deploy only specified OpenWhisk entities
  * @param {Array} [deployConfig.filterEntities.actions] filter list of actions to deploy by provided array, e.g. ['name1', ..]
- * @param {Boolean} [deployConfig.filterEntities.byBuiltActions] if true, trim actions from the manifest based on the already built actions
+ * @param {boolean} [deployConfig.filterEntities.byBuiltActions] if true, trim actions from the manifest based on the already built actions
  * @param {Array} [deployConfig.filterEntities.sequences] filter list of sequences to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.triggers] filter list of triggers to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.rules] filter list of rules to deploy, e.g. ['name1', ..]
@@ -69,11 +69,11 @@ async function deployActions (config, deployConfig = {}, logFunc) {
         }
       })
       Object.entries(manifest.packages).forEach(([packageName, pkg]) => {
-        const manifestActions = pkg.actions
-        manifest.packages[packageName].actions = Object.keys(manifestActions).reduce((newActions, actionKey) => {
+        const packageActions = pkg.actions
+        manifest.packages[packageName].actions = Object.keys(packageActions).reduce((newActions, actionKey) => {
           if (builtActions.includes(actionKey)) {
             // eslint-disable-next-line no-param-reassign
-            newActions[actionKey] = manifestActions[actionKey]
+            newActions[actionKey] = packageActions[actionKey]
           }
           return newActions
         }, {})

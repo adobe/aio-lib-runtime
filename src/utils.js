@@ -2010,20 +2010,6 @@ function activationLogBanner (logFunc, activation, activationLogs) {
 }
 
 /**
- * Returns the parsed object.
- *
- * @param {string} stringData stringData you want to be parsed
- * @returns {object} parsedData or empty object
- */
-function tryParseString (stringData) {
-  try {
-    return JSON.parse(stringData)
-  } catch (e) {
-    return {}
-  }
-}
-
-/**
  * Will tell if the action was built before based on it's contentHash.
  *
  * @param {string} lastBuildsData Data with the last builds
@@ -2031,13 +2017,12 @@ function tryParseString (stringData) {
  * @returns {boolean} true if the action was built before
  */
 function actionBuiltBefore (lastBuildsData, actionBuildData) {
-  if (actionBuildData && Object.keys(actionBuildData)) {
+  if (actionBuildData && Object.keys(actionBuildData).length > 0) {
     const [actionName, contenthash] = Object.entries(actionBuildData)[0]
-    const storedData = tryParseString(lastBuildsData)
+    const storedData = safeParse(lastBuildsData)
     return storedData[actionName] === contenthash
-  } else {
-    aioLogger.debug('Invalid actionBuiltData\'')
   }
+  aioLogger.debug('Invalid actionBuiltData')
 }
 
 /**
@@ -2054,12 +2039,12 @@ async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prev
       aioLogger.debug('Deployments log file not found, creating a new one...')
       await fs.createFile(lastBuiltActionsPath)
     }
-    if (actionBuildData && Object.keys(actionBuildData).length) {
+    if (actionBuildData && Object.keys(actionBuildData).length > 0) {
       const textData = JSON.stringify({ ...prevBuildData, ...actionBuildData })
       await fs.writeFile(lastBuiltActionsPath, textData)
     }
   } catch (e) {
-    aioLogger.error('Something went wrong ' + e)
+    aioLogger.error(`Something went wrong, ${e}`)
     throw e
   }
 }
@@ -2116,5 +2101,5 @@ module.exports = {
   getActionNameFromZipFile,
   dumpActionsBuiltInfo,
   actionBuiltBefore,
-  tryParseString
+  safeParse
 }

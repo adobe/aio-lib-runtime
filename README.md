@@ -254,14 +254,12 @@ for syncing managed projects.</p>
 <dt><a href="#getActionZipFileName">getActionZipFileName(pkgName, actionName, defaultPkg)</a> ⇒ <code>string</code></dt>
 <dd><p>Returns the action&#39;s build file name without the .zip extension</p>
 </dd>
-<dt><a href="#getActionNameFromZipFile">getActionNameFromZipFile(zipFile, pkgName)</a> ⇒ <code>string</code></dt>
+<dt><a href="#getActionNameFromZipFile">getActionNameFromZipFile(zipFile)</a> ⇒ <code>string</code></dt>
 <dd><p>Returns the action name based on the zipFile name.</p>
 </dd>
 <dt><a href="#activationLogBanner">activationLogBanner(logFunc, activation, activationLogs)</a></dt>
 <dd><p>Creates an info banner for an activation.</p>
 </dd>
-<dt><a href="#tryParseString">tryParseString(stringData)</a> ⇒ <code>object</code></dt>
-<dd></dd>
 <dt><a href="#actionBuiltBefore">actionBuiltBefore(lastBuildsData, actionBuildData)</a> ⇒ <code>boolean</code></dt>
 <dd><p>Will tell if the action was built before based on it&#39;s contentHash.</p>
 </dd>
@@ -471,7 +469,7 @@ runs the command
 | [deployConfig.isLocalDev] | <code>boolean</code> |  | local dev flag |
 | [deployConfig.filterEntities] | <code>object</code> |  | add filters to deploy only specified OpenWhisk entities |
 | [deployConfig.filterEntities.actions] | <code>Array</code> |  | filter list of actions to deploy by provided array, e.g. ['name1', ..] |
-| [deployConfig.filterEntities.byBuiltActions] | <code>Array</code> |  | if true, trim actions from the manifest based on the already built actions |
+| [deployConfig.filterEntities.byBuiltActions] | <code>boolean</code> |  | if true, trim actions from the manifest based on the already built actions |
 | [deployConfig.filterEntities.sequences] | <code>Array</code> |  | filter list of sequences to deploy, e.g. ['name1', ..] |
 | [deployConfig.filterEntities.triggers] | <code>Array</code> |  | filter list of triggers to deploy, e.g. ['name1', ..] |
 | [deployConfig.filterEntities.rules] | <code>Array</code> |  | filter list of rules to deploy, e.g. ['name1', ..] |
@@ -1262,7 +1260,7 @@ Returns the action's build file name without the .zip extension
 
 <a name="getActionNameFromZipFile"></a>
 
-## getActionNameFromZipFile(zipFile, pkgName) ⇒ <code>string</code>
+## getActionNameFromZipFile(zipFile) ⇒ <code>string</code>
 Returns the action name based on the zipFile name.
 
 **Kind**: global function  
@@ -1271,7 +1269,6 @@ Returns the action name based on the zipFile name.
 | Param | Type | Description |
 | --- | --- | --- |
 | zipFile | <code>string</code> | name of the zip file |
-| pkgName | <code>string</code> | name of the package, optional |
 
 <a name="activationLogBanner"></a>
 
@@ -1285,16 +1282,6 @@ Creates an info banner for an activation.
 | logFunc | <code>object</code> | custom logger function |
 | activation | <code>object</code> | activation metadata |
 | activationLogs | <code>Array.&lt;string&gt;</code> | the logs of the activation (may selectively suppress banner if there are no log lines) |
-
-<a name="tryParseString"></a>
-
-## tryParseString(stringData) ⇒ <code>object</code>
-**Kind**: global function  
-**Returns**: <code>object</code> - parsedData  
-
-| Param |
-| --- |
-| stringData | 
 
 <a name="actionBuiltBefore"></a>
 
