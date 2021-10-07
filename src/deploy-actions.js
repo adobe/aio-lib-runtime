@@ -27,7 +27,7 @@ const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...package
  * @param {boolean} [deployConfig.isLocalDev] local dev flag
  * @param {object} [deployConfig.filterEntities] add filters to deploy only specified OpenWhisk entities
  * @param {Array} [deployConfig.filterEntities.actions] filter list of actions to deploy by provided array, e.g. ['name1', ..]
- * @param {Array} [deployConfig.filterEntities.byBuiltActions] if true, trim actions from the manifest based on the already built actions
+ * @param {Boolean} [deployConfig.filterEntities.byBuiltActions] if true, trim actions from the manifest based on the already built actions
  * @param {Array} [deployConfig.filterEntities.sequences] filter list of sequences to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.triggers] filter list of triggers to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.rules] filter list of rules to deploy, e.g. ['name1', ..]

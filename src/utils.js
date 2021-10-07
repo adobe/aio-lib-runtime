@@ -1985,7 +1985,9 @@ function getActionZipFileName (pkgName, actionName, defaultPkg) {
  */
 function getActionNameFromZipFile (zipFile) {
   const ZIP_EXTENSION = '.zip'
-  if (!zipFile || !zipFile.includes(ZIP_EXTENSION)) return ''
+  if (!zipFile || !zipFile.includes(ZIP_EXTENSION)) {
+    return ''
+  }
   const [action] = zipFile.split('.')
   return action
 }
@@ -2029,9 +2031,13 @@ function tryParseString (stringData) {
  * @returns {boolean} true if the action was built before
  */
 function actionBuiltBefore (lastBuildsData, actionBuildData) {
-  const [actionName, contenthash] = Object.entries(actionBuildData)[0]
-  const storedData = tryParseString(lastBuildsData)
-  return storedData[actionName] === contenthash
+  if (actionBuildData && Object.keys(actionBuildData)) {
+    const [actionName, contenthash] = Object.entries(actionBuildData)[0]
+    const storedData = tryParseString(lastBuildsData)
+    return storedData[actionName] === contenthash
+  } else {
+    aioLogger.debug('Invalid actionBuiltData\'')
+  }
 }
 
 /**
@@ -2043,12 +2049,12 @@ function actionBuiltBefore (lastBuildsData, actionBuildData) {
  * @returns {Promise<boolean>} If the contentHash already belongs to the deploymentLogs file
  */
 async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prevBuildData) {
-  if (!fs.existsSync(lastBuiltActionsPath)) {
-    aioLogger.debug('Deployments log file not found, creating a new one...')
-    await fs.createFile(lastBuiltActionsPath)
-  }
   try {
-    if (Object.keys(actionBuildData).length) {
+    if (!fs.existsSync(lastBuiltActionsPath)) {
+      aioLogger.debug('Deployments log file not found, creating a new one...')
+      await fs.createFile(lastBuiltActionsPath)
+    }
+    if (actionBuildData && Object.keys(actionBuildData).length) {
       const textData = JSON.stringify({ ...prevBuildData, ...actionBuildData })
       await fs.writeFile(lastBuiltActionsPath, textData)
     }

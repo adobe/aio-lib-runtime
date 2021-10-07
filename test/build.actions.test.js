@@ -582,7 +582,7 @@ test('should not fail if extra package does not have actions', async () => {
     path.normalize('/dist/actions/action-zip.zip'))
 })
 
-test('should skip check for action built before while action filter', async () => {
+test('should always zip action files when skipCheck=true', async () => {
   addSampleAppFiles()
   const config = deepClone(global.sampleAppConfig)
   utils.actionBuiltBefore = jest.fn(() => true)
@@ -591,7 +591,7 @@ test('should skip check for action built before while action filter', async () =
     path.normalize('/dist/actions/action.zip'))
 })
 
-test('should not zip files', async () => {
+test('should not zip files if the action was built before (skipCheck=false)', async () => {
   addSampleAppFiles()
   const config = deepClone(global.sampleAppConfig)
   utils.actionBuiltBefore = jest.fn(() => true)

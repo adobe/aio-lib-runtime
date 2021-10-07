@@ -222,11 +222,6 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
         dumpData = { ...dumpData, ...actionBuildData }
         await utils.zip(tempBuildDir, outPath)
         builtList.push(outPath)
-      // fs.remove(tempBuildDir) // remove the build file, don't need to wait ...
-      // const fStats = fs.statSync(outPath)
-      // if (fStats && fStats.size > (22 * 1024 * 1024)) {
-      //   this.emit('warning', `file size exceeds 22 MB, you may not be able to deploy this action. file size is ${fStats.size} Bytes`)
-      // }
       }
     }
     const parsedLastBuiltData = utils.tryParseString(lastBuiltData)
