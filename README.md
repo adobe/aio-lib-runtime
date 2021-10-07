@@ -78,17 +78,17 @@ with valid options argument</p>
 <dt><a href="#deployActions">deployActions(config, [deployConfig], [logFunc])</a> ⇒ <code>Promise.&lt;object&gt;</code></dt>
 <dd><p>runs the command</p>
 </dd>
-<dt><a href="#deployWsk">deployWsk(scriptConfig, manifestContent, logFunc, filterEntities)</a></dt>
+<dt><a href="#deployWsk">deployWsk(scriptConfig, manifestContent, logFunc, filterEntities)</a> ⇒ <code>Promise.&lt;object&gt;</code></dt>
 <dd></dd>
 <dt><a href="#init">init(options)</a> ⇒ <code><a href="#OpenwhiskClient">Promise.&lt;OpenwhiskClient&gt;</a></code></dt>
 <dd><p>Returns a Promise that resolves with a new RuntimeAPI object.</p>
 </dd>
-<dt><a href="#printActionLogs">printActionLogs(config, logger, limit, filterActions, strip, tail, fetchLogsInterval, startTime)</a></dt>
+<dt><a href="#printActionLogs">printActionLogs(config, logger, limit, filterActions, strip, tail, fetchLogsInterval, startTime)</a> ⇒ <code>object</code></dt>
 <dd><p>Prints action logs.</p>
 </dd>
 <dt><a href="#undeployActions">undeployActions(config, [logFunc])</a></dt>
 <dd></dd>
-<dt><a href="#undeployWsk">undeployWsk(packageName, manifestContent, owOptions, logger)</a></dt>
+<dt><a href="#undeployWsk">undeployWsk(packageName, manifestContent, owOptions, logger)</a> ⇒ <code>Promise.&lt;void&gt;</code></dt>
 <dd></dd>
 <dt><a href="#getIncludesForAction">getIncludesForAction(action)</a> ⇒ <code>Promise.&lt;Array.&lt;IncludeEntry&gt;&gt;</code></dt>
 <dd><p>Gets the list of files matching the patterns defined by action.include</p>
@@ -96,7 +96,7 @@ with valid options argument</p>
 <dt><a href="#printLogs">printLogs(activation, strip, logger)</a></dt>
 <dd><p>Prints activation logs messages.</p>
 </dd>
-<dt><a href="#printFilteredActionLogs">printFilteredActionLogs(runtime, logger, limit, filterActions, strip, startTime)</a></dt>
+<dt><a href="#printFilteredActionLogs">printFilteredActionLogs(runtime, logger, limit, filterActions, strip, startTime)</a> ⇒ <code>object</code></dt>
 <dd><p>Filters and prints action logs.</p>
 </dd>
 <dt><a href="#getActionEntryFile">getActionEntryFile(pkgJsonPath)</a> ⇒ <code>string</code></dt>
@@ -360,24 +360,27 @@ Log Forwarding management API
 Get current Log Forwarding settings
 
 **Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
+**Returns**: <code>Promise.&lt;\*&gt;</code> - response from get API  
 <a name="LogForwarding+setAdobeIoRuntime"></a>
 
 ### logForwarding.setAdobeIoRuntime() ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>
 Set Log Forwarding to Adobe I/O Runtime (default behavior)
 
 **Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
+**Returns**: <code>Promise.&lt;(\*\|undefined)&gt;</code> - response from set API  
 <a name="LogForwarding+setAzureLogAnalytics"></a>
 
 ### logForwarding.setAzureLogAnalytics(customerId, sharedKey, logType) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>
 Set Log Forwarding to Azure Log Analytics
 
 **Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
+**Returns**: <code>Promise.&lt;(\*\|undefined)&gt;</code> - response from set API  
 
-| Param | Type |
-| --- | --- |
-| customerId | <code>string</code> | 
-| sharedKey | <code>string</code> | 
-| logType | <code>string</code> | 
+| Param | Type | Description |
+| --- | --- | --- |
+| customerId | <code>string</code> | customer ID |
+| sharedKey | <code>string</code> | shared key |
+| logType | <code>string</code> | log type |
 
 <a name="LogForwarding+setSplunkHec"></a>
 
@@ -385,13 +388,14 @@ Set Log Forwarding to Azure Log Analytics
 Set Log Forwarding to Splunk HEC
 
 **Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
+**Returns**: <code>Promise.&lt;(\*\|undefined)&gt;</code> - response from set API  
 
-| Param | Type |
-| --- | --- |
-| host | <code>string</code> | 
-| port | <code>string</code> | 
-| index | <code>string</code> | 
-| hecToken | <code>string</code> | 
+| Param | Type | Description |
+| --- | --- | --- |
+| host | <code>string</code> | host |
+| port | <code>string</code> | port |
+| index | <code>string</code> | index |
+| hecToken | <code>string</code> | hec token |
 
 <a name="RuntimeAPI"></a>
 
@@ -477,8 +481,9 @@ runs the command
 
 <a name="deployWsk"></a>
 
-## deployWsk(scriptConfig, manifestContent, logFunc, filterEntities)
+## deployWsk(scriptConfig, manifestContent, logFunc, filterEntities) ⇒ <code>Promise.&lt;object&gt;</code>
 **Kind**: global function  
+**Returns**: <code>Promise.&lt;object&gt;</code> - deployedEntities  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -514,10 +519,11 @@ Returns a Promise that resolves with a new RuntimeAPI object.
 
 <a name="printActionLogs"></a>
 
-## printActionLogs(config, logger, limit, filterActions, strip, tail, fetchLogsInterval, startTime)
+## printActionLogs(config, logger, limit, filterActions, strip, tail, fetchLogsInterval, startTime) ⇒ <code>object</code>
 Prints action logs.
 
 **Kind**: global function  
+**Returns**: <code>object</code> - activation timestamp of the last retrieved activation or null  
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -542,8 +548,9 @@ Prints action logs.
 
 <a name="undeployWsk"></a>
 
-## undeployWsk(packageName, manifestContent, owOptions, logger)
+## undeployWsk(packageName, manifestContent, owOptions, logger) ⇒ <code>Promise.&lt;void&gt;</code>
 **Kind**: global function  
+**Returns**: <code>Promise.&lt;void&gt;</code> - void  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -579,10 +586,11 @@ Prints activation logs messages.
 
 <a name="printFilteredActionLogs"></a>
 
-## printFilteredActionLogs(runtime, logger, limit, filterActions, strip, startTime)
+## printFilteredActionLogs(runtime, logger, limit, filterActions, strip, startTime) ⇒ <code>object</code>
 Filters and prints action logs.
 
 **Kind**: global function  
+**Returns**: <code>object</code> - activation timestamp of the last retrieved activation or null  
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -594,7 +602,7 @@ Filters and prints action logs.
 | startTime | <code>number</code> | <code>0</code> | time in milliseconds. Only logs after this time will be fetched |
 
 
-* [printFilteredActionLogs(runtime, logger, limit, filterActions, strip, startTime)](#printFilteredActionLogs)
+* [printFilteredActionLogs(runtime, logger, limit, filterActions, strip, startTime)](#printFilteredActionLogs) ⇒ <code>object</code>
     * [~isSequenceActivation(activation)](#printFilteredActionLogs..isSequenceActivation) ⇒ <code>boolean</code>
     * [~printActivationLogs(activation, runtime)](#printFilteredActionLogs..printActivationLogs)
     * [~printSequenceLogs(activation, runtime)](#printFilteredActionLogs..printSequenceLogs)
