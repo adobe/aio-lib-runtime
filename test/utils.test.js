@@ -2047,7 +2047,8 @@ describe('validateActionRuntime', () => {
   })
   test('actionBuiltBefore would call logger on invalid data, (coverage)', () => {
     const loggerSpy = jest.spyOn(aioLogger, 'debug')
-    utils.actionBuiltBefore(null, null)
-    expect(loggerSpy).toHaveBeenLastCalledWith('Invalid actionBuiltData')
+    const builtBefore = utils.actionBuiltBefore(null, null)
+    expect(loggerSpy).toHaveBeenLastCalledWith('actionBuiltBefore > Invalid actionBuiltData')
+    expect(builtBefore).toBe(false)
   })
 })

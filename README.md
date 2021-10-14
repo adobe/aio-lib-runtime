@@ -75,6 +75,14 @@ with valid options argument</p>
 ## Functions
 
 <dl>
+<dt><a href="#prepareToBuildAction">prepareToBuildAction(zipFileName, action, root, dist)</a> ⇒ <code><a href="#ActionBuild">Promise.&lt;ActionBuild&gt;</a></code></dt>
+<dd><p>Will return data about an action ready to be built.</p>
+</dd>
+<dt><a href="#zipActions">zipActions(buildsList, lastBuildsPath, skipCheck)</a> ⇒ <code>Array.&lt;string&gt;</code></dt>
+<dd><p>Will zip actions.
+ By default only actions which were not built before will be zipped.
+ Last built actions data will be used to validate which action needs zipping.</p>
+</dd>
 <dt><a href="#deployActions">deployActions(config, [deployConfig], [logFunc])</a> ⇒ <code>Promise.&lt;object&gt;</code></dt>
 <dd><p>runs the command</p>
 </dd>
@@ -271,6 +279,8 @@ for syncing managed projects.</p>
 ## Typedefs
 
 <dl>
+<dt><a href="#ActionBuild">ActionBuild</a> : <code>object</code></dt>
+<dd></dd>
 <dt><a href="#OpenwhiskOptions">OpenwhiskOptions</a> : <code>object</code></dt>
 <dd></dd>
 <dt><a href="#OpenwhiskClient">OpenwhiskClient</a> : <code>object</code></dt>
@@ -453,6 +463,37 @@ Deletes a trigger and associated feeds
 | Param | Type | Description |
 | --- | --- | --- |
 | options | <code>object</code> | options with the `name` of the trigger |
+
+<a name="prepareToBuildAction"></a>
+
+## prepareToBuildAction(zipFileName, action, root, dist) ⇒ [<code>Promise.&lt;ActionBuild&gt;</code>](#ActionBuild)
+Will return data about an action ready to be built.
+
+**Kind**: global function  
+**Returns**: [<code>Promise.&lt;ActionBuild&gt;</code>](#ActionBuild) - Relevant for data for the zip process..  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| zipFileName | <code>string</code> | the action's build file name without the .zip extension. |
+| action | <code>object</code> | Data about the Action. |
+| root | <code>string</code> | root of the project. |
+| dist | <code>string</code> | Path to the minimized version of the action code |
+
+<a name="zipActions"></a>
+
+## zipActions(buildsList, lastBuildsPath, skipCheck) ⇒ <code>Array.&lt;string&gt;</code>
+Will zip actions.
+ By default only actions which were not built before will be zipped.
+ Last built actions data will be used to validate which action needs zipping.
+
+**Kind**: global function  
+**Returns**: <code>Array.&lt;string&gt;</code> - Array of zipped actions.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| buildsList | [<code>Array.&lt;ActionBuild&gt;</code>](#ActionBuild) | Array with data about actions available to be zipped. |
+| lastBuildsPath | <code>string</code> | Path to the last built actions data. |
+| skipCheck | <code>boolean</code> | when true will zip all the actions from the buildsList |
 
 <a name="deployActions"></a>
 
@@ -1309,6 +1350,18 @@ Will dump the previously actions built data information.
 | lastBuiltActionsPath | <code>string</code> | Path to the deployments logs |
 | actionBuildData | <code>object</code> | Object which contains action name and contentHash. |
 | prevBuildData | <code>object</code> | Object which contains info about all the previously built actions |
+
+<a name="ActionBuild"></a>
+
+## ActionBuild : <code>object</code>
+**Kind**: global typedef  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| outPath | <code>string</code> | zip output path |
+| actionBuildData | <code>object</code> | Object where key is the name of the action and value is its contentHash |
+| tempBuildDir | <code>string</code> | path of temp build |
 
 <a name="OpenwhiskOptions"></a>
 

@@ -86,6 +86,38 @@ declare class RuntimeAPI {
 }
 
 /**
+ * @property outPath - zip output path
+ * @property actionBuildData - Object where key is the name of the action and value is its contentHash
+ * @property tempBuildDir - path of temp build
+ */
+declare type ActionBuild = {
+    outPath: string;
+    actionBuildData: any;
+    tempBuildDir: string;
+};
+
+/**
+ * Will return data about an action ready to be built.
+ * @param zipFileName - the action's build file name without the .zip extension.
+ * @param action - Data about the Action.
+ * @param root - root of the project.
+ * @param dist - Path to the minimized version of the action code
+ * @returns Relevant for data for the zip process..
+ */
+declare function prepareToBuildAction(zipFileName: string, action: any, root: string, dist: string): Promise<ActionBuild>;
+
+/**
+ * Will zip actions.
+ *  By default only actions which were not built before will be zipped.
+ *  Last built actions data will be used to validate which action needs zipping.
+ * @param buildsList - Array with data about actions available to be zipped.
+ * @param lastBuildsPath - Path to the last built actions data.
+ * @param skipCheck - when true will zip all the actions from the buildsList
+ * @returns Array of zipped actions.
+ */
+declare function zipActions(buildsList: ActionBuild[], lastBuildsPath: string, skipCheck: boolean): string[];
+
+/**
  * runs the command
  * @param config - app config
  * @param [deployConfig = {}] - deployment config

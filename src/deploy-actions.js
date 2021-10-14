@@ -55,37 +55,33 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     throw new Error(`missing files in ${utils._relApp(config.root, dist)}, maybe you forgot to build your actions ?`)
   }
 
-  /* Filter manifest actions based on the already built actions */
-  const _filterManifestActions = () => {
-    if (deployConfig.filterEntities && deployConfig.filterEntities.byBuiltActions) {
-      aioLogger.debug('Trimming out the manifest\'s actions...')
-      filterEntities = undefined
-      const distFiles = fs.readdirSync(path.resolve(__dirname, dist))
-      const builtActions = []
-      distFiles.forEach(fileName => {
-        const actionName = utils.getActionNameFromZipFile(fileName)
-        if (actionName) {
-          builtActions.push(actionName)
-        }
-      })
-      Object.entries(manifest.packages).forEach(([packageName, pkg]) => {
-        const packageActions = pkg.actions
-        manifest.packages[packageName].actions = Object.keys(packageActions).reduce((newActions, actionKey) => {
-          if (builtActions.includes(actionKey)) {
-            // eslint-disable-next-line no-param-reassign
-            newActions[actionKey] = packageActions[actionKey]
-          }
-          return newActions
-        }, {})
-      })
-    }
-  }
-
   // 1. rewrite wskManifest config
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const manifest = modifiedConfig.manifest.full
   const relDist = utils._relApp(config.root, config.actions.dist)
-  _filterManifestActions()
+  if (deployConfig.filterEntities && deployConfig.filterEntities.byBuiltActions) {
+    /* Filter manifest actions based on the already built actions */
+    aioLogger.debug('Trimming out the manifest\'s actions...')
+    filterEntities = undefined
+    const distFiles = fs.readdirSync(path.resolve(__dirname, dist))
+    const builtActions = []
+    distFiles.forEach(fileName => {
+      const actionName = utils.getActionNameFromZipFile(fileName)
+      if (actionName) {
+        builtActions.push(actionName)
+      }
+    })
+    Object.entries(manifest.packages).forEach(([packageName, pkg]) => {
+      const packageActions = pkg.actions
+      manifest.packages[packageName].actions = Object.keys(packageActions).reduce((newActions, actionKey) => {
+        if (builtActions.includes(actionKey)) {
+          // eslint-disable-next-line no-param-reassign
+          newActions[actionKey] = packageActions[actionKey]
+        }
+        return newActions
+      }, {})
+    })
+  }
   for (const [pkgName, pkg] of Object.entries(manifest.packages)) {
     pkg.version = config.app.version
     for (const [name, action] of Object.entries(pkg.actions || {})) {

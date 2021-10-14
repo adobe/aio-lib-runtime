@@ -2022,7 +2022,8 @@ function actionBuiltBefore (lastBuildsData, actionBuildData) {
     const storedData = safeParse(lastBuildsData)
     return storedData[actionName] === contenthash
   }
-  aioLogger.debug('Invalid actionBuiltData')
+  aioLogger.debug('actionBuiltBefore > Invalid actionBuiltData')
+  return false
 }
 
 /**
@@ -2039,10 +2040,8 @@ async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prev
       aioLogger.debug('Deployments log file not found, creating a new one...')
       await fs.createFile(lastBuiltActionsPath)
     }
-    if (actionBuildData && Object.keys(actionBuildData).length > 0) {
-      const textData = JSON.stringify({ ...prevBuildData, ...actionBuildData })
-      await fs.writeFile(lastBuiltActionsPath, textData)
-    }
+    const textData = JSON.stringify({ ...prevBuildData, ...actionBuildData })
+    await fs.writeFile(lastBuiltActionsPath, textData)
   } catch (e) {
     aioLogger.error(`Something went wrong, ${e}`)
     throw e

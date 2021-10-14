@@ -95,6 +95,25 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
 }
 // need config.root
 // config.actions.dist
+
+/**
+ * @typedef ActionBuild
+ * @type {object}
+ * @property {string} outPath zip output path
+ * @property {object} actionBuildData Object where key is the name of the action and value is its contentHash
+ * @property {string} tempBuildDir path of temp build
+ */
+
+/**
+ *  Will return data about an action ready to be built.
+ *
+ * @param {string} zipFileName the action's build file name without the .zip extension.
+ * @param {object} action  Data about the Action.
+ * @param {string} root root of the project.
+ * @param {string} dist Path to the minimized version of the action code
+ *
+ * @returns {Promise<ActionBuild>} Relevant for data for the zip process..
+ */
 const prepareToBuildAction = async (zipFileName, action, root, dist) => {
   // path.resolve supports both relative and absolute action.function
   const actionPath = path.resolve(root, action.function)
@@ -162,15 +181,47 @@ const prepareToBuildAction = async (zipFileName, action, root, dist) => {
   if (isDirectory) {
     actionBuildData = { [zipFileName]: actionFileStats.mtime.valueOf() }
   } else {
-    const [contentHashedFileName] = await fs.readdir(tempBuildDir)
+    const [contentHashedFileName] = await fs.readdir(tempBuildDir) // eg: index.25d8f992944c60aa2e62.js
     const contentHash = contentHashedFileName && contentHashedFileName.split('.')[1]
     actionBuildData = { [zipFileName]: contentHash }
   }
+
   return {
     outPath,
     actionBuildData,
     tempBuildDir
   }
+}
+
+/**
+ *  Will zip actions.
+ *  By default only actions which were not built before will be zipped.
+ *  Last built actions data will be used to validate which action needs zipping.
+ *
+ * @param {Array<ActionBuild>} buildsList Array with data about actions available to be zipped.
+ * @param {string} lastBuildsPath Path to the last built actions data.
+ * @param {boolean} skipCheck when true will zip all the actions from the buildsList
+ * @returns {string[]} Array of zipped actions.
+ */
+const zipActions = async (buildsList, lastBuildsPath, skipCheck) => {
+  let dumpData = {}
+  const builtList = []
+  let lastBuiltData = ''
+  if (fs.existsSync(lastBuildsPath)) {
+    lastBuiltData = await fs.readFile(lastBuildsPath, 'utf8')
+  }
+  for (const build of buildsList) {
+    const { outPath, actionBuildData, tempBuildDir } = build
+    const builtBefore = utils.actionBuiltBefore(lastBuiltData, actionBuildData)
+    if (!builtBefore || skipCheck) {
+      dumpData = { ...dumpData, ...actionBuildData }
+      await utils.zip(tempBuildDir, outPath)
+      builtList.push(outPath)
+    }
+  }
+  const parsedLastBuiltData = utils.safeParse(lastBuiltData)
+  await utils.dumpActionsBuiltInfo(lastBuildsPath, dumpData, parsedLastBuiltData)
+  return builtList
 }
 
 const buildActions = async (config, filterActions, skipCheck = false) => {
@@ -188,7 +239,7 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
   // clear out dist dir
   fs.emptyDirSync(config.actions.dist)
   const toBuildList = []
-  const lastBuiltActionsPath = path.join(config.root, 'dist', 'last-built-actions.txt')
+  const lastBuiltActionsPath = path.join(config.root, 'dist', 'last-built-actions.json')
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
     const actionsToBuild = Object.entries(pkg.actions || {})
 
@@ -208,28 +259,7 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
     }
   }
 
-  const _buildActions = async () => {
-    let dumpData = {}
-    const builtList = []
-    let lastBuiltData = ''
-    if (fs.existsSync(lastBuiltActionsPath)) {
-      lastBuiltData = await fs.readFile(lastBuiltActionsPath, 'utf8')
-    }
-    for (const build of toBuildList) {
-      const { outPath, actionBuildData, tempBuildDir } = build
-      const builtBefore = utils.actionBuiltBefore(lastBuiltData, actionBuildData)
-      if (!builtBefore || skipCheck) {
-        dumpData = { ...dumpData, ...actionBuildData }
-        await utils.zip(tempBuildDir, outPath)
-        builtList.push(outPath)
-      }
-    }
-    const parsedLastBuiltData = utils.safeParse(lastBuiltData)
-    return { parsedLastBuiltData, builtList, dumpData }
-  }
-  const { parsedLastBuiltData, dumpData, builtList: builtActions } = await _buildActions()
-  await utils.dumpActionsBuiltInfo(lastBuiltActionsPath, dumpData, parsedLastBuiltData)
-  return builtActions
+  return zipActions(toBuildList, lastBuiltActionsPath, skipCheck)
 }
 
 module.exports = buildActions
