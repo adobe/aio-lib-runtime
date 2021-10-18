@@ -33,6 +33,7 @@ test('get', async () => {
   return new Promise(resolve => {
     mockFetch.mockReturnValue(new Promise(resolve => {
       resolve({
+        ok: true,
         json: jest.fn().mockResolvedValue('result')
       })
     }))
@@ -46,15 +47,27 @@ test('get', async () => {
   })
 })
 
-test('get failed', async () => {
+test('get request failed', async () => {
   mockFetch.mockRejectedValue(new Error('mocked error'))
   await expect(logForwarding.get()).rejects.toThrow("Could not get log forwarding settings for namespace 'some_namespace': mocked error")
+})
+
+test('get failed on server', async () => {
+  const res = {
+    ok: false,
+    status: 400,
+    statusText: 'Bad Request',
+    text: jest.fn().mockResolvedValue('Error')
+  }
+  mockFetch.mockImplementation(() => res)
+  await expect(logForwarding.get()).rejects.toThrow("Could not get log forwarding settings for namespace 'some_namespace': 400 (Bad Request). Error: Error")
 })
 
 test.each(dataFixtures)('set %s', async (destination, fnName, input) => {
   return new Promise(resolve => {
     mockFetch.mockReturnValue(new Promise(resolve => {
       resolve({
+        ok: true,
         text: jest.fn().mockResolvedValue(`result for ${destination}`)
       })
     }))
@@ -69,10 +82,17 @@ test.each(dataFixtures)('set %s', async (destination, fnName, input) => {
 })
 
 test.each(dataFixtures)('set %s failed', async (destination, fnName, input) => {
-  mockFetch.mockRejectedValue(new Error(`mocked error for ${destination}`))
+  const res = {
+    ok: false,
+    status: 400,
+    statusText: 'Bad Request',
+    text: jest.fn().mockResolvedValue(`Error for ${destination}`)
+  }
+  mockFetch.mockImplementation(() => res)
+
   await expect(logForwarding[fnName]())
     .rejects
-    .toThrow(`Could not update log forwarding settings for namespace 'some_namespace': mocked error for ${destination}`)
+    .toThrow(`Could not update log forwarding settings for namespace 'some_namespace': 400 (Bad Request). Error: Error for ${destination}`)
 })
 
 const assertRequest = (expectedMethod, expectedData) => {
