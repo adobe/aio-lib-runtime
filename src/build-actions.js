@@ -117,10 +117,11 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
 const prepareToBuildAction = async (zipFileName, action, root, dist) => {
   // path.resolve supports both relative and absolute action.function
   const actionPath = path.resolve(root, action.function)
+
   const outPath = path.join(dist, `${zipFileName}.zip`)
   const tempBuildDir = path.join(dist, `${zipFileName}-temp`) // build all to tempDir first
   const actionFileStats = fs.lstatSync(actionPath)
-  let isDirectory = false
+  const isDirectory = actionFileStats.isDirectory()
 
   // make sure temp/ exists
   fs.ensureDirSync(tempBuildDir)
@@ -130,13 +131,12 @@ const prepareToBuildAction = async (zipFileName, action, root, dist) => {
     const dest = path.join(tempBuildDir, incFile.dest)
     fs.ensureDirSync(dest)
     // dest is expected to be a dir ...
-    incFile.sources.forEach(file => {
+    for (const file of incFile.sources) {
       fs.copyFileSync(file, path.join(dest, path.parse(file).base))
-    })
+    }
   })
 
-  if (actionFileStats.isDirectory()) {
-    isDirectory = true
+  if (isDirectory) {
     // make sure package.json exists OR index.js
     const packageJsonPath = path.join(actionPath, 'package.json')
     if (!fs.existsSync(packageJsonPath)) {
@@ -178,15 +178,19 @@ const prepareToBuildAction = async (zipFileName, action, root, dist) => {
     })
   }
   let actionBuildData
+  let tempActionName
+  let contentHash
   if (isDirectory) {
-    actionBuildData = { [zipFileName]: actionFileStats.mtime.valueOf() }
+    contentHash = actionFileStats.mtime.valueOf()
+    actionBuildData = { [zipFileName]: contentHash }
   } else {
-    const [contentHashedFileName] = await fs.readdir(tempBuildDir) // eg: index.25d8f992944c60aa2e62.js
-    const contentHash = contentHashedFileName && contentHashedFileName.split('.')[1]
+    [tempActionName] = await fs.readdir(tempBuildDir) // eg: index.25d8f992944c60aa2e62.js
+    contentHash = tempActionName && tempActionName.split('.')[1]
     actionBuildData = { [zipFileName]: contentHash }
   }
 
   return {
+    tempActionName,
     outPath,
     actionBuildData,
     tempBuildDir
@@ -211,10 +215,14 @@ const zipActions = async (buildsList, lastBuildsPath, skipCheck) => {
     lastBuiltData = await fs.readFile(lastBuildsPath, 'utf8')
   }
   for (const build of buildsList) {
-    const { outPath, actionBuildData, tempBuildDir } = build
+    const { outPath, actionBuildData, tempBuildDir, tempActionName } = build
     const builtBefore = utils.actionBuiltBefore(lastBuiltData, actionBuildData)
     if (!builtBefore || skipCheck) {
       dumpData = { ...dumpData, ...actionBuildData }
+      if (tempActionName) {
+        // rename index.[contentHash] to index.js
+        fs.renameSync(path.join(tempBuildDir, tempActionName), path.join(tempBuildDir, 'index.js'))
+      }
       await utils.zip(tempBuildDir, outPath)
       builtList.push(outPath)
     }
