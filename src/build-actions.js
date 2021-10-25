@@ -102,6 +102,7 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
  * @property {string} outPath zip output path
  * @property {object} actionBuildData Object where key is the name of the action and value is its contentHash
  * @property {string} tempBuildDir path of temp build
+ * @property {string} tempActionName name of the action file.
  */
 
 /**
@@ -112,7 +113,7 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
  * @param {string} root root of the project.
  * @param {string} dist Path to the minimized version of the action code
  *
- * @returns {Promise<ActionBuild>} Relevant for data for the zip process..
+ * @returns {Promise<ActionBuild>} Relevant data for the zip process..
  */
 const prepareToBuildAction = async (zipFileName, action, root, dist) => {
   // path.resolve supports both relative and absolute action.function
