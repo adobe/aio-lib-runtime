@@ -160,7 +160,7 @@ describe('createComponentsFromSequence', () => {
     })
   })
 })
-
+/* eslint-disable no-template-curly-in-string */
 describe('processInputs', () => {
   test('input = {}, params = {}', () => {
     const res = utils.processInputs({}, {})
@@ -195,13 +195,51 @@ describe('processInputs', () => {
     const res = utils.processInputs({ a: 'string', one: 'number', an: 'integer' }, { })
     expect(res).toEqual({ a: '', one: 0, an: 0 })
   })
-  // eslint-disable-next-line no-template-curly-in-string
   test('input = { an: $undefEnvVar, a: $definedEnvVar, another: $definedEnvVar, the: ${definedEnvVar}, one: ${ definedEnvVar  } }, params = { a: 123 }', () => {
     process.env.definedEnvVar = 'giraffe'
-    // eslint-disable-next-line no-template-curly-in-string
     const res = utils.processInputs({ an: '$undefEnvVar', a: '$definedEnvVar', another: '$definedEnvVar', the: '${definedEnvVar}', one: '${ definedEnvVar  }' }, { a: 123 })
     expect(res).toEqual({ a: 123, another: 'giraffe', an: '', the: 'giraffe', one: 'giraffe' })
     delete process.env.definedEnvVar
+  })
+  test('invalid input returns undefined (coverage)', () => {
+    let res = utils.processInputs({}, { a: 123 })
+    expect(res).toEqual({})
+    res = utils.processInputs(undefined, { a: 123 })
+    expect(res).toEqual(undefined)
+    res = utils.processInputs('string', { a: 123 })
+    expect(res).toEqual(undefined)
+  })
+  test('nested inputs with default and params, {foo: ${bar}, config: {nestedFoo: {bar}}', () => {
+    process.env.BAR = 'itWorks'
+    process.env.BAR_VAR = 'barVar'
+    process.env.FOO = 'fooo'
+    const input = {
+      stuff: '$BAR_VAR $BAR_VAR, ${ BAR_VAR }, $FOO',
+      foo: '${BAR}',
+      bar: {
+        default: '${BAR}, $BAR, ${FOO}'
+      },
+      config: {
+        nestedFoo: {
+          extraNested: '${BAR}, $BAR, ${FOO}'
+        },
+        a: 'I will be replaced'
+      }
+    }
+    const expectedOutput = {
+      stuff: 'barVar barVar, barVar, fooo',
+      foo: process.env.BAR,
+      bar: `${process.env.BAR}, ${process.env.BAR}, ${process.env.FOO}`,
+      config: {
+        nestedFoo: {
+          extraNested: `${process.env.BAR}, ${process.env.BAR}, ${process.env.FOO}`
+        },
+        a: 123
+      }
+    }
+    const res = utils.processInputs(input, { a: 123 })
+    expect(res).toEqual(expectedOutput)
+    delete process.env.bar
   })
 })
 
