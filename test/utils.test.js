@@ -186,6 +186,10 @@ describe('processInputs', () => {
     const res = utils.processInputs({ I: { default: 'am' } }, { })
     expect(res).toEqual({ I: 'am' })
   })
+  test('input = { I : { value: am } }, params = { I : nitpicking }', () => {
+    const res = utils.processInputs({ I: { value: 'am' } }, { I: 'nitpicking' })
+    expect(res).toEqual({ I: 'nitpicking' })
+  })
   test('input = { a : string, one : number, an: integer }, params = { }', () => {
     const res = utils.processInputs({ a: 'string', one: 'number', an: 'integer' }, { })
     expect(res).toEqual({ a: '', one: 0, an: 0 })
