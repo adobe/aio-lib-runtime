@@ -470,7 +470,7 @@ Deletes a trigger and associated feeds
 Will return data about an action ready to be built.
 
 **Kind**: global function  
-**Returns**: [<code>Promise.&lt;ActionBuild&gt;</code>](#ActionBuild) - Relevant for data for the zip process..  
+**Returns**: [<code>Promise.&lt;ActionBuild&gt;</code>](#ActionBuild) - Relevant data for the zip process..  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -1362,6 +1362,7 @@ Will dump the previously actions built data information.
 | outPath | <code>string</code> | zip output path |
 | actionBuildData | <code>object</code> | Object where key is the name of the action and value is its contentHash |
 | tempBuildDir | <code>string</code> | path of temp build |
+| tempActionName | <code>string</code> | name of the action file. |
 
 <a name="OpenwhiskOptions"></a>
 
