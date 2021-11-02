@@ -706,42 +706,45 @@ function replaceIfEnvKey (inputString) {
  * @returns {object} the processed inputs
  */
 function processInputs (input, params) {
-  const dictDataTypes = {
-    string: '',
-    integer: 0,
-    number: 0
-  }
   if (typeof input === 'object') {
-    for (const [key, value] of Object.entries(input)) {
-      if (Object.prototype.hasOwnProperty.call(params, key)) {
-        // eslint-disable-next-line no-param-reassign
-        input[key] = params[key]
-      } else {
-        if (Object.prototype.hasOwnProperty.call(dictDataTypes, input[key])) {
-          // eslint-disable-next-line no-param-reassign
-          input[key] = dictDataTypes[input[key]]
-        } else if (typeof value === 'string') {
-          // eslint-disable-next-line no-param-reassign
-          input[key] = replaceIfEnvKey(value)
-        } else if (typeof value === 'object') {
-          let found = false
-          const defaultKeys = ['value', 'default']
-          for (const someKey in input[key]) {
-            if (defaultKeys.includes(someKey)) {
-              found = true
-              // eslint-disable-next-line no-param-reassign
-              input[key] = replaceIfEnvKey(input[key][someKey])
-            }
+    const output = cloneDeep(input)
+    const dictDataTypes = {
+      string: '',
+      integer: 0,
+      number: 0
+    }
+    const recursiveProcess = (output) => {
+      /* eslint-disable no-param-reassign */
+      for (const key in output) {
+        if (typeof output[key] === 'string') {
+          if (Object.prototype.hasOwnProperty.call(dictDataTypes, output[key])) {
+            output[key] = dictDataTypes[output[key]]
+          } else {
+            output[key] = replaceIfEnvKey(output[key])
           }
-          if (!found) {
-            processInputs(input[key], params)
+        }
+        if (typeof output[key] === 'object') {
+          const defaultKeys = ['value', 'default']
+          for (const someKey in output[key]) {
+            if (defaultKeys.includes(someKey)) {
+              output[key] = replaceIfEnvKey(output[key][someKey])
+            } else {
+              recursiveProcess(output[key])
+            }
           }
         }
       }
     }
-    return input
+    // replace with param values if any params.
+    for (const key in input) {
+      if (Object.prototype.hasOwnProperty.call(params, key)) {
+        output[key] = params[key]
+      }
+    }
+    recursiveProcess(output)
+    return output
   } else {
-    aioLogger.debug(`processInputs:: invalid input, ${input}`)
+    aioLogger.debug('processInputs::Invalid input')
     return undefined
   }
 }
