@@ -672,51 +672,81 @@ function parsePathPattern (path) {
 }
 
 /**
+ * @param {string} inputString the string that may have env vars
+ * @returns {string} output the string with $vars/${vars} replaced
+ * @access private
+ */
+function replaceIfEnvKey (inputString) {
+  const getEnvKey = (env) => {
+    let val = env
+    /* istanbul ignore else */
+    if (val.startsWith('$')) {
+      val = val.substr(1)
+    }
+    /* istanbul ignore else */
+    if (val.startsWith('{')) {
+      val = val.slice(1, -1).trim()
+    }
+    return val
+  }
+  let match
+  let output = inputString
+  const envKeyMatch = RegExp(/(\${|\${ +|\$)\w+( +}|}|)/, 'g')
+  while ((match = envKeyMatch.exec(inputString)) !== null) {
+    // eslint-disable-next-line no-param-reassign
+    output = output.replace(match[0], process.env[getEnvKey(match[0])] || '')
+  }
+  return output
+}
+
+/**
  * @description Process inputs
  * @param {object} input the input object to process
  * @param {object} params the parameters for the input to process
  * @returns {object} the processed inputs
  */
 function processInputs (input, params) {
-  // check if the value of a key is an object (Advanced parameters)
-  const dictDataTypes = {
-    string: '',
-    integer: 0,
-    number: 0
-  }
-
-  const output = Object.assign({}, input)
-
-  // check if the value of a key is an object (Advanced parameters)
-  for (const key in input) {
-    // eslint: see https://eslint.org/docs/rules/no-prototype-builtins
-    if (Object.prototype.hasOwnProperty.call(params, key)) {
-      output[key] = params[key]
-    } else {
-      if (typeof input[key] === 'object') {
-        for (const val in input[key]) {
-          if (val === 'value' || val === 'default') {
-            output[key] = input[key][val]
+  if (typeof input === 'object') {
+    const output = cloneDeep(input)
+    const dictDataTypes = {
+      string: '',
+      integer: 0,
+      number: 0
+    }
+    const recursiveProcess = (output) => {
+      /* eslint-disable no-param-reassign */
+      for (const key in output) {
+        if (typeof output[key] === 'string') {
+          if (Object.prototype.hasOwnProperty.call(dictDataTypes, output[key])) {
+            output[key] = dictDataTypes[output[key]]
+          } else {
+            output[key] = replaceIfEnvKey(output[key])
           }
         }
-      } else {
-        // For example: name:'string' is changed to name:'' (Typed parameters)
-        // For example: height:'integer' or height:'number' is changed to height:0 (Typed parameters)
-        // eslint: see https://eslint.org/docs/rules/no-prototype-builtins
-        if (Object.prototype.hasOwnProperty.call(dictDataTypes, input[key])) {
-          output[key] = dictDataTypes[input[key]]
-        } else if (typeof input[key] === 'string' && input[key].startsWith('$')) {
-          let val = input[key].substr(1)
-          if (val.startsWith('{')) {
-            val = val.slice(1, -1).trim()
+        if (typeof output[key] === 'object') {
+          const defaultKeys = ['value', 'default']
+          for (const someKey in output[key]) {
+            if (defaultKeys.includes(someKey)) {
+              output[key] = replaceIfEnvKey(output[key][someKey])
+            } else {
+              recursiveProcess(output[key])
+            }
           }
-          output[key] = process.env[val] || ''
         }
       }
     }
+    // replace with param values if any params.
+    for (const key in input) {
+      if (Object.prototype.hasOwnProperty.call(params, key)) {
+        output[key] = params[key]
+      }
+    }
+    recursiveProcess(output)
+    return output
+  } else {
+    aioLogger.debug('processInputs::Invalid input')
+    return undefined
   }
-
-  return output
 }
 
 /**
