@@ -12,6 +12,7 @@ governing permissions and limitations under the License.
 const sdk = require('../src/index')
 const path = require('path')
 const deepClone = require('lodash.clonedeep')
+const { utils } = require('../src')
 const fs = jest.requireActual('fs-extra')
 const { createHttpsProxy } = require('@adobe/aio-lib-test-proxy')
 
@@ -68,6 +69,10 @@ test('HTTPS_PROXY must be set if E2E_USE_PROXY is set', () => {
 
 describe('build-actions', () => {
   test('full config', async () => {
+    /* skip checking previously built actions */
+    utils.dumpActionsBuiltInfo = jest.fn(() => false)
+    utils.actionBuiltBefore = jest.fn(() => false)
+
     expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
       expect.stringContaining('action.zip'),
       expect.stringContaining('action-zip.zip')
@@ -80,6 +85,9 @@ describe('build-actions', () => {
 
 describe('build, deploy, invoke and undeploy of actions', () => {
   test('basic manifest', async () => {
+    /* skip checking previously built actions */
+    utils.dumpActionsBuiltInfo = jest.fn(() => false)
+    utils.actionBuiltBefore = jest.fn(() => false)
     // console.log(config)
     // Build
     expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
@@ -212,4 +220,36 @@ test('triggers with feed', async () => {
   expect(await sdkClient.triggers.get({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
   // Delete
   expect(await sdkClient.triggers.delete({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
+})
+
+describe('filter manifest based on built actions', () => {
+  test('it should build & deploy just one of two.', async () => {
+    // Prepare
+    const fileData = JSON.stringify({ 'action-zip': 1632317755882 })
+    fs.readFile = jest.fn(() => (fileData))
+    const deployConfig = {
+      filterEntities: {
+        byBuiltActions: true
+      }
+    }
+    // Build
+    expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
+      expect.stringContaining('action.zip')
+    ]))
+
+    // Deploy
+    config.root = path.resolve('./')
+    const deployedEntities = await sdk.deployActions(config, deployConfig)
+    expect(deployedEntities.actions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'sample-app-1.0.0/action' }),
+      expect.objectContaining({ name: 'sample-app-1.0.0/action-sequence' })
+    ]))
+
+    // Undeploy
+    await sdk.undeployActions(config)
+    const actions = await sdkClient.actions.list({ limit: 1 })
+    if (actions.length > 0) {
+      expect(actions[0].name).not.toEqual('action-sequence')
+    }
+  })
 })

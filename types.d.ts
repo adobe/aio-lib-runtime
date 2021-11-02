@@ -4,18 +4,29 @@
 declare class LogForwarding {
     /**
      * Get current Log Forwarding settings
+     * @returns response from get API
      */
     get(): Promise<any>;
     /**
      * Set Log Forwarding to Adobe I/O Runtime (default behavior)
+     * @returns response from set API
      */
     setAdobeIoRuntime(): Promise<any | undefined>;
     /**
      * Set Log Forwarding to Azure Log Analytics
+     * @param customerId - customer ID
+     * @param sharedKey - shared key
+     * @param logType - log type
+     * @returns response from set API
      */
     setAzureLogAnalytics(customerId: string, sharedKey: string, logType: string): Promise<any | undefined>;
     /**
      * Set Log Forwarding to Splunk HEC
+     * @param host - host
+     * @param port - port
+     * @param index - index
+     * @param hecToken - hec token
+     * @returns response from set API
      */
     setSplunkHec(host: string, port: string, index: string, hecToken: string): Promise<any | undefined>;
 }
@@ -75,11 +86,45 @@ declare class RuntimeAPI {
 }
 
 /**
+ * @property outPath - zip output path
+ * @property actionBuildData - Object where key is the name of the action and value is its contentHash
+ * @property tempBuildDir - path of temp build
+ */
+declare type ActionBuild = {
+    outPath: string;
+    actionBuildData: any;
+    tempBuildDir: string;
+};
+
+/**
+ * Will return data about an action ready to be built.
+ * @param zipFileName - the action's build file name without the .zip extension.
+ * @param action - Data about the Action.
+ * @param root - root of the project.
+ * @param dist - Path to the minimized version of the action code
+ * @returns Relevant for data for the zip process..
+ */
+declare function prepareToBuildAction(zipFileName: string, action: any, root: string, dist: string): Promise<ActionBuild>;
+
+/**
+ * Will zip actions.
+ *  By default only actions which were not built before will be zipped.
+ *  Last built actions data will be used to validate which action needs zipping.
+ * @param buildsList - Array with data about actions available to be zipped.
+ * @param lastBuildsPath - Path to the last built actions data.
+ * @param skipCheck - when true will zip all the actions from the buildsList
+ * @returns Array of zipped actions.
+ */
+declare function zipActions(buildsList: ActionBuild[], lastBuildsPath: string, skipCheck: boolean): string[];
+
+/**
  * runs the command
  * @param config - app config
  * @param [deployConfig = {}] - deployment config
+ * @param [deployConfig.isLocalDev] - local dev flag
  * @param [deployConfig.filterEntities] - add filters to deploy only specified OpenWhisk entities
- * @param [deployConfig.filterEntities.actions] - filter list of actions to deploy, e.g. ['name1', ..]
+ * @param [deployConfig.filterEntities.actions] - filter list of actions to deploy by provided array, e.g. ['name1', ..]
+ * @param [deployConfig.filterEntities.byBuiltActions] - if true, trim actions from the manifest based on the already built actions
  * @param [deployConfig.filterEntities.sequences] - filter list of sequences to deploy, e.g. ['name1', ..]
  * @param [deployConfig.filterEntities.triggers] - filter list of triggers to deploy, e.g. ['name1', ..]
  * @param [deployConfig.filterEntities.rules] - filter list of rules to deploy, e.g. ['name1', ..]
@@ -89,8 +134,10 @@ declare class RuntimeAPI {
  * @returns deployedEntities
  */
 declare function deployActions(config: any, deployConfig?: {
+    isLocalDev?: boolean;
     filterEntities?: {
         actions?: any[];
+        byBuiltActions?: boolean;
         sequences?: any[];
         triggers?: any[];
         rules?: any[];
@@ -104,8 +151,9 @@ declare function deployActions(config: any, deployConfig?: {
  * @param manifestContent - manifest
  * @param logFunc - custom logger function
  * @param filterEntities - entities (actions, sequences, triggers, rules etc) to be filtered
+ * @returns deployedEntities
  */
-declare function deployWsk(scriptConfig: any, manifestContent: any, logFunc: any, filterEntities: any): void;
+declare function deployWsk(scriptConfig: any, manifestContent: any, logFunc: any, filterEntities: any): Promise<object>;
 
 /**
  * @property apihost - Hostname and optional port for openwhisk platform
@@ -168,8 +216,9 @@ declare function init(options: OpenwhiskOptions): Promise<OpenwhiskClient>;
  * @param tail - if true, logs are fetched continuously
  * @param fetchLogsInterval - number of seconds to wait before fetching logs again when tail is set to true
  * @param startTime - time in milliseconds. Only logs after this time will be fetched
+ * @returns activation timestamp of the last retrieved activation or null
  */
-declare function printActionLogs(config: any, logger: any, limit: number, filterActions: any[], strip: boolean, tail: boolean, fetchLogsInterval?: number, startTime: number): void;
+declare function printActionLogs(config: any, logger: any, limit: number, filterActions: any[], strip: boolean, tail: boolean, fetchLogsInterval?: number, startTime: number): any;
 
 /**
  * A class to manage triggers
@@ -200,8 +249,9 @@ declare function undeployActions(config: any, logFunc?: any): void;
  * @param manifestContent - manifest
  * @param owOptions - openwhisk options
  * @param logger - custom logger function
+ * @returns void
  */
-declare function undeployWsk(packageName: string, manifestContent: any, owOptions: any, logger: any): void;
+declare function undeployWsk(packageName: string, manifestContent: any, owOptions: any, logger: any): Promise<void>;
 
 /**
  * The entry point to the information read from the manifest, this can be extracted using
@@ -448,8 +498,9 @@ declare function printLogs(activation: any, strip: boolean, logger: any): void;
  *    [] = logs of all actions in the namespace
  * @param strip - if true, strips the timestamp which prefixes every log line
  * @param startTime - time in milliseconds. Only logs after this time will be fetched
+ * @returns activation timestamp of the last retrieved activation or null
  */
-declare function printFilteredActionLogs(runtime: any, logger: any, limit: number, filterActions: any[], strip: boolean, startTime: number): void;
+declare function printFilteredActionLogs(runtime: any, logger: any, limit: number, filterActions: any[], strip: boolean, startTime: number): any;
 
 /**
  * returns path to main function as defined in package.json OR default of index.js
@@ -834,10 +885,34 @@ declare function validateActionRuntime(action: any): void;
 declare function getActionZipFileName(pkgName: string, actionName: string, defaultPkg: boolean): string;
 
 /**
+ * Returns the action name based on the zipFile name.
+ * @param zipFile - name of the zip file
+ * @returns name of the action
+ */
+declare function getActionNameFromZipFile(zipFile: string): string;
+
+/**
  * Creates an info banner for an activation.
  * @param logFunc - custom logger function
  * @param activation - activation metadata
  * @param activationLogs - the logs of the activation (may selectively suppress banner if there are no log lines)
  */
 declare function activationLogBanner(logFunc: any, activation: any, activationLogs: string[]): void;
+
+/**
+ * Will tell if the action was built before based on it's contentHash.
+ * @param lastBuildsData - Data with the last builds
+ * @param actionBuildData - Object which contains action name and contentHash.
+ * @returns true if the action was built before
+ */
+declare function actionBuiltBefore(lastBuildsData: string, actionBuildData: any): boolean;
+
+/**
+ * Will dump the previously actions built data information.
+ * @param lastBuiltActionsPath - Path to the deployments logs
+ * @param actionBuildData - Object which contains action name and contentHash.
+ * @param prevBuildData - Object which contains info about all the previously built actions
+ * @returns If the contentHash already belongs to the deploymentLogs file
+ */
+declare function dumpActionsBuiltInfo(lastBuiltActionsPath: string, actionBuildData: any, prevBuildData: any): Promise<boolean>;
 

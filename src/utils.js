@@ -2008,6 +2008,21 @@ function getActionZipFileName (pkgName, actionName, defaultPkg) {
 }
 
 /**
+ * Returns the action name based on the zipFile name.
+ *
+ * @param {string} zipFile name of the zip file
+ * @returns {string} name of the action
+ */
+function getActionNameFromZipFile (zipFile) {
+  const ZIP_EXTENSION = '.zip'
+  if (!zipFile || !zipFile.includes(ZIP_EXTENSION)) {
+    return ''
+  }
+  const [action] = zipFile.split('.')
+  return action
+}
+
+/**
  * Creates an info banner for an activation.
  *
  * @param {object} logFunc custom logger function
@@ -2021,6 +2036,45 @@ function activationLogBanner (logFunc, activation, activationLogs) {
         logFunc(annotation.value + ':' + activation.activationId)
       }
     })
+  }
+}
+
+/**
+ * Will tell if the action was built before based on it's contentHash.
+ *
+ * @param {string} lastBuildsData Data with the last builds
+ * @param {object} actionBuildData Object which contains action name and contentHash.
+ * @returns {boolean} true if the action was built before
+ */
+function actionBuiltBefore (lastBuildsData, actionBuildData) {
+  if (actionBuildData && Object.keys(actionBuildData).length > 0) {
+    const [actionName, contenthash] = Object.entries(actionBuildData)[0]
+    const storedData = safeParse(lastBuildsData)
+    return storedData[actionName] === contenthash
+  }
+  aioLogger.debug('actionBuiltBefore > Invalid actionBuiltData')
+  return false
+}
+
+/**
+ * Will dump the previously actions built data information.
+ *
+ * @param {string} lastBuiltActionsPath Path to the deployments logs
+ * @param {object} actionBuildData Object which contains action name and contentHash.
+ * @param {object} prevBuildData Object which contains info about all the previously built actions
+ * @returns {Promise<boolean>} If the contentHash already belongs to the deploymentLogs file
+ */
+async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prevBuildData) {
+  try {
+    if (!fs.existsSync(lastBuiltActionsPath)) {
+      aioLogger.debug('Deployments log file not found, creating a new one...')
+      await fs.createFile(lastBuiltActionsPath)
+    }
+    const textData = JSON.stringify({ ...prevBuildData, ...actionBuildData })
+    await fs.writeFile(lastBuiltActionsPath, textData)
+  } catch (e) {
+    aioLogger.error(`Something went wrong, ${e}`)
+    throw e
   }
 }
 
@@ -2072,5 +2126,9 @@ module.exports = {
   zip,
   replacePackagePlaceHolder,
   validateActionRuntime,
-  getActionZipFileName
+  getActionZipFileName,
+  getActionNameFromZipFile,
+  dumpActionsBuiltInfo,
+  actionBuiltBefore,
+  safeParse
 }

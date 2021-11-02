@@ -16,10 +16,10 @@ const os = require('os')
 const path = require('path')
 const archiver = require('archiver')
 const networking = require('@adobe/aio-lib-core-networking')
+const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:utils', { provider: 'debug', level: process.env.LOG_LEVEL })
 networking.createFetch = jest.fn()
 const mockFetch = jest.fn()
 networking.createFetch.mockReturnValue(mockFetch)
-
 jest.mock('archiver')
 jest.mock('@adobe/aio-lib-core-networking')
 jest.mock('globby')
@@ -98,6 +98,10 @@ describe('utils has the right functions', () => {
     expect(typeof utils.getProjectHash).toEqual('function')
     expect(typeof utils.addManagedProjectAnnotations).toEqual('function')
     expect(typeof utils.printLogs).toEqual('function')
+    expect(typeof utils.getActionZipFileName).toEqual('function')
+    expect(typeof utils.getActionNameFromZipFile).toEqual('function')
+    expect(typeof utils.dumpActionsBuiltInfo).toEqual('function')
+    expect(typeof utils.actionBuiltBefore).toEqual('function')
 
     expect(utils.urlJoin).toBeDefined()
     expect(typeof utils.urlJoin).toBe('function')
@@ -2062,5 +2066,30 @@ describe('validateActionRuntime', () => {
 
     const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:16' } })
     expect(func).toThrowError(`Unsupported node version in action undefined. Supported versions are ${supportedEngines.node}`)
+  })
+
+  test('dumpActionsBuiltInfo might catch some errors under unlikely conditions', async () => {
+    const circ = {}
+    circ.circ = circ
+    const func = () => utils.dumpActionsBuiltInfo('./last-built-actions.mock.txt', circ)
+    await expect(func).rejects.toThrowError(TypeError)
+  })
+
+  test('getActionNameFromZipFile expected output', async () => {
+    const actionZipName = 'actions-zip.zip'
+    const expectedOutput = 'actions-zip'
+    await expect(utils.getActionNameFromZipFile(actionZipName)).toEqual(expectedOutput)
+  })
+
+  test('getActionNameFromZipFile empty string', async () => {
+    const actionZipName = 'actions-zip'
+    const expectedOutput = ''
+    await expect(utils.getActionNameFromZipFile(actionZipName)).toEqual(expectedOutput)
+  })
+  test('actionBuiltBefore would call logger on invalid data, (coverage)', () => {
+    const loggerSpy = jest.spyOn(aioLogger, 'debug')
+    const builtBefore = utils.actionBuiltBefore(null, null)
+    expect(loggerSpy).toHaveBeenLastCalledWith('actionBuiltBefore > Invalid actionBuiltData')
+    expect(builtBefore).toBe(false)
   })
 })

@@ -75,6 +75,14 @@ with valid options argument</p>
 ## Functions
 
 <dl>
+<dt><a href="#prepareToBuildAction">prepareToBuildAction(zipFileName, action, root, dist)</a> ⇒ <code><a href="#ActionBuild">Promise.&lt;ActionBuild&gt;</a></code></dt>
+<dd><p>Will return data about an action ready to be built.</p>
+</dd>
+<dt><a href="#zipActions">zipActions(buildsList, lastBuildsPath, skipCheck)</a> ⇒ <code>Array.&lt;string&gt;</code></dt>
+<dd><p>Will zip actions.
+ By default only actions which were not built before will be zipped.
+ Last built actions data will be used to validate which action needs zipping.</p>
+</dd>
 <dt><a href="#deployActions">deployActions(config, [deployConfig], [logFunc])</a> ⇒ <code>Promise.&lt;object&gt;</code></dt>
 <dd><p>runs the command</p>
 </dd>
@@ -254,14 +262,25 @@ for syncing managed projects.</p>
 <dt><a href="#getActionZipFileName">getActionZipFileName(pkgName, actionName, defaultPkg)</a> ⇒ <code>string</code></dt>
 <dd><p>Returns the action&#39;s build file name without the .zip extension</p>
 </dd>
+<dt><a href="#getActionNameFromZipFile">getActionNameFromZipFile(zipFile)</a> ⇒ <code>string</code></dt>
+<dd><p>Returns the action name based on the zipFile name.</p>
+</dd>
 <dt><a href="#activationLogBanner">activationLogBanner(logFunc, activation, activationLogs)</a></dt>
 <dd><p>Creates an info banner for an activation.</p>
+</dd>
+<dt><a href="#actionBuiltBefore">actionBuiltBefore(lastBuildsData, actionBuildData)</a> ⇒ <code>boolean</code></dt>
+<dd><p>Will tell if the action was built before based on it&#39;s contentHash.</p>
+</dd>
+<dt><a href="#dumpActionsBuiltInfo">dumpActionsBuiltInfo(lastBuiltActionsPath, actionBuildData, prevBuildData)</a> ⇒ <code>Promise.&lt;boolean&gt;</code></dt>
+<dd><p>Will dump the previously actions built data information.</p>
 </dd>
 </dl>
 
 ## Typedefs
 
 <dl>
+<dt><a href="#ActionBuild">ActionBuild</a> : <code>object</code></dt>
+<dd></dd>
 <dt><a href="#OpenwhiskOptions">OpenwhiskOptions</a> : <code>object</code></dt>
 <dd></dd>
 <dt><a href="#OpenwhiskClient">OpenwhiskClient</a> : <code>object</code></dt>
@@ -445,6 +464,37 @@ Deletes a trigger and associated feeds
 | --- | --- | --- |
 | options | <code>object</code> | options with the `name` of the trigger |
 
+<a name="prepareToBuildAction"></a>
+
+## prepareToBuildAction(zipFileName, action, root, dist) ⇒ [<code>Promise.&lt;ActionBuild&gt;</code>](#ActionBuild)
+Will return data about an action ready to be built.
+
+**Kind**: global function  
+**Returns**: [<code>Promise.&lt;ActionBuild&gt;</code>](#ActionBuild) - Relevant for data for the zip process..  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| zipFileName | <code>string</code> | the action's build file name without the .zip extension. |
+| action | <code>object</code> | Data about the Action. |
+| root | <code>string</code> | root of the project. |
+| dist | <code>string</code> | Path to the minimized version of the action code |
+
+<a name="zipActions"></a>
+
+## zipActions(buildsList, lastBuildsPath, skipCheck) ⇒ <code>Array.&lt;string&gt;</code>
+Will zip actions.
+ By default only actions which were not built before will be zipped.
+ Last built actions data will be used to validate which action needs zipping.
+
+**Kind**: global function  
+**Returns**: <code>Array.&lt;string&gt;</code> - Array of zipped actions.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| buildsList | [<code>Array.&lt;ActionBuild&gt;</code>](#ActionBuild) | Array with data about actions available to be zipped. |
+| lastBuildsPath | <code>string</code> | Path to the last built actions data. |
+| skipCheck | <code>boolean</code> | when true will zip all the actions from the buildsList |
+
 <a name="deployActions"></a>
 
 ## deployActions(config, [deployConfig], [logFunc]) ⇒ <code>Promise.&lt;object&gt;</code>
@@ -457,8 +507,10 @@ runs the command
 | --- | --- | --- | --- |
 | config | <code>object</code> |  | app config |
 | [deployConfig] | <code>object</code> | <code>{}</code> | deployment config |
+| [deployConfig.isLocalDev] | <code>boolean</code> |  | local dev flag |
 | [deployConfig.filterEntities] | <code>object</code> |  | add filters to deploy only specified OpenWhisk entities |
-| [deployConfig.filterEntities.actions] | <code>Array</code> |  | filter list of actions to deploy, e.g. ['name1', ..] |
+| [deployConfig.filterEntities.actions] | <code>Array</code> |  | filter list of actions to deploy by provided array, e.g. ['name1', ..] |
+| [deployConfig.filterEntities.byBuiltActions] | <code>boolean</code> |  | if true, trim actions from the manifest based on the already built actions |
 | [deployConfig.filterEntities.sequences] | <code>Array</code> |  | filter list of sequences to deploy, e.g. ['name1', ..] |
 | [deployConfig.filterEntities.triggers] | <code>Array</code> |  | filter list of triggers to deploy, e.g. ['name1', ..] |
 | [deployConfig.filterEntities.rules] | <code>Array</code> |  | filter list of rules to deploy, e.g. ['name1', ..] |
@@ -490,7 +542,7 @@ runs the command
 | pkgName | <code>object</code> | name of the package |
 | pkgEntity | <code>object</code> | package object from the manifest |
 | filterItems | <code>object</code> | items (actions, sequences, triggers, rules etc) to be filtered |
-| fullNameCheck | <code>object</code> | true of the items are part of packages (actions and sequences) |
+| fullNameCheck | <code>boolean</code> | true if the items are part of packages (actions and sequences) |
 
 <a name="init"></a>
 
@@ -1247,6 +1299,18 @@ Returns the action's build file name without the .zip extension
 | actionName | <code>string</code> | name of the action |
 | defaultPkg | <code>boolean</code> | true if pkgName is the default/first package |
 
+<a name="getActionNameFromZipFile"></a>
+
+## getActionNameFromZipFile(zipFile) ⇒ <code>string</code>
+Returns the action name based on the zipFile name.
+
+**Kind**: global function  
+**Returns**: <code>string</code> - name of the action  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| zipFile | <code>string</code> | name of the zip file |
+
 <a name="activationLogBanner"></a>
 
 ## activationLogBanner(logFunc, activation, activationLogs)
@@ -1259,6 +1323,45 @@ Creates an info banner for an activation.
 | logFunc | <code>object</code> | custom logger function |
 | activation | <code>object</code> | activation metadata |
 | activationLogs | <code>Array.&lt;string&gt;</code> | the logs of the activation (may selectively suppress banner if there are no log lines) |
+
+<a name="actionBuiltBefore"></a>
+
+## actionBuiltBefore(lastBuildsData, actionBuildData) ⇒ <code>boolean</code>
+Will tell if the action was built before based on it's contentHash.
+
+**Kind**: global function  
+**Returns**: <code>boolean</code> - true if the action was built before  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| lastBuildsData | <code>string</code> | Data with the last builds |
+| actionBuildData | <code>object</code> | Object which contains action name and contentHash. |
+
+<a name="dumpActionsBuiltInfo"></a>
+
+## dumpActionsBuiltInfo(lastBuiltActionsPath, actionBuildData, prevBuildData) ⇒ <code>Promise.&lt;boolean&gt;</code>
+Will dump the previously actions built data information.
+
+**Kind**: global function  
+**Returns**: <code>Promise.&lt;boolean&gt;</code> - If the contentHash already belongs to the deploymentLogs file  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| lastBuiltActionsPath | <code>string</code> | Path to the deployments logs |
+| actionBuildData | <code>object</code> | Object which contains action name and contentHash. |
+| prevBuildData | <code>object</code> | Object which contains info about all the previously built actions |
+
+<a name="ActionBuild"></a>
+
+## ActionBuild : <code>object</code>
+**Kind**: global typedef  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| outPath | <code>string</code> | zip output path |
+| actionBuildData | <code>object</code> | Object where key is the name of the action and value is its contentHash |
+| tempBuildDir | <code>string</code> | path of temp build |
 
 <a name="OpenwhiskOptions"></a>
 
