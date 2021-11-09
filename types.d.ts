@@ -32,46 +32,6 @@ declare class LogForwarding {
 }
 
 /**
- * @property apihost - Hostname and optional port for openwhisk platform
- * @property api_key - Authorisation key
- * @property [api] - Full API URL
- * @property [apiversion] - Api version
- * @property [namespace] - Namespace for resource requests
- * @property [ignore_certs] - Turns off server SSL/TLS certificate verification
- * @property [key] - Client key to use when connecting to the apihost
- */
-declare type OpenwhiskOptions = {
-    apihost: string;
-    api_key: string;
-    api?: string;
-    apiversion?: string;
-    namespace?: string;
-    ignore_certs?: boolean;
-    key?: string;
-};
-
-/**
- * @property actions - actions
- * @property activations - activations
- * @property namespaces - namespaces
- * @property packages - packages
- * @property rules - rules
- * @property triggers - triggers
- * @property routes - routes
- * @property logForwarding - Log Forwarding API
- */
-declare type OpenwhiskClient = {
-    actions: ow.Actions;
-    activations: ow.Activations;
-    namespaces: ow.Namespaces;
-    packages: ow.Packages;
-    rules: ow.Rules;
-    triggers: ow.Triggers;
-    routes: ow.Routes;
-    logForwarding: LogForwarding;
-};
-
-/**
  * This class provides methods to call your RuntimeAPI APIs.
  * Before calling any method initialize the instance by calling the `init` method on it
  * with valid options argument
@@ -89,11 +49,13 @@ declare class RuntimeAPI {
  * @property outPath - zip output path
  * @property actionBuildData - Object where key is the name of the action and value is its contentHash
  * @property tempBuildDir - path of temp build
+ * @property tempActionName - name of the action file.
  */
 declare type ActionBuild = {
     outPath: string;
     actionBuildData: any;
     tempBuildDir: string;
+    tempActionName: string;
 };
 
 /**
@@ -102,7 +64,7 @@ declare type ActionBuild = {
  * @param action - Data about the Action.
  * @param root - root of the project.
  * @param dist - Path to the minimized version of the action code
- * @returns Relevant for data for the zip process..
+ * @returns Relevant data for the zip process..
  */
 declare function prepareToBuildAction(zipFileName: string, action: any, root: string, dist: string): Promise<ActionBuild>;
 
@@ -156,46 +118,6 @@ declare function deployActions(config: any, deployConfig?: {
 declare function deployWsk(scriptConfig: any, manifestContent: any, logFunc: any, filterEntities: any): Promise<object>;
 
 /**
- * @property apihost - Hostname and optional port for openwhisk platform
- * @property api_key - Authorisation key
- * @property [api] - Full API URL
- * @property [apiversion] - Api version
- * @property [namespace] - Namespace for resource requests
- * @property [ignore_certs] - Turns off server SSL/TLS certificate verification
- * @property [key] - Client key to use when connecting to the apihost
- */
-declare type OpenwhiskOptions = {
-    apihost: string;
-    api_key: string;
-    api?: string;
-    apiversion?: string;
-    namespace?: string;
-    ignore_certs?: boolean;
-    key?: string;
-};
-
-/**
- * @property actions - actions
- * @property activations - activations
- * @property namespaces - namespaces
- * @property packages - packages
- * @property rules - rules
- * @property triggers - triggers
- * @property routes - routes
- * @property logForwarding - Log Forwarding API
- */
-declare type OpenwhiskClient = {
-    actions: ow.Actions;
-    activations: ow.Activations;
-    namespaces: ow.Namespaces;
-    packages: ow.Packages;
-    rules: ow.Rules;
-    triggers: ow.Triggers;
-    routes: ow.Routes;
-    logForwarding: LogForwarding;
-};
-
-/**
  * Returns a Promise that resolves with a new RuntimeAPI object.
  * @param options - options for initialization
  * @returns a Promise with a RuntimeAPI object
@@ -237,6 +159,57 @@ declare class Triggers {
      */
     delete(options: any): Promise<object>;
 }
+
+/**
+ * @property apihost - Hostname and optional port for openwhisk platform
+ * @property api_key - Authorisation key
+ * @property [api] - Full API URL
+ * @property [apiversion] - Api version
+ * @property [namespace] - Namespace for resource requests
+ * @property [ignore_certs] - Turns off server SSL/TLS certificate verification
+ * @property [key] - Client key to use when connecting to the apihost
+ * @property [retry] - the retry options. Defaults to 2 retries, with a 200ms minTimeout.
+ */
+declare type OpenwhiskOptions = {
+    apihost: string;
+    api_key: string;
+    api?: string;
+    apiversion?: string;
+    namespace?: string;
+    ignore_certs?: boolean;
+    key?: string;
+    retry?: OpenwhiskRetryOptions;
+};
+
+/**
+ * @property retries - the number of retries for an OpenWhisk call
+ * @property minTimeout - the minimum number of milliseconds to wait before a retry
+ */
+declare type OpenwhiskRetryOptions = {
+    retries: number;
+    minTimeout: number;
+};
+
+/**
+ * @property actions - actions
+ * @property activations - activations
+ * @property namespaces - namespaces
+ * @property packages - packages
+ * @property rules - rules
+ * @property triggers - triggers
+ * @property routes - routes
+ * @property logForwarding - Log Forwarding management API
+ */
+declare type OpenwhiskClient = {
+    actions: ow.Actions;
+    activations: ow.Activations;
+    namespaces: ow.Namespaces;
+    packages: ow.Packages;
+    rules: ow.Rules;
+    triggers: ow.Triggers;
+    routes: ow.Routes;
+    logForwarding: LogForwarding;
+};
 
 /**
  * @param config - app config

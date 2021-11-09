@@ -283,9 +283,7 @@ for syncing managed projects.</p>
 <dd></dd>
 <dt><a href="#OpenwhiskOptions">OpenwhiskOptions</a> : <code>object</code></dt>
 <dd></dd>
-<dt><a href="#OpenwhiskClient">OpenwhiskClient</a> : <code>object</code></dt>
-<dd></dd>
-<dt><a href="#OpenwhiskOptions">OpenwhiskOptions</a> : <code>object</code></dt>
+<dt><a href="#OpenwhiskRetryOptions">OpenwhiskRetryOptions</a> : <code>object</code></dt>
 <dd></dd>
 <dt><a href="#OpenwhiskClient">OpenwhiskClient</a> : <code>object</code></dt>
 <dd></dd>
@@ -1379,6 +1377,18 @@ Will dump the previously actions built data information.
 | [namespace] | <code>string</code> | Namespace for resource requests |
 | [ignore_certs] | <code>boolean</code> | Turns off server SSL/TLS certificate verification |
 | [key] | <code>string</code> | Client key to use when connecting to the apihost |
+| [retry] | [<code>OpenwhiskRetryOptions</code>](#OpenwhiskRetryOptions) | the retry options. Defaults to 2 retries, with a 200ms minTimeout. |
+
+<a name="OpenwhiskRetryOptions"></a>
+
+## OpenwhiskRetryOptions : <code>object</code>
+**Kind**: global typedef  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| retries | <code>number</code> | the number of retries for an OpenWhisk call |
+| minTimeout | <code>number</code> | the minimum number of milliseconds to wait before a retry |
 
 <a name="OpenwhiskClient"></a>
 
@@ -1396,39 +1406,6 @@ Will dump the previously actions built data information.
 | triggers | <code>ow.Triggers</code> | triggers |
 | routes | <code>ow.Routes</code> | routes |
 | logForwarding | [<code>LogForwarding</code>](#LogForwarding) | Log Forwarding management API |
-
-<a name="OpenwhiskOptions"></a>
-
-## OpenwhiskOptions : <code>object</code>
-**Kind**: global typedef  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| apihost | <code>string</code> | Hostname and optional port for openwhisk platform |
-| api_key | <code>string</code> | Authorisation key |
-| [api] | <code>string</code> | Full API URL |
-| [apiversion] | <code>string</code> | Api version |
-| [namespace] | <code>string</code> | Namespace for resource requests |
-| [ignore_certs] | <code>boolean</code> | Turns off server SSL/TLS certificate verification |
-| [key] | <code>string</code> | Client key to use when connecting to the apihost |
-
-<a name="OpenwhiskClient"></a>
-
-## OpenwhiskClient : <code>object</code>
-**Kind**: global typedef  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| actions | <code>ow.Actions</code> | actions |
-| activations | <code>ow.Activations</code> | activations |
-| namespaces | <code>ow.Namespaces</code> | namespaces |
-| packages | <code>ow.Packages</code> | packages |
-| rules | <code>ow.Rules</code> | rules |
-| triggers | <code>ow.Triggers</code> | triggers |
-| routes | <code>ow.Routes</code> | routes |
-| logForwarding | [<code>LogForwarding</code>](#LogForwarding) | Log Forwarding API |
 
 <a name="ManifestPackages"></a>
 
