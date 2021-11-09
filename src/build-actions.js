@@ -45,7 +45,7 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
   config.entry = config.entry || []
   config.entry.push(actionPath)
   config.entry = uniqueArr(config.entry)
-  // make sure filepaths are resolved from the config dir
+  // make sure filePaths are resolved from the config dir
   config.entry = config.entry.map(f => {
     if (!path.isAbsolute(f)) {
       return path.resolve(path.dirname(configPath), f)
@@ -95,28 +95,49 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
 }
 // need config.root
 // config.actions.dist
-const buildAction = async (zipFileName, action, root, dist) => {
-  // path.resolve supports both relative and absolut action.function
+
+/**
+ * @typedef ActionBuild
+ * @type {object}
+ * @property {string} outPath zip output path
+ * @property {object} actionBuildData Object where key is the name of the action and value is its contentHash
+ * @property {string} tempBuildDir path of temp build
+ * @property {string} tempActionName name of the action file.
+ */
+
+/**
+ *  Will return data about an action ready to be built.
+ *
+ * @param {string} zipFileName the action's build file name without the .zip extension.
+ * @param {object} action  Data about the Action.
+ * @param {string} root root of the project.
+ * @param {string} dist Path to the minimized version of the action code
+ *
+ * @returns {Promise<ActionBuild>} Relevant data for the zip process..
+ */
+const prepareToBuildAction = async (zipFileName, action, root, dist) => {
+  // path.resolve supports both relative and absolute action.function
   const actionPath = path.resolve(root, action.function)
 
   const outPath = path.join(dist, `${zipFileName}.zip`)
   const tempBuildDir = path.join(dist, `${zipFileName}-temp`) // build all to tempDir first
   const actionFileStats = fs.lstatSync(actionPath)
+  const isDirectory = actionFileStats.isDirectory()
 
   // make sure temp/ exists
   fs.ensureDirSync(tempBuildDir)
-  // Process include(d) files
+  // Process included files
   const includeFiles = await utils.getIncludesForAction(action)
   includeFiles.forEach(incFile => {
     const dest = path.join(tempBuildDir, incFile.dest)
     fs.ensureDirSync(dest)
     // dest is expected to be a dir ...
-    incFile.sources.forEach(file => {
+    for (const file of incFile.sources) {
       fs.copyFileSync(file, path.join(dest, path.parse(file).base))
-    })
+    }
   })
 
-  if (actionFileStats.isDirectory()) {
+  if (isDirectory) {
     // make sure package.json exists OR index.js
     const packageJsonPath = path.join(actionPath, 'package.json')
     if (!fs.existsSync(packageJsonPath)) {
@@ -134,7 +155,7 @@ const buildAction = async (zipFileName, action, root, dist) => {
     // TODO: when we get to excludes, use a filter function here.
     fs.copySync(actionPath, tempBuildDir, { dereference: true })
   } else {
-    const outBuildFilename = 'index.js' // `${name}.tmp.js`
+    const outBuildFilename = 'index.[contenthash].js' // `${name}.tmp.js`
     // if not directory => package and minify to single file
     const webpackConfig = await getWebpackConfig(actionPath, root, tempBuildDir, outBuildFilename)
     const compiler = webpack(webpackConfig)
@@ -157,36 +178,77 @@ const buildAction = async (zipFileName, action, root, dist) => {
       })
     })
   }
+  let actionBuildData
+  let tempActionName
+  let contentHash
+  if (isDirectory) {
+    contentHash = actionFileStats.mtime.valueOf()
+    actionBuildData = { [zipFileName]: contentHash }
+  } else {
+    [tempActionName] = await fs.readdir(tempBuildDir) // eg: index.25d8f992944c60aa2e62.js
+    contentHash = tempActionName && tempActionName.split('.')[1]
+    actionBuildData = { [zipFileName]: contentHash }
+  }
 
-  // todo: split out zipping
-  // zip the dir
-  await utils.zip(tempBuildDir, outPath)
-  // fs.remove(tempBuildDir) // remove the build file, don't need to wait ...
-
-  // const fStats = fs.statSync(outPath)
-  // if (fStats && fStats.size > (22 * 1024 * 1024)) {
-  //   this.emit('warning', `file size exceeds 22 MB, you may not be able to deploy this action. file size is ${fStats.size} Bytes`)
-  // }
-  return outPath
+  return {
+    tempActionName,
+    outPath,
+    actionBuildData,
+    tempBuildDir
+  }
 }
 
-const buildActions = async (config, filterActions) => {
+/**
+ *  Will zip actions.
+ *  By default only actions which were not built before will be zipped.
+ *  Last built actions data will be used to validate which action needs zipping.
+ *
+ * @param {Array<ActionBuild>} buildsList Array with data about actions available to be zipped.
+ * @param {string} lastBuildsPath Path to the last built actions data.
+ * @param {boolean} skipCheck when true will zip all the actions from the buildsList
+ * @returns {string[]} Array of zipped actions.
+ */
+const zipActions = async (buildsList, lastBuildsPath, skipCheck) => {
+  let dumpData = {}
+  const builtList = []
+  let lastBuiltData = ''
+  if (fs.existsSync(lastBuildsPath)) {
+    lastBuiltData = await fs.readFile(lastBuildsPath, 'utf8')
+  }
+  for (const build of buildsList) {
+    const { outPath, actionBuildData, tempBuildDir, tempActionName } = build
+    const builtBefore = utils.actionBuiltBefore(lastBuiltData, actionBuildData)
+    if (!builtBefore || skipCheck) {
+      dumpData = { ...dumpData, ...actionBuildData }
+      if (tempActionName) {
+        // rename index.[contentHash] to index.js
+        fs.renameSync(path.join(tempBuildDir, tempActionName), path.join(tempBuildDir, 'index.js'))
+      }
+      await utils.zip(tempBuildDir, outPath)
+      builtList.push(outPath)
+    }
+  }
+  const parsedLastBuiltData = utils.safeParse(lastBuiltData)
+  await utils.dumpActionsBuiltInfo(lastBuildsPath, dumpData, parsedLastBuiltData)
+  return builtList
+}
+
+const buildActions = async (config, filterActions, skipCheck = false) => {
   if (!config.app.hasBackend) {
     throw new Error('cannot build actions, app has no backend')
   }
-
   // rewrite config
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
   let sanitizedFilterActions = cloneDeep(filterActions)
-
   if (sanitizedFilterActions) {
     // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
-    sanitizedFilterActions = sanitizedFilterActions.map((actionName) => actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
+    sanitizedFilterActions = sanitizedFilterActions.map(actionName => actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
   }
 
   // clear out dist dir
   fs.emptyDirSync(config.actions.dist)
-  const builtList = []
+  const toBuildList = []
+  const lastBuiltActionsPath = path.join(config.root, 'dist', 'last-built-actions.json')
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
     const actionsToBuild = Object.entries(pkg.actions || {})
 
@@ -202,10 +264,11 @@ const buildActions = async (config, filterActions) => {
       // zipFileName would be <actionName>.zip for default package and
       // <pkgName>/<actionName>.zip for non default packages for backward compatibility
       const zipFileName = utils.getActionZipFileName(pkgName, actionName, modifiedConfig.ow.package === pkgName)
-      builtList.push(await buildAction(zipFileName, action, config.root, config.actions.dist))
+      toBuildList.push(await prepareToBuildAction(zipFileName, action, config.root, config.actions.dist))
     }
   }
-  return builtList
+
+  return zipActions(toBuildList, lastBuiltActionsPath, skipCheck)
 }
 
 module.exports = buildActions
