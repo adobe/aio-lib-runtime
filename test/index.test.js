@@ -24,15 +24,16 @@ const gApiKey = 'test-apikey'
 
 // /////////////////////////////////////////////
 
-const createOptions = () => {
+const createOptions = (options) => {
   return {
     api_key: gApiKey,
-    apihost: gApiHost
+    apihost: gApiHost,
+    ...options
   }
 }
 
-const createSdkClient = async () => {
-  return sdk.init(createOptions())
+const createSdkClient = async (options) => {
+  return sdk.init(createOptions(options))
 }
 
 // /////////////////////////////////////////////
@@ -78,6 +79,16 @@ test('set http proxy', async () => {
   getProxyForUrl.mockReturnValue('https://user:hunter2@localhost:8081') // proxy settings available (url and auth)
   sdkClient = await createSdkClient()
   expect(Object.keys(sdkClient)).toEqual(expect.arrayContaining(['actions', 'activations', 'namespaces', 'packages', 'rules', 'triggers', 'routes']))
+})
+
+test('set retry by default', async () => {
+  const sdkClient = await createSdkClient()
+  expect(sdkClient.initOptions).toEqual(expect.objectContaining({ retry: { retries: 2, minTimeout: 200 } }))
+})
+
+test('set user retry', async () => {
+  const sdkClient = await createSdkClient({ retry: { retries: 1, minTimeout: 1000 } })
+  expect(sdkClient.initOptions).toEqual(expect.objectContaining({ retry: { retries: 1, minTimeout: 1000 } }))
 })
 
 test('triggers.create', async () => {
