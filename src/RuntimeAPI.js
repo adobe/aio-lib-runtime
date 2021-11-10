@@ -17,28 +17,8 @@ const deepCopy = require('lodash.clonedeep')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:RuntimeAPI', { provider: 'debug', level: process.env.LOG_LEVEL })
 const LogForwarding = require('./LogForwarding')
 
-/**
- * @typedef {object} OpenwhiskOptions
- * @property {string} apihost Hostname and optional port for openwhisk platform
- * @property {string} api_key Authorisation key
- * @property {string} [api] Full API URL
- * @property {string} [apiversion] Api version
- * @property {string} [namespace] Namespace for resource requests
- * @property {boolean} [ignore_certs] Turns off server SSL/TLS certificate verification
- * @property {string} [key] Client key to use when connecting to the apihost
- */
-
-/**
- * @typedef {object} OpenwhiskClient
- * @property {ow.Actions} actions actions
- * @property {ow.Activations} activations activations
- * @property {ow.Namespaces} namespaces namespaces
- * @property {ow.Packages} packages packages
- * @property {ow.Rules} rules rules
- * @property {ow.Triggers} triggers triggers
- * @property {ow.Routes} routes routes
- * @property {LogForwarding} logForwarding Log Forwarding API
- */
+require('./types.jsdoc') // for VS Code autocomplete
+/* global OpenwhiskOptions, OpenwhiskClient */ // for linter
 
 /**
  * This class provides methods to call your RuntimeAPI APIs.
@@ -77,6 +57,11 @@ class RuntimeAPI {
       aioLogger.debug('proxy settings not found')
     }
 
+    // set retry by default, 2 retres with a first timeout of 200ms (will be ~400ms on the second one)
+    if (clonedOptions.retry === undefined) {
+      clonedOptions.retry = { retries: 2, minTimeout: 200 }
+    }
+
     this.ow = ow(clonedOptions)
     const self = this
 
@@ -95,7 +80,8 @@ class RuntimeAPI {
         }
       }),
       routes: this.ow.routes,
-      logForwarding: new LogForwarding(options.namespace, options.apihost, options.api_key)
+      logForwarding: new LogForwarding(options.namespace, options.apihost, options.api_key),
+      initOptions: clonedOptions
     }
   }
 }

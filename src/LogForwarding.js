@@ -99,7 +99,7 @@ class LogForwarding {
     }
 
     const fetch = createFetch()
-    return fetch(
+    const res = await fetch(
       this.apiHost + '/runtime/namespaces/' + this.namespace + '/logForwarding',
       {
         method: method,
@@ -110,6 +110,10 @@ class LogForwarding {
         }
       }
     )
+    if (!res.ok) {
+      throw new Error(`${res.status} (${res.statusText}). Error: ${await res.text()}`)
+    }
+    return res
   }
 }
 

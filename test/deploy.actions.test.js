@@ -122,6 +122,7 @@ test('deploy full manifest', async () => {
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
+
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
 })
 
@@ -886,6 +887,45 @@ test('ims stage: if actions are deployed with the headless validator and custom 
       }
     ]
   })
+})
+
+it('should filter the manifest', async () => {
+  addSampleAppFiles()
+  runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
+
+  const buildDir = global.sampleAppConfig.actions.dist
+  // fake a previous build
+  const fakeFiles = {}
+  fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
+  fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
+  global.fakeFileSystem.addJson(fakeFiles)
+  await deployActions(global.sampleAppConfig, {
+    filterEntities: {
+      byBuiltActions: true
+    }
+  })
+
+  const expectedDistPackagesFiltered = {
+    'sample-app-1.0.0': {
+      license: 'Apache-2.0',
+      version: '1.0.0',
+      actions: {
+        'action-zip': {
+          function: path.normalize('dist/actions/action-zip.zip'),
+          runtime: 'nodejs:12',
+          web: 'yes'
+        }
+      },
+      apis: { api1: { base: { path: { action: { method: 'get' } } } } },
+      dependencies: { dependency1: { location: 'fake.com/package' } },
+      rules: { rule1: { action: 'action', rule: true, trigger: 'trigger1' } },
+      sequences: { 'action-sequence': { actions: 'action, action-zip', web: 'yes' } },
+      triggers: { trigger1: null }
+    }
+  }
+
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
 })
 
 test('No backend is present', async () => {

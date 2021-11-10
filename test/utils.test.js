@@ -16,10 +16,10 @@ const os = require('os')
 const path = require('path')
 const archiver = require('archiver')
 const networking = require('@adobe/aio-lib-core-networking')
+const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:utils', { provider: 'debug', level: process.env.LOG_LEVEL })
 networking.createFetch = jest.fn()
 const mockFetch = jest.fn()
 networking.createFetch.mockReturnValue(mockFetch)
-
 jest.mock('archiver')
 jest.mock('@adobe/aio-lib-core-networking')
 jest.mock('globby')
@@ -98,6 +98,10 @@ describe('utils has the right functions', () => {
     expect(typeof utils.getProjectHash).toEqual('function')
     expect(typeof utils.addManagedProjectAnnotations).toEqual('function')
     expect(typeof utils.printLogs).toEqual('function')
+    expect(typeof utils.getActionZipFileName).toEqual('function')
+    expect(typeof utils.getActionNameFromZipFile).toEqual('function')
+    expect(typeof utils.dumpActionsBuiltInfo).toEqual('function')
+    expect(typeof utils.actionBuiltBefore).toEqual('function')
 
     expect(utils.urlJoin).toBeDefined()
     expect(typeof utils.urlJoin).toBe('function')
@@ -160,7 +164,7 @@ describe('createComponentsFromSequence', () => {
     })
   })
 })
-
+/* eslint-disable no-template-curly-in-string */
 describe('processInputs', () => {
   test('input = {}, params = {}', () => {
     const res = utils.processInputs({}, {})
@@ -186,22 +190,63 @@ describe('processInputs', () => {
     const res = utils.processInputs({ I: { default: 'am' } }, { })
     expect(res).toEqual({ I: 'am' })
   })
-  test('input = { I : { value: am } }, params = { I : { value: nitpicking } }', () => {
-    // note: is this relevant?
-    const res = utils.processInputs({ I: { value: 'am' } }, { I: { value: 'nitpicking' } })
-    expect(res).toEqual({ I: { value: 'nitpicking' } })
+  test('input = { I : { value: am } }, params = { I : nitpicking }', () => {
+    const res = utils.processInputs({ I: { value: 'am' } }, { I: 'nitpicking' })
+    expect(res).toEqual({ I: 'nitpicking' })
   })
   test('input = { a : string, one : number, an: integer }, params = { }', () => {
     const res = utils.processInputs({ a: 'string', one: 'number', an: 'integer' }, { })
     expect(res).toEqual({ a: '', one: 0, an: 0 })
   })
-  // eslint-disable-next-line no-template-curly-in-string
   test('input = { an: $undefEnvVar, a: $definedEnvVar, another: $definedEnvVar, the: ${definedEnvVar}, one: ${ definedEnvVar  } }, params = { a: 123 }', () => {
     process.env.definedEnvVar = 'giraffe'
-    // eslint-disable-next-line no-template-curly-in-string
     const res = utils.processInputs({ an: '$undefEnvVar', a: '$definedEnvVar', another: '$definedEnvVar', the: '${definedEnvVar}', one: '${ definedEnvVar  }' }, { a: 123 })
-    expect(res).toEqual({ a: 123, another: 'giraffe', an: '', the: 'giraffe', one: 'giraffe' })
+    expect(res).toStrictEqual({ a: 123, another: 'giraffe', an: '', the: 'giraffe', one: 'giraffe' })
     delete process.env.definedEnvVar
+  })
+  test('invalid input returns undefined (coverage)', () => {
+    let res = utils.processInputs({}, { a: 123 })
+    expect(res).toEqual({})
+    res = utils.processInputs(undefined, { a: 123 })
+    expect(res).toEqual(undefined)
+    res = utils.processInputs('string', { a: 123 })
+    expect(res).toEqual(undefined)
+  })
+  test('nested input and params', () => {
+    process.env.BAR = 'itWorks'
+    process.env.BAR_VAR = 'barVar'
+    process.env.FOO = 'fooo'
+    const input = {
+      a: 'I will be replaced',
+      stuff: '$BAR_VAR $BAR_VAR, ${ BAR_VAR }, $FOO',
+      foo: '${BAR}',
+      bar: {
+        default: '${BAR}, $BAR, ${FOO}'
+      },
+      config: {
+        nestedFoo: {
+          extraNested: '${BAR}, $BAR, ${FOO}'
+        },
+        a: 'I will not be replaced'
+      }
+    }
+    const expectedOutput = {
+      a: 123,
+      stuff: 'barVar barVar, barVar, fooo',
+      foo: process.env.BAR,
+      bar: `${process.env.BAR}, ${process.env.BAR}, ${process.env.FOO}`,
+      config: {
+        nestedFoo: {
+          extraNested: `${process.env.BAR}, ${process.env.BAR}, ${process.env.FOO}`
+        },
+        a: 'I will not be replaced'
+      }
+    }
+    const res = utils.processInputs(input, { a: 123 })
+    expect(res).toStrictEqual(expectedOutput)
+    delete process.env.BAR
+    delete process.env.BAR_VAR
+    delete process.env.FOO
   })
 })
 
@@ -2049,5 +2094,30 @@ describe('validateActionRuntime', () => {
 
     const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:16' } })
     expect(func).toThrowError(`Unsupported node version in action undefined. Supported versions are ${supportedEngines.node}`)
+  })
+
+  test('dumpActionsBuiltInfo might catch some errors under unlikely conditions', async () => {
+    const circ = {}
+    circ.circ = circ
+    const func = () => utils.dumpActionsBuiltInfo('./last-built-actions.mock.txt', circ)
+    await expect(func).rejects.toThrowError(TypeError)
+  })
+
+  test('getActionNameFromZipFile expected output', async () => {
+    const actionZipName = 'actions-zip.zip'
+    const expectedOutput = 'actions-zip'
+    await expect(utils.getActionNameFromZipFile(actionZipName)).toEqual(expectedOutput)
+  })
+
+  test('getActionNameFromZipFile empty string', async () => {
+    const actionZipName = 'actions-zip'
+    const expectedOutput = ''
+    await expect(utils.getActionNameFromZipFile(actionZipName)).toEqual(expectedOutput)
+  })
+  test('actionBuiltBefore would call logger on invalid data, (coverage)', () => {
+    const loggerSpy = jest.spyOn(aioLogger, 'debug')
+    const builtBefore = utils.actionBuiltBefore(null, null)
+    expect(loggerSpy).toHaveBeenLastCalledWith('actionBuiltBefore > Invalid actionBuiltData')
+    expect(builtBefore).toBe(false)
   })
 })

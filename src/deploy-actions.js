@@ -24,8 +24,10 @@ const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...package
  *
  * @param {object} config app config
  * @param {object} [deployConfig={}] deployment config
+ * @param {boolean} [deployConfig.isLocalDev] local dev flag
  * @param {object} [deployConfig.filterEntities] add filters to deploy only specified OpenWhisk entities
- * @param {Array} [deployConfig.filterEntities.actions] filter list of actions to deploy, e.g. ['name1', ..]
+ * @param {Array} [deployConfig.filterEntities.actions] filter list of actions to deploy by provided array, e.g. ['name1', ..]
+ * @param {boolean} [deployConfig.filterEntities.byBuiltActions] if true, trim actions from the manifest based on the already built actions
  * @param {Array} [deployConfig.filterEntities.sequences] filter list of sequences to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.triggers] filter list of triggers to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.rules] filter list of rules to deploy, e.g. ['name1', ..]
@@ -39,6 +41,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
 
   const isLocalDev = deployConfig.isLocalDev
   const log = logFunc || console.log
+  let filterEntities = deployConfig.filterEntities
 
   // checks
   /// a. missing credentials
@@ -56,6 +59,29 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const manifest = modifiedConfig.manifest.full
   const relDist = utils._relApp(config.root, config.actions.dist)
+  if (deployConfig.filterEntities && deployConfig.filterEntities.byBuiltActions) {
+    /* Filter manifest actions based on the already built actions */
+    aioLogger.debug('Trimming out the manifest\'s actions...')
+    filterEntities = undefined
+    const distFiles = fs.readdirSync(path.resolve(__dirname, dist))
+    const builtActions = []
+    distFiles.forEach(fileName => {
+      const actionName = utils.getActionNameFromZipFile(fileName)
+      if (actionName) {
+        builtActions.push(actionName)
+      }
+    })
+    Object.entries(manifest.packages).forEach(([packageName, pkg]) => {
+      const packageActions = pkg.actions
+      manifest.packages[packageName].actions = Object.keys(packageActions).reduce((newActions, actionKey) => {
+        if (builtActions.includes(actionKey)) {
+          // eslint-disable-next-line no-param-reassign
+          newActions[actionKey] = packageActions[actionKey]
+        }
+        return newActions
+      }, {})
+    })
+  }
   for (const [pkgName, pkg] of Object.entries(manifest.packages)) {
     pkg.version = config.app.version
     for (const [name, action] of Object.entries(pkg.actions || {})) {
@@ -65,17 +91,15 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     }
   }
 
-  const filterEntities = deployConfig.filterEntities
-  if (deployConfig.filterEntities) {
-    // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
+  // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
+  if (filterEntities) {
     packageItems.forEach((k) => {
-      if (deployConfig.filterEntities[k]) {
-        filterEntities[k] = deployConfig.filterEntities[k].map((actionName) =>
+      if (filterEntities[k]) {
+        filterEntities[k] = filterEntities[k].map((actionName) =>
           actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
       }
     })
   }
-
   // 2. deploy manifest
   const deployedEntities = await deployWsk(
     modifiedConfig,
@@ -83,7 +107,6 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     log,
     filterEntities
   )
-
   // enrich actions array with urls
   if (Array.isArray(deployedEntities.actions)) {
     const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
@@ -122,7 +145,7 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
    * @param {object} pkgName name of the package
    * @param {object} pkgEntity package object from the manifest
    * @param {object} filterItems items (actions, sequences, triggers, rules etc) to be filtered
-   * @param {object} fullNameCheck true of the items are part of packages (actions and sequences)
+   * @param {boolean} fullNameCheck true if the items are part of packages (actions and sequences)
    * @returns {object} package object containing only the filterItems
    */
   function _filterOutPackageEntity (pkgName, pkgEntity, filterItems, fullNameCheck) {
@@ -131,7 +154,7 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
     }
     // We check the full name (<packageName>/<actionName>) for actions and sequences
     return Object.keys(pkgEntity)
-      .filter(name => fullNameCheck ? filterItems.includes(pkgName + '/' + name) : filterItems.includes(name))
+      .filter(entityName => fullNameCheck ? filterItems.includes(`${pkgName}/${entityName}`) : filterItems.includes(entityName))
       .reduce((obj, key) => {
         obj[key] = pkgEntity[key] // eslint-disable-line no-param-reassign
         return obj
@@ -147,12 +170,11 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
   // support for entity filters, e.g. user wants to deploy only a single action
   if (typeof filterEntities === 'object') {
     deleteOldEntities = false // don't delete any deployed entity
-
-    filterableItems.forEach(k => {
-      Object.entries(packages).forEach(([pkgName, pkg]) => {
-        pkg[k] = _filterOutPackageEntity(pkgName, pkg[k], filterEntities[k], packageItems.includes(k)) // eslint-disable-line no-param-reassign
+    filterableItems.forEach(filterableItemKey => {
+      Object.entries(packages).forEach(([pkgName, packageEntity]) => {
+        packageEntity[filterableItemKey] = _filterOutPackageEntity(pkgName, packageEntity[filterableItemKey], filterEntities[filterableItemKey], packageItems.includes(filterableItemKey)) // eslint-disable-line no-param-reassign
         // cleanup empty entities
-        if (Object.keys(pkg[k]).length === 0) delete pkg[k] // eslint-disable-line no-param-reassign
+        if (Object.keys(packageEntity[filterableItemKey]).length === 0) delete packageEntity[filterableItemKey] // eslint-disable-line no-param-reassign
       })
     })
     // todo filter out packages, like auth package
