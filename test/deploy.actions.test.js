@@ -49,12 +49,12 @@ const expectedDistManifest = {
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         },
         'action-zip': {
-          function: path.normalize('dist/actions/action-zip.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action-zip.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -252,7 +252,7 @@ test('use deployConfig.filterEntities to deploy only one action', async () => {
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -291,7 +291,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action'
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -333,7 +333,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action 
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -381,7 +381,7 @@ test('use deployConfig.filterEntities to deploy only one action and one api', as
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -431,12 +431,12 @@ test('use deployConfig.filterEntities to deploy only two actions and one sequenc
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         },
         'action-zip': {
-          function: path.normalize('dist/actions/action-zip.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action-zip.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -515,7 +515,7 @@ test('use deployConfig.filterEntities on non existing pkgEntity should work', as
         version: '1.0.0',
         actions: {
           action: {
-            function: path.normalize('dist/actions/action.zip'),
+            function: path.normalize('dist/actions/sample-app-reduced-1.0.0/action.zip'),
             runtime: 'nodejs:12',
             web: 'yes'
           }
@@ -651,10 +651,10 @@ test('custom package and action filter', async () => {
     'bobby-mcgee': expect.objectContaining({
       actions: {
         action: {
-          function: path.normalize('dist/actions/action.zip'), runtime: 'nodejs:12', web: 'yes'
+          function: path.normalize('dist/actions/bobby-mcgee/action.zip'), runtime: 'nodejs:12', web: 'yes'
         },
         'action-zip': {
-          function: path.normalize('dist/actions/action-zip.zip'), runtime: 'nodejs:12', web: 'yes'
+          function: path.normalize('dist/actions/bobby-mcgee/action-zip.zip'), runtime: 'nodejs:12', web: 'yes'
         }
       }
     })
@@ -896,8 +896,8 @@ it('should filter the manifest', async () => {
   const buildDir = global.sampleAppConfig.actions.dist
   // fake a previous build
   const fakeFiles = {}
-  fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
-  fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
+  fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action.js')] = 'fakecontent'
+  fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action-zip.zip')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)
   await deployActions(global.sampleAppConfig, {
     filterEntities: {
@@ -911,7 +911,7 @@ it('should filter the manifest', async () => {
       version: '1.0.0',
       actions: {
         'action-zip': {
-          function: path.normalize('dist/actions/action-zip.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action-zip.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }

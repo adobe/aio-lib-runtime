@@ -258,12 +258,8 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
       if (Array.isArray(sanitizedFilterActions) && !sanitizedFilterActions.includes(actionFullName)) {
         continue
       }
-      // const out =  // todo: log output of each action as it is built
-      // need config.root
-      // config.actions.dist
-      // zipFileName would be <actionName>.zip for default package and
-      // <pkgName>/<actionName>.zip for non default packages for backward compatibility
-      const zipFileName = utils.getActionZipFileName(pkgName, actionName, modifiedConfig.ow.package === pkgName)
+      // zipFileName = <pkgName>/<actionName>.zip
+      const zipFileName = utils.getActionZipFileName(pkgName, actionName, false)
       toBuildList.push(await prepareToBuildAction(zipFileName, action, config.root, config.actions.dist))
     }
   }

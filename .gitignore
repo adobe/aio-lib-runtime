@@ -3,3 +3,4 @@ package-lock.json
 coverage
 junit.xml
 .env
+.idea

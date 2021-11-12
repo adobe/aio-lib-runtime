@@ -1963,6 +1963,20 @@ describe('getActionUrls', () => {
     const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expect.objectContaining(expected))
   })
+  test('urls with action keys when legacy on', () => {
+    const expected = {
+      'pkg2/thataction': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence',
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      action: 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
+      'action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip'
+    }
+    const result = utils.getActionUrls(config, false, false, true)
+    expect(result).toEqual(expected)
+  })
 })
 
 describe('_absApp', () => {
@@ -2119,5 +2133,8 @@ describe('validateActionRuntime', () => {
     const builtBefore = utils.actionBuiltBefore(null, null)
     expect(loggerSpy).toHaveBeenLastCalledWith('actionBuiltBefore > Invalid actionBuiltData')
     expect(builtBefore).toBe(false)
+  })
+  test('getActionZipFileName, defaultPkg:true  (coverage)', () => {
+    expect(utils.getActionZipFileName('pk1', 'action', true)).toEqual('action')
   })
 })

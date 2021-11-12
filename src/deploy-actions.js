@@ -65,10 +65,13 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     filterEntities = undefined
     const distFiles = fs.readdirSync(path.resolve(__dirname, dist))
     const builtActions = []
-    distFiles.forEach(fileName => {
-      const actionName = utils.getActionNameFromZipFile(fileName)
-      if (actionName) {
-        builtActions.push(actionName)
+    distFiles.forEach(pgkName => {
+      const actionFiles = fs.readdirSync(path.resolve(__dirname, dist, pgkName))
+      for (const fileName of actionFiles) {
+        const actionName = utils.getActionNameFromZipFile(fileName)
+        if (actionName) {
+          builtActions.push(actionName)
+        }
       }
     })
     Object.entries(manifest.packages).forEach(([packageName, pkg]) => {
@@ -86,7 +89,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     pkg.version = config.app.version
     for (const [name, action] of Object.entries(pkg.actions || {})) {
       // change path to built action
-      const zipFileName = utils.getActionZipFileName(pkgName, name, modifiedConfig.ow.package === pkgName) + '.zip'
+      const zipFileName = utils.getActionZipFileName(pkgName, name, false) + '.zip'
       action.function = path.join(relDist, zipFileName)
     }
   }

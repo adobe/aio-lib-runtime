@@ -1847,9 +1847,10 @@ function checkOpenWhiskCredentials (config) {
  * @param {object} appConfig app config
  * @param {boolean} isRemoteDev remote dev
  * @param {boolean} isLocalDev local dev
+ * @param {boolean} legacy default false add backwards compatibility for urls keys.
  * @returns {object} urls of actions
  */
-function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
+function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false, legacy = false) {
   // sets action urls [{ name: url }]
   const config = replacePackagePlaceHolder(appConfig)
   const cleanApihost = removeProtocolFromURL(config.ow.apihost)
@@ -1919,16 +1920,31 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   // populate urls
   const actionsAndSequences = {}
   Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
+    const defaultPkg = pkgName === config.ow.package
     Object.entries(pkg.actions || {}).forEach(([actionName, action]) => {
+      if (defaultPkg && legacy) {
+        // keep old action url key for backwards compatibility
+        actionsAndSequences[getActionZipFileName(pkgName, actionName, defaultPkg)] = action
+      }
       actionsAndSequences[getActionZipFileName(pkgName, actionName, false)] = action
     })
     Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
+      if (defaultPkg && legacy) {
+        // keep old action url key for backwards compatibility
+        actionsAndSequences[getActionZipFileName(pkgName, actionName, defaultPkg)] = action
+      }
       actionsAndSequences[getActionZipFileName(pkgName, actionName, false)] = action
     })
   })
   const urls = {}
   Object.entries(actionsAndSequences).forEach(([pkgAndActionName, action]) => {
-    urls[pkgAndActionName] = getActionUrl(pkgAndActionName, action)
+    let fullNameInURL = pkgAndActionName
+    if (pkgAndActionName.indexOf('/') === -1) {
+      // pkg not included in pkgAndActionName since this is from the default package
+      // But the pkg name is required to construct the URL
+      fullNameInURL = config.ow.package + '/' + pkgAndActionName
+    }
+    urls[pkgAndActionName] = getActionUrl(fullNameInURL, action)
   })
   return urls
 }
@@ -2042,9 +2058,9 @@ function activationLogBanner (logFunc, activation, activationLogs) {
  */
 function actionBuiltBefore (lastBuildsData, actionBuildData) {
   if (actionBuildData && Object.keys(actionBuildData).length > 0) {
-    const [actionName, contenthash] = Object.entries(actionBuildData)[0]
+    const [actionName, contentHash] = Object.entries(actionBuildData)[0]
     const storedData = safeParse(lastBuildsData)
-    return storedData[actionName] === contenthash
+    return storedData[actionName] === contentHash
   }
   aioLogger.debug('actionBuiltBefore > Invalid actionBuiltData')
   return false
