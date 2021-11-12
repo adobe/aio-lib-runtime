@@ -1,6 +1,6 @@
 {
   "name": "@adobe/aio-lib-runtime",
-  "version": "3.1.1",
+  "version": "3.2.0",
   "license": "Apache-2.0",
   "main": "src/index.js",
   "bugs": {
@@ -20,7 +20,7 @@
     "globby": "^11.0.1",
     "js-yaml": "^3.14.0",
     "lodash.clonedeep": "^4.5.0",
-    "openwhisk": "^3.21.2",
+    "openwhisk": "^3.21.5",
     "openwhisk-fqn": "0.0.2",
     "proxy-from-env": "^1.1.0",
     "semver": "^7.3.2",
