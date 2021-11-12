@@ -63,6 +63,9 @@ async function sdkTest() {
 <dt><a href="#LogForwarding">LogForwarding</a></dt>
 <dd><p>Log Forwarding management API</p>
 </dd>
+<dt><a href="#LogForwardingLocalDestinationsProvider">LogForwardingLocalDestinationsProvider</a></dt>
+<dd><p>Log Forwarding destination provider</p>
+</dd>
 <dt><a href="#RuntimeAPI">RuntimeAPI</a></dt>
 <dd><p>This class provides methods to call your RuntimeAPI APIs.
 Before calling any method initialize the instance by calling the <code>init</code> method on it
@@ -356,9 +359,12 @@ Log Forwarding management API
 
 * [LogForwarding](#LogForwarding)
     * [.get()](#LogForwarding+get) ⇒ <code>Promise.&lt;\*&gt;</code>
-    * [.setAdobeIoRuntime()](#LogForwarding+setAdobeIoRuntime) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>
-    * [.setAzureLogAnalytics(customerId, sharedKey, logType)](#LogForwarding+setAzureLogAnalytics) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>
-    * [.setSplunkHec(host, port, index, hecToken)](#LogForwarding+setSplunkHec) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>
+    * ~~[.setAdobeIoRuntime()](#LogForwarding+setAdobeIoRuntime) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>~~
+    * ~~[.setAzureLogAnalytics(customerId, sharedKey, logType)](#LogForwarding+setAzureLogAnalytics) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>~~
+    * ~~[.setSplunkHec(host, port, index, hecToken)](#LogForwarding+setSplunkHec) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>~~
+    * [.getSupportedDestinations()](#LogForwarding+getSupportedDestinations) ⇒ <code>Array.&lt;object&gt;</code>
+    * [.getDestinationSettings(destination)](#LogForwarding+getDestinationSettings) ⇒ <code>Array.&lt;object&gt;</code>
+    * [.setDestination(destination, config)](#LogForwarding+setDestination) ⇒ <code>Promise.&lt;\*&gt;</code>
 
 <a name="LogForwarding+get"></a>
 
@@ -369,14 +375,18 @@ Get current Log Forwarding settings
 **Returns**: <code>Promise.&lt;\*&gt;</code> - response from get API  
 <a name="LogForwarding+setAdobeIoRuntime"></a>
 
-### logForwarding.setAdobeIoRuntime() ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>
+### ~~logForwarding.setAdobeIoRuntime() ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>~~
+***Deprecated***
+
 Set Log Forwarding to Adobe I/O Runtime (default behavior)
 
 **Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
 **Returns**: <code>Promise.&lt;(\*\|undefined)&gt;</code> - response from set API  
 <a name="LogForwarding+setAzureLogAnalytics"></a>
 
-### logForwarding.setAzureLogAnalytics(customerId, sharedKey, logType) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>
+### ~~logForwarding.setAzureLogAnalytics(customerId, sharedKey, logType) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>~~
+***Deprecated***
+
 Set Log Forwarding to Azure Log Analytics
 
 **Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
@@ -390,7 +400,9 @@ Set Log Forwarding to Azure Log Analytics
 
 <a name="LogForwarding+setSplunkHec"></a>
 
-### logForwarding.setSplunkHec(host, port, index, hecToken) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>
+### ~~logForwarding.setSplunkHec(host, port, index, hecToken) ⇒ <code>Promise.&lt;(\*\|undefined)&gt;</code>~~
+***Deprecated***
+
 Set Log Forwarding to Splunk HEC
 
 **Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
@@ -402,6 +414,68 @@ Set Log Forwarding to Splunk HEC
 | port | <code>string</code> | port |
 | index | <code>string</code> | index |
 | hecToken | <code>string</code> | hec token |
+
+<a name="LogForwarding+getSupportedDestinations"></a>
+
+### logForwarding.getSupportedDestinations() ⇒ <code>Array.&lt;object&gt;</code>
+Get supported destinations
+
+**Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
+**Returns**: <code>Array.&lt;object&gt;</code> - in format: { value: <value>, name: <name> }  
+<a name="LogForwarding+getDestinationSettings"></a>
+
+### logForwarding.getDestinationSettings(destination) ⇒ <code>Array.&lt;object&gt;</code>
+Get destination settings
+
+**Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
+**Returns**: <code>Array.&lt;object&gt;</code> - in format: { name: <name>, message: <message>[, type: <type>] }  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| destination | <code>string</code> | Destination name |
+
+<a name="LogForwarding+setDestination"></a>
+
+### logForwarding.setDestination(destination, config) ⇒ <code>Promise.&lt;\*&gt;</code>
+Configure destination
+
+**Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
+**Returns**: <code>Promise.&lt;\*&gt;</code> - response from set API  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| destination | <code>string</code> | Destination name |
+| config | <code>object</code> | value-pairs of settings, specific to the destination |
+
+<a name="LogForwardingLocalDestinationsProvider"></a>
+
+## LogForwardingLocalDestinationsProvider
+Log Forwarding destination provider
+
+**Kind**: global class  
+
+* [LogForwardingLocalDestinationsProvider](#LogForwardingLocalDestinationsProvider)
+    * [.getSupportedDestinations()](#LogForwardingLocalDestinationsProvider+getSupportedDestinations) ⇒ <code>Array.&lt;object&gt;</code>
+    * [.getDestinationSettings(destination)](#LogForwardingLocalDestinationsProvider+getDestinationSettings) ⇒ <code>Array.&lt;object&gt;</code>
+
+<a name="LogForwardingLocalDestinationsProvider+getSupportedDestinations"></a>
+
+### logForwardingLocalDestinationsProvider.getSupportedDestinations() ⇒ <code>Array.&lt;object&gt;</code>
+Get supported destinations
+
+**Kind**: instance method of [<code>LogForwardingLocalDestinationsProvider</code>](#LogForwardingLocalDestinationsProvider)  
+**Returns**: <code>Array.&lt;object&gt;</code> - in format: { value: <value>, name: <name> }  
+<a name="LogForwardingLocalDestinationsProvider+getDestinationSettings"></a>
+
+### logForwardingLocalDestinationsProvider.getDestinationSettings(destination) ⇒ <code>Array.&lt;object&gt;</code>
+Get destination settings
+
+**Kind**: instance method of [<code>LogForwardingLocalDestinationsProvider</code>](#LogForwardingLocalDestinationsProvider)  
+**Returns**: <code>Array.&lt;object&gt;</code> - in format: { name: <name>, message: <message>[, type: <type>] }  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| destination | <code>string</code> | Destination name |
 
 <a name="RuntimeAPI"></a>
 
