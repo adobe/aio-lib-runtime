@@ -2021,7 +2021,7 @@ function getActionZipFileName (pkgName, actionName, defaultPkg) {
  * Returns the action name based on the zipFile name.
  *
  * @param {string} zipFile name of the zip file
- * @returns {string} name of the action
+ * @returns {string} name of the action or empty string.
  */
 function getActionNameFromZipFile (zipFile) {
   const ZIP_EXTENSION = '.zip'

@@ -258,6 +258,13 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
       if (Array.isArray(sanitizedFilterActions) && !sanitizedFilterActions.includes(actionFullName)) {
         continue
       }
+      const defaultPkg = modifiedConfig.ow.package === pkgName
+      if (defaultPkg) {
+        // zipFileName = <actionName>.zip
+        // build using old path for backwards compatibility (it will be ignored on deploy)
+        const zipFileName = utils.getActionZipFileName(pkgName, actionName, defaultPkg)
+        toBuildList.push(await prepareToBuildAction(zipFileName, action, config.root, config.actions.dist))
+      }
       // zipFileName = <pkgName>/<actionName>.zip
       const zipFileName = utils.getActionZipFileName(pkgName, actionName, false)
       toBuildList.push(await prepareToBuildAction(zipFileName, action, config.root, config.actions.dist))

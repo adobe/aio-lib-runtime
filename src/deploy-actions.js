@@ -59,24 +59,25 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const manifest = modifiedConfig.manifest.full
   const relDist = utils._relApp(config.root, config.actions.dist)
+
   if (deployConfig.filterEntities && deployConfig.filterEntities.byBuiltActions) {
-    /* Filter manifest actions based on the already built actions */
     aioLogger.debug('Trimming out the manifest\'s actions...')
     filterEntities = undefined
-    const distFiles = fs.readdirSync(path.resolve(__dirname, dist))
     const builtActions = []
+    const distFiles = fs.readdirSync(path.resolve(__dirname, dist))
     distFiles.forEach(pgkName => {
-      const actionFiles = fs.readdirSync(path.resolve(__dirname, dist, pgkName))
-      for (const fileName of actionFiles) {
-        const actionName = utils.getActionNameFromZipFile(fileName)
-        if (actionName) {
-          builtActions.push(actionName)
+      const packageFolder = path.resolve(__dirname, dist, pgkName)
+      if (fs.statSync(packageFolder).isDirectory()) {
+        const pkgFolder = fs.readdirSync(packageFolder)
+        for (const actionFiles of pkgFolder) {
+          const actionName = utils.getActionNameFromZipFile(actionFiles)
+          actionName && builtActions.push(actionName)
         }
       }
     })
-    Object.entries(manifest.packages).forEach(([packageName, pkg]) => {
+    Object.entries(manifest.packages).forEach(([pgkName, pkg]) => {
       const packageActions = pkg.actions
-      manifest.packages[packageName].actions = Object.keys(packageActions).reduce((newActions, actionKey) => {
+      manifest.packages[pgkName].actions = Object.keys(packageActions).reduce((newActions, actionKey) => {
         if (builtActions.includes(actionKey)) {
           // eslint-disable-next-line no-param-reassign
           newActions[actionKey] = packageActions[actionKey]
