@@ -889,13 +889,14 @@ test('ims stage: if actions are deployed with the headless validator and custom 
   })
 })
 
-it('should filter the manifest', async () => {
+it('should filter the manifest, ignore the legacy action build', async () => {
   addSampleAppFiles()
   runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
 
   const buildDir = global.sampleAppConfig.actions.dist
   // fake a previous build
   const fakeFiles = {}
+  fakeFiles[path.join(buildDir, 'action-zip.js')] = 'fakecontent'
   fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action.js')] = 'fakecontent'
   fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action-zip.zip')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)

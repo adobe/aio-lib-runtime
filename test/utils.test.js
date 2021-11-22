@@ -2133,6 +2133,8 @@ describe('validateActionRuntime', () => {
     const builtBefore = utils.actionBuiltBefore(null, null)
     expect(loggerSpy).toHaveBeenLastCalledWith('actionBuiltBefore > Invalid actionBuiltData')
     expect(builtBefore).toBe(false)
+    const builtBefore1 = utils.actionBuiltBefore('', { someAction: undefined })
+    expect(builtBefore1).toBe(false)
   })
   test('getActionZipFileName, defaultPkg:true  (coverage)', () => {
     expect(utils.getActionZipFileName('pk1', 'action', true)).toEqual('action')

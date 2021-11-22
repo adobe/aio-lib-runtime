@@ -2058,9 +2058,12 @@ function activationLogBanner (logFunc, activation, activationLogs) {
  */
 function actionBuiltBefore (lastBuildsData, actionBuildData) {
   if (actionBuildData && Object.keys(actionBuildData).length > 0) {
+    // actionBuildData = { [actionName]: contentHash }
     const [actionName, contentHash] = Object.entries(actionBuildData)[0]
     const storedData = safeParse(lastBuildsData)
-    return storedData[actionName] === contentHash
+    if (contentHash) {
+      return storedData[actionName] === contentHash
+    }
   }
   aioLogger.debug('actionBuiltBefore > Invalid actionBuiltData')
   return false
@@ -2076,10 +2079,7 @@ function actionBuiltBefore (lastBuildsData, actionBuildData) {
  */
 async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prevBuildData) {
   try {
-    if (!fs.existsSync(lastBuiltActionsPath)) {
-      aioLogger.debug('Deployments log file not found, creating a new one...')
-      await fs.createFile(lastBuiltActionsPath)
-    }
+    fs.ensureFileSync(lastBuiltActionsPath)
     const textData = JSON.stringify({ ...prevBuildData, ...actionBuildData })
     await fs.writeFile(lastBuiltActionsPath, textData)
   } catch (e) {
