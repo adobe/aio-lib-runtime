@@ -44,7 +44,6 @@ const supportedEngines = require('../package.json').engines
  * @property {Array<ManifestRule>} [rules] Rules in the manifest package
  * @property {Array<ManifestDependency>} [dependencies] Dependencies in the manifest package
  * @property {Array<object>} [apis] Apis in the manifest package
- *
  */
 
 /**
@@ -66,7 +65,6 @@ const supportedEngines = require('../package.json').engines
  *                     option is only valid if `web` or `web-export` is set to true
  * @property {string} [docker] the docker container to run the action into
  * @property {Array<object>} [annotations] the manifest action annotations
- *
  */
 
 /**
@@ -166,7 +164,6 @@ async function getIncludesForAction (action) {
  * @property {string} action the action name behind the api
  * @property {string} responsettype the response type, e.g. 'json'
  * @property {string} operation the http method, e.g 'get'
- *
  */
 
 /**
@@ -214,7 +211,6 @@ async function getIncludesForAction (action) {
  * TODO
  *
  * @typedef {Array<object>} DeploymentPackages
- *
  */
 
 /**
@@ -691,6 +687,7 @@ function replaceIfEnvKey (inputString) {
   }
   let match
   let output = inputString
+  // eslint-disable-next-line prefer-regex-literals
   const envKeyMatch = RegExp(/(\${|\${ +|\$)\w+( +}|}|)/, 'g')
   while ((match = envKeyMatch.exec(inputString)) !== null) {
     // eslint-disable-next-line no-param-reassign
