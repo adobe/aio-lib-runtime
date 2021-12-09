@@ -502,7 +502,6 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should fail if webpack throws an error', async () => {
-    // eslint-disable-next-line standard/no-callback-literal
     webpackMock.run.mockImplementation(cb => cb(new Error('fake webpack error')))
     await expect(buildActions(config)).rejects.toThrow('fake webpack error')
   })
