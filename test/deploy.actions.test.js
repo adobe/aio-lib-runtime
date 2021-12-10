@@ -897,8 +897,10 @@ it('should filter the manifest, ignore the legacy action build', async () => {
   // fake a previous build
   const fakeFiles = {}
   fakeFiles[path.join(buildDir, 'action-zip.js')] = 'fakecontent'
+  fakeFiles[path.join(buildDir, 'action-temp')] = 'fakecontent'
   fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action.js')] = 'fakecontent'
   fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action-zip.zip')] = 'fake-content'
+  fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action-zip-temp')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)
   await deployActions(global.sampleAppConfig, {
     filterEntities: {

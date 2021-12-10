@@ -65,9 +65,10 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     filterEntities = undefined
     const builtActions = []
     const distFiles = fs.readdirSync(path.resolve(__dirname, dist))
-    distFiles.forEach(pgkName => {
-      const packageFolder = path.resolve(__dirname, dist, pgkName)
-      if (fs.statSync(packageFolder).isDirectory()) {
+    distFiles.forEach(distFile => {
+      const packageFolder = path.resolve(__dirname, dist, distFile)
+      // validate that distFile is a package folder.
+      if (manifest.packages[distFile] && fs.statSync(packageFolder).isDirectory()) {
         const pkgFolder = fs.readdirSync(packageFolder)
         for (const actionFiles of pkgFolder) {
           const actionName = utils.getActionNameFromZipFile(actionFiles)
