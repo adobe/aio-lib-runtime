@@ -112,7 +112,6 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
  * @param {object} action  Data about the Action.
  * @param {string} root root of the project.
  * @param {string} dist Path to the minimized version of the action code
- *
  * @returns {Promise<ActionBuild>} Relevant data for the zip process..
  */
 const prepareToBuildAction = async (zipFileName, action, root, dist) => {
