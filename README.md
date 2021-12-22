@@ -365,6 +365,7 @@ Log Forwarding management API
     * [.getSupportedDestinations()](#LogForwarding+getSupportedDestinations) ⇒ <code>Array.&lt;object&gt;</code>
     * [.getDestinationSettings(destination)](#LogForwarding+getDestinationSettings) ⇒ <code>Array.&lt;object&gt;</code>
     * [.setDestination(destination, config)](#LogForwarding+setDestination) ⇒ <code>Promise.&lt;\*&gt;</code>
+    * [.getErrors()](#LogForwarding+getErrors) ⇒ <code>object</code>
 
 <a name="LogForwarding+get"></a>
 
@@ -447,6 +448,13 @@ Configure destination
 | destination | <code>string</code> | Destination name |
 | config | <code>object</code> | value-pairs of settings, specific to the destination |
 
+<a name="LogForwarding+getErrors"></a>
+
+### logForwarding.getErrors() ⇒ <code>object</code>
+Get log forwarding errors
+
+**Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
+**Returns**: <code>object</code> - Errors in format { destination: '<destination>', errors: [] }  
 <a name="LogForwardingLocalDestinationsProvider"></a>
 
 ## LogForwardingLocalDestinationsProvider

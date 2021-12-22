@@ -126,6 +126,28 @@ class LogForwarding {
     }
   }
 
+  /**
+   * Get log forwarding errors
+   *
+   * @returns {object} Errors in format { destination: '<destination>', errors: [] }
+   */
+  async getErrors () {
+    try {
+      const requestResult = await this.request('get', undefined, '/errors')
+      const result = await requestResult.json()
+      if (result.destination !== undefined && result.errors !== undefined && Array.isArray(result.errors)) {
+        return result
+      } else {
+        return {
+          destination: undefined,
+          errors: []
+        }
+      }
+    } catch (e) {
+      throw new Error(`Could not get log forwarding errors for namespace '${this.namespace}': ${e.message}`)
+    }
+  }
+
   async set (data) {
     try {
       const res = await this.request('put', data)
@@ -135,14 +157,14 @@ class LogForwarding {
     }
   }
 
-  async request (method, data) {
+  async request (method, data, subPath = '') {
     if (this.namespace === '_') {
       throw new Error("Namespace '_' is not supported by log forwarding management API")
     }
 
     const fetch = createFetch()
     const res = await fetch(
-      this.apiHost + '/runtime/namespaces/' + this.namespace + '/logForwarding',
+      this.apiHost + '/runtime/namespaces/' + this.namespace + '/logForwarding' + subPath,
       {
         method: method,
         body: JSON.stringify(data),
