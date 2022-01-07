@@ -47,6 +47,11 @@ declare class LogForwarding {
      * @returns response from set API
      */
     setDestination(destination: string, config: any): Promise<any>;
+    /**
+     * Get log forwarding errors
+     * @returns Errors in format { destination: '<destination>', errors: [] }
+     */
+    getErrors(): any;
 }
 
 /**

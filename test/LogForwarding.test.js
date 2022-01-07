@@ -174,8 +174,63 @@ test('set destination failed', async () => {
     .rejects.toThrow("Could not update log forwarding settings for namespace 'some_namespace': mocked error")
 })
 
-const assertRequest = (expectedMethod, expectedData) => {
-  expect(mockFetch).toBeCalledWith(apiUrl, {
+test.each([
+  [
+    'errors exist',
+    {
+      destination: 'destination',
+      errors: [
+        'error1',
+        'error2'
+      ]
+    },
+    {
+      destination: 'destination',
+      errors: [
+        'error1',
+        'error2'
+      ]
+    }
+  ],
+  [
+    'no errors',
+    {
+      destination: 'destination',
+      errors: []
+    },
+    {
+      destination: 'destination',
+      errors: []
+    }
+  ],
+  [
+    'empty remote response',
+    {},
+    {
+      destination: undefined,
+      errors: []
+    }
+  ]
+])('get errors (%s)', async (test, remoteResponse, expected) => {
+  mockFetch.mockReturnValue(new Promise(resolve => {
+    resolve({
+      ok: true,
+      json: jest.fn().mockResolvedValue(remoteResponse)
+    })
+  }))
+  expect(await logForwarding.getErrors()).toEqual(expected)
+  expect(mockFetch).toBeCalledTimes(1)
+  assertRequest('get', undefined, '/errors')
+})
+
+test('could not get errors', async () => {
+  mockFetch.mockRejectedValue(new Error('mocked error'))
+  await expect(logForwarding.getErrors())
+    .rejects.toThrow("Could not get log forwarding errors for namespace 'some_namespace': mocked error")
+})
+
+const assertRequest = (expectedMethod, expectedData, expectedSubPath = '') => {
+  expect(mockFetch).toBeCalledWith(apiUrl + expectedSubPath, {
     method: expectedMethod,
     body: JSON.stringify(expectedData),
     headers: {
