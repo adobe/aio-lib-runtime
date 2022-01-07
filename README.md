@@ -455,6 +455,7 @@ Get log forwarding errors
 
 **Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
 **Returns**: <code>object</code> - Errors in format { destination: '<destination>', errors: [] }  
+
 <a name="LogForwardingLocalDestinationsProvider"></a>
 
 ## LogForwardingLocalDestinationsProvider
