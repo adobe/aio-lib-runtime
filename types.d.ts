@@ -29,6 +29,46 @@ declare class LogForwarding {
      * @returns response from set API
      */
     setSplunkHec(host: string, port: string, index: string, hecToken: string): Promise<any | undefined>;
+    /**
+     * Get supported destinations
+     * @returns in format: { value: <value>, name: <name> }
+     */
+    getSupportedDestinations(): object[];
+    /**
+     * Get destination settings
+     * @param destination - Destination name
+     * @returns in format: { name: <name>, message: <message>[, type: <type>] }
+     */
+    getDestinationSettings(destination: string): object[];
+    /**
+     * Configure destination
+     * @param destination - Destination name
+     * @param config - value-pairs of settings, specific to the destination
+     * @returns response from set API
+     */
+    setDestination(destination: string, config: any): Promise<any>;
+    /**
+     * Get log forwarding errors
+     * @returns Errors in format { destination: '<destination>', errors: [] }
+     */
+    getErrors(): any;
+}
+
+/**
+ * Log Forwarding destination provider
+ */
+declare class LogForwardingLocalDestinationsProvider {
+    /**
+     * Get supported destinations
+     * @returns in format: { value: <value>, name: <name> }
+     */
+    getSupportedDestinations(): object[];
+    /**
+     * Get destination settings
+     * @param destination - Destination name
+     * @returns in format: { name: <name>, message: <message>[, type: <type>] }
+     */
+    getDestinationSettings(destination: string): object[];
 }
 
 /**
