@@ -5,7 +5,7 @@ const mockFetch = jest.fn()
 
 jest.mock('@adobe/aio-lib-core-networking')
 
-const apiUrl = 'host/runtime/namespaces/some_namespace/logForwarding'
+const apiUrl = 'https://host/runtime/namespaces/some_namespace/logForwarding'
 
 const dataFixtures = [
   ['adobe_io_runtime', 'setAdobeIoRuntime', {}],
@@ -27,12 +27,26 @@ let logForwarding
 beforeEach(async () => {
   logForwarding = new LogForwarding(
     'some_namespace',
-    'host',
+    'https://host',
     'key',
     new LogForwardingLocalDestinationsProvider()
   )
   createFetch.mockReturnValue(mockFetch)
   mockFetch.mockReset()
+})
+
+test('ensure apihost protocol is not duplicated', async () => {
+  expect(logForwarding.apiHost).toEqual('https://host')
+})
+
+test('ensure apihost has protocol', async () => {
+  logForwarding = new LogForwarding(
+    'some_namespace',
+    'host',
+    'key',
+    new LogForwardingLocalDestinationsProvider()
+  )
+  expect(logForwarding.apiHost).toEqual('https://host')
 })
 
 test('get', async () => {
