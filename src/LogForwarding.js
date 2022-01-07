@@ -17,6 +17,11 @@ const { createFetch } = require('@adobe/aio-lib-core-networking')
 class LogForwarding {
   constructor (namespace, apiHost, apiKey, destinationsProvider) {
     this.apiHost = apiHost
+    // if apihost does not have the protocol, assume HTTPS
+    if (!apiHost.match(/^http(s)?:\/\//)) {
+      this.apiHost = `https://${this.apiHost}`
+    }
+
     this.auth = apiKey
     this.namespace = namespace
     this.destinationsProvider = destinationsProvider
