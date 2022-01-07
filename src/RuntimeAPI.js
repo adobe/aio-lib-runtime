@@ -16,7 +16,6 @@ const { getProxyForUrl } = require('proxy-from-env')
 const deepCopy = require('lodash.clonedeep')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:RuntimeAPI', { provider: 'debug', level: process.env.LOG_LEVEL })
 const LogForwarding = require('./LogForwarding')
-const LogForwardingLocalDestinationsProvider = require('./LogForwardingLocalDestinationsProvider')
 
 require('./types.jsdoc') // for VS Code autocomplete
 /* global OpenwhiskOptions, OpenwhiskClient */ // for linter
@@ -81,12 +80,7 @@ class RuntimeAPI {
         }
       }),
       routes: this.ow.routes,
-      logForwarding: new LogForwarding(
-        clonedOptions.namespace,
-        clonedOptions.apihost,
-        clonedOptions.api_key,
-        new LogForwardingLocalDestinationsProvider()
-      ),
+      logForwarding: new LogForwarding(options.namespace, options.apihost, options.api_key),
       initOptions: clonedOptions
     }
   }
