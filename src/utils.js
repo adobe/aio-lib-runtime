@@ -1988,7 +1988,7 @@ function validateActionRuntime (action) {
   // sometimes this method is called with 'sequence' which is a different kind of kind than exec.kind which
   // comes from action: runtime: in manifest -jm
   if (action.exec && action.exec.kind && action.exec.kind.toLowerCase().startsWith('nodejs:')) {
-    if (SupportedRuntimes.indexOf(action.exec.kind) < 0) {
+    if (!SupportedRuntimes.includes(action.exec.kind)) {
       throw new Error(`Unsupported node version in action ${action.name}. Supported versions are ${SupportedRuntimes}`)
     }
   }
