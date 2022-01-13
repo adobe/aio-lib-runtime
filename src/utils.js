@@ -20,8 +20,8 @@ const fetch = createFetch()
 const globby = require('globby')
 const path = require('path')
 const archiver = require('archiver')
-const semver = require('semver')
-const supportedEngines = require('../package.json').engines
+// this is a static list that comes from here: https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
+const SupportedRuntimes = ['nodejs:10', 'nodejs:12', 'nodejs:14']
 
 /**
  *
@@ -1994,10 +1994,12 @@ function replacePackagePlaceHolder (config) {
  * @param {object} action action object
  */
 function validateActionRuntime (action) {
+  // I suspect we have an issue here with 2 kinds of kinds ...
+  // sometimes this method is called with 'sequence' which is a different kind of kind than exec.kind which
+  // comes from action: runtime: in manifest -jm
   if (action.exec && action.exec.kind && action.exec.kind.toLowerCase().startsWith('nodejs:')) {
-    const nodeVer = semver.coerce(action.exec.kind.split(':')[1])
-    if (!semver.satisfies(nodeVer, supportedEngines.node)) {
-      throw new Error(`Unsupported node version in action ${action.name}. Supported versions are ${supportedEngines.node}`)
+    if (!SupportedRuntimes.includes(action.exec.kind)) {
+      throw new Error(`Unsupported node version in action ${action.name}. Supported versions are ${SupportedRuntimes}`)
     }
   }
 }

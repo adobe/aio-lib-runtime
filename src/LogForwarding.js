@@ -15,10 +15,16 @@ const { createFetch } = require('@adobe/aio-lib-core-networking')
  * Log Forwarding management API
  */
 class LogForwarding {
-  constructor (namespace, apiHost, apiKey) {
+  constructor (namespace, apiHost, apiKey, destinationsProvider) {
     this.apiHost = apiHost
+    // if apihost does not have the protocol, assume HTTPS
+    if (!apiHost.match(/^http(s)?:\/\//)) {
+      this.apiHost = `https://${this.apiHost}`
+    }
+
     this.auth = apiKey
     this.namespace = namespace
+    this.destinationsProvider = destinationsProvider
   }
 
   /**
@@ -38,6 +44,7 @@ class LogForwarding {
   /**
    * Set Log Forwarding to Adobe I/O Runtime (default behavior)
    *
+   * @deprecated use `setDestination('adobe_io_runtime', {})`
    * @returns {Promise<*|undefined>} response from set API
    */
   async setAdobeIoRuntime () {
@@ -49,6 +56,7 @@ class LogForwarding {
   /**
    * Set Log Forwarding to Azure Log Analytics
    *
+   * @deprecated use `setDestination('azure_log_analytics', {...})`
    * @param {string} customerId customer ID
    * @param {string} sharedKey shared key
    * @param {string} logType log type
@@ -67,6 +75,7 @@ class LogForwarding {
   /**
    * Set Log Forwarding to Splunk HEC
    *
+   * @deprecated use `setDestination('splunk_hec', {...})`
    * @param {string} host host
    * @param {string} port port
    * @param {string} index index
@@ -84,6 +93,66 @@ class LogForwarding {
     })
   }
 
+  /**
+   * Get supported destinations
+   *
+   * @returns {object[]} in format: { value: <value>, name: <name> }
+   */
+  getSupportedDestinations () {
+    return this.destinationsProvider.getSupportedDestinations()
+  }
+
+  /**
+   * Get destination settings
+   *
+   * @param {string} destination Destination name
+   * @returns {object[]} in format: { name: <name>, message: <message>[, type: <type>] }
+   */
+  getDestinationSettings (destination) {
+    return this.destinationsProvider.getDestinationSettings(destination)
+  }
+
+  /**
+   * Configure destination
+   *
+   * @param {string} destination Destination name
+   * @param {object} config value-pairs of settings, specific to the destination
+   * @returns {Promise<*>} response from set API
+   */
+  async setDestination (destination, config) {
+    const data = {
+      [destination]: config
+    }
+    try {
+      const res = await this.request('put', data)
+      return await res.text()
+    } catch (e) {
+      throw new Error(`Could not update log forwarding settings for namespace '${this.namespace}': ${e.message}`)
+    }
+  }
+
+  /**
+   * Get log forwarding errors
+   *
+   * @returns {object} Errors in format { destination: '<destination>', errors: [] }
+   */
+  async getErrors () {
+    try {
+      const requestResult = await this.request('get', undefined, '/errors')
+      const result = await requestResult.json()
+      if (result.destination !== undefined && result.errors !== undefined && Array.isArray(result.errors)) {
+        return result
+      } else {
+        return {
+          destination: undefined,
+          errors: []
+        }
+      }
+    } catch (e) {
+      throw new Error(`Could not get log forwarding errors for namespace '${this.namespace}': ${e.message}`)
+    }
+  }
+
   async set (data) {
     try {
       const res = await this.request('put', data)
@@ -93,14 +162,14 @@ class LogForwarding {
     }
   }
 
-  async request (method, data) {
+  async request (method, data, subPath = '') {
     if (this.namespace === '_') {
       throw new Error("Namespace '_' is not supported by log forwarding management API")
     }
 
     const fetch = createFetch()
     const res = await fetch(
-      this.apiHost + '/runtime/namespaces/' + this.namespace + '/logForwarding',
+      this.apiHost + '/runtime/namespaces/' + this.namespace + '/logForwarding' + subPath,
       {
         method: method,
         body: JSON.stringify(data),

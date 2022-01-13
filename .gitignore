@@ -4,3 +4,4 @@ coverage
 junit.xml
 .env
 .idea
+.DS_Store
