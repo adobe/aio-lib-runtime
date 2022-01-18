@@ -100,10 +100,11 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
  * @typedef ActionBuild
  * @type {object}
  * @property {string} actionName The name of the action
- * @property {object} buildData Object where key is the name of the action and value is its contentHash
- * @property {string} outPath zip output path
+ * @property {object} buildHash Map with key as the name of the action and value its contentHash
+ * @property {boolean} legacy Indicate legacy action support
  * @property {string} tempBuildDir path of temp build
  * @property {string} tempActionName name of the action file.
+ * @property {string} outPath zip output path
  */
 
 /**
@@ -195,8 +196,8 @@ const prepareToBuildAction = async (action, root, dist) => {
     actionName,
     buildHash,
     legacy: defaultPackage,
-    tempBuildDir,
     outPath,
+    tempBuildDir,
     tempActionName
   }
 }
@@ -261,7 +262,7 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
   // clear out dist dir
   fs.emptyDirSync(distFolder)
   const toBuildList = []
-  const lastBuiltActionsPath = path.join(distFolder, 'last-built-actions.json')
+  const lastBuiltActionsPath = path.join(config.root, 'dist', 'last-built-actions.json')
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
     const actionsToBuild = Object.entries(pkg.actions || {})
 

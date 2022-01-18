@@ -76,15 +76,22 @@ async function deployActions (config, deployConfig = {}, logFunc) {
         }
       }
     })
+    if (builtActions.length === 0) {
+      log('No changes detected.')
+      log('Deployment of actions skipped.')
+    }
     Object.entries(manifest.packages).forEach(([pgkName, pkg]) => {
-      const packageActions = pkg.actions
-      manifest.packages[pgkName].actions = Object.keys(packageActions).reduce((newActions, actionKey) => {
-        if (builtActions.includes(actionKey)) {
-          // eslint-disable-next-line no-param-reassign
-          newActions[actionKey] = packageActions[actionKey]
-        }
-        return newActions
-      }, {})
+      const packageActions = pkg.actions || {}
+      const actionKeys = Object.keys(packageActions)
+      if (actionKeys.length > 0) {
+        manifest.packages[pgkName].actions = actionKeys.reduce((newActions, actionKey) => {
+          if (builtActions.includes(actionKey)) {
+            // eslint-disable-next-line no-param-reassign
+            newActions[actionKey] = packageActions[actionKey]
+          }
+          return newActions
+        }, {})
+      }
     })
   }
   for (const [pkgName, pkg] of Object.entries(manifest.packages)) {

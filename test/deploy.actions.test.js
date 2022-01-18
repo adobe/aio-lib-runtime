@@ -889,6 +889,64 @@ test('ims stage: if actions are deployed with the headless validator and custom 
   })
 })
 
+test('use deployConfig.filterEntities.byBuiltActions, package with no action', async () => {
+  addSampleAppFiles()
+  runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
+  // fake a previous build
+  const fakeFiles = {}
+  const buildDir = global.sampleAppConfig.actions.dist
+  fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action.zip')] = 'fakecontent'
+  fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action-zip.zip')] = 'fake-content'
+  global.fakeFileSystem.addJson(fakeFiles)
+
+  const multiPackageConfig = deepCopy(global.sampleAppConfig)
+  multiPackageConfig.manifest.full.packages.extrapkg = deepCopy(multiPackageConfig.manifest.full.packages.__APP_PACKAGE__)
+  delete multiPackageConfig.manifest.full.packages.extrapkg.actions
+
+  const expectedMultiDistManifest = deepCopy(expectedDistManifest)
+  expectedMultiDistManifest.packages.extrapkg = deepCopy(expectedMultiDistManifest.packages['sample-app-1.0.0'])
+  delete expectedMultiDistManifest.packages.extrapkg.actions
+
+  await deployActions(multiPackageConfig, {
+    filterEntities: {
+      byBuiltActions: true
+    }
+  })
+
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
+
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedMultiDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
+})
+
+test('use deployConfig.filterEntities.byBuiltActions, deploy package with no actions to redeploy', async () => {
+  addSampleAppFiles()
+  runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
+
+  const buildDir = global.sampleAppConfig.actions.dist
+  // fake a previous build
+  const fakeFiles = {}
+  fakeFiles[path.join(buildDir, 'not-action')] = 'fake-content'
+  global.fakeFileSystem.addJson(fakeFiles)
+
+  const multiPackageConfig = deepCopy(global.sampleAppConfig)
+
+  const expectedMultiDistManifest = deepCopy(expectedDistManifest)
+  expectedMultiDistManifest.packages['sample-app-1.0.0'].actions = {}
+
+  await deployActions(multiPackageConfig, {
+    filterEntities: {
+      byBuiltActions: true
+    }
+  })
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
+
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedMultiDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
+})
+
 it('should filter the manifest, ignore the legacy action build', async () => {
   addSampleAppFiles()
   runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
@@ -902,6 +960,7 @@ it('should filter the manifest, ignore the legacy action build', async () => {
   fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action-zip.zip')] = 'fake-content'
   fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action-zip-temp')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)
+
   await deployActions(global.sampleAppConfig, {
     filterEntities: {
       byBuiltActions: true
