@@ -190,51 +190,21 @@ test('set destination failed', async () => {
     .rejects.toThrow("Could not update log forwarding settings for namespace 'some_namespace': mocked error")
 })
 
-test.each([
-  [
-    'errors exist',
-    {
-      destination: 'destination',
-      errors: [
-        'error1',
-        'error2'
-      ]
-    },
-    {
-      destination: 'destination',
-      errors: [
-        'error1',
-        'error2'
-      ]
-    }
-  ],
-  [
-    'no errors',
-    {
-      destination: 'destination',
-      errors: []
-    },
-    {
-      destination: 'destination',
-      errors: []
-    }
-  ],
-  [
-    'empty remote response',
-    {},
-    {
-      destination: undefined,
-      errors: []
-    }
-  ]
-])('get errors (%s)', async (test, remoteResponse, expected) => {
+test('get errors', async () => {
+  const result = {
+    configured_forwarder: 'destination',
+    errors: [
+      'error1',
+      'error2'
+    ]
+  }
   mockFetch.mockReturnValue(new Promise(resolve => {
     resolve({
       ok: true,
-      json: jest.fn().mockResolvedValue(remoteResponse)
+      json: jest.fn().mockResolvedValue(result)
     })
   }))
-  expect(await logForwarding.getErrors()).toEqual(expected)
+  expect(await logForwarding.getErrors()).toEqual(result)
   expect(mockFetch).toBeCalledTimes(1)
   assertRequest('get', undefined, '/errors')
 })
