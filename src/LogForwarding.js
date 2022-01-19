@@ -125,7 +125,7 @@ class LogForwarding {
     }
     try {
       const res = await this.request('put', data)
-      return await res.text()
+      return await res.json()
     } catch (e) {
       throw new Error(`Could not update log forwarding settings for namespace '${this.namespace}': ${e.message}`)
     }
@@ -156,7 +156,7 @@ class LogForwarding {
   async set (data) {
     try {
       const res = await this.request('put', data)
-      return await res.text()
+      return await res.json()
     } catch (e) {
       throw new Error(`Could not update log forwarding settings for namespace '${this.namespace}': ${e.message}`)
     }

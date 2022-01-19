@@ -85,16 +85,17 @@ test('get failed on server', async () => {
 
 test.each(dataFixtures)('set %s (deprecated)', async (destination, fnName, input) => {
   return new Promise(resolve => {
+    const result = { [destination]: { field: 'data' } }
     mockFetch.mockReturnValue(new Promise(resolve => {
       resolve({
         ok: true,
-        text: jest.fn().mockResolvedValue(`result for ${destination}`)
+        json: jest.fn().mockResolvedValue(result)
       })
     }))
     return logForwarding[fnName](...Object.values(input))
       .then((res) => {
         expect(mockFetch).toBeCalledTimes(1)
-        expect(res).toBe(`result for ${destination}`)
+        expect(res).toBe(result)
         assertRequest('put', { [destination]: input })
         resolve()
       })
@@ -166,16 +167,17 @@ test('get settings for unsupported destination', async () => {
 
 test('set destination', async () => {
   return new Promise(resolve => {
+    const result = { destination: { field: 'data' } }
     mockFetch.mockReturnValue(new Promise(resolve => {
       resolve({
         ok: true,
-        text: jest.fn().mockResolvedValue("result for 'destination'")
+        json: jest.fn().mockResolvedValue(result)
       })
     }))
     return logForwarding.setDestination('destination', { k: 'v' })
       .then((res) => {
         expect(mockFetch).toBeCalledTimes(1)
-        expect(res).toBe("result for 'destination'")
+        expect(res).toBe(result)
         assertRequest('put', { destination: { k: 'v' } })
         resolve()
       })
