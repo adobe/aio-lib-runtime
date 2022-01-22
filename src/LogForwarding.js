@@ -125,7 +125,7 @@ class LogForwarding {
     }
     try {
       const res = await this.request('put', data)
-      return await res.text()
+      return await res.json()
     } catch (e) {
       throw new Error(`Could not update log forwarding settings for namespace '${this.namespace}': ${e.message}`)
     }
@@ -139,15 +139,7 @@ class LogForwarding {
   async getErrors () {
     try {
       const requestResult = await this.request('get', undefined, '/errors')
-      const result = await requestResult.json()
-      if (result.destination !== undefined && result.errors !== undefined && Array.isArray(result.errors)) {
-        return result
-      } else {
-        return {
-          destination: undefined,
-          errors: []
-        }
-      }
+      return await requestResult.json()
     } catch (e) {
       throw new Error(`Could not get log forwarding errors for namespace '${this.namespace}': ${e.message}`)
     }
@@ -156,7 +148,7 @@ class LogForwarding {
   async set (data) {
     try {
       const res = await this.request('put', data)
-      return await res.text()
+      return await res.json()
     } catch (e) {
       throw new Error(`Could not update log forwarding settings for namespace '${this.namespace}': ${e.message}`)
     }
