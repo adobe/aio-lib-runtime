@@ -49,12 +49,12 @@ const expectedDistManifest = {
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         },
         'action-zip': {
-          function: path.normalize('dist/actions/action-zip.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action-zip.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -252,7 +252,7 @@ test('use deployConfig.filterEntities to deploy only one action', async () => {
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -291,7 +291,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action'
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -333,7 +333,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action 
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -381,7 +381,7 @@ test('use deployConfig.filterEntities to deploy only one action and one api', as
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -431,12 +431,12 @@ test('use deployConfig.filterEntities to deploy only two actions and one sequenc
       version: '1.0.0',
       actions: {
         action: {
-          function: path.normalize('dist/actions/action.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         },
         'action-zip': {
-          function: path.normalize('dist/actions/action-zip.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action-zip.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }
@@ -515,7 +515,7 @@ test('use deployConfig.filterEntities on non existing pkgEntity should work', as
         version: '1.0.0',
         actions: {
           action: {
-            function: path.normalize('dist/actions/action.zip'),
+            function: path.normalize('dist/actions/sample-app-reduced-1.0.0/action.zip'),
             runtime: 'nodejs:12',
             web: 'yes'
           }
@@ -651,10 +651,10 @@ test('custom package and action filter', async () => {
     'bobby-mcgee': expect.objectContaining({
       actions: {
         action: {
-          function: path.normalize('dist/actions/action.zip'), runtime: 'nodejs:12', web: 'yes'
+          function: path.normalize('dist/actions/bobby-mcgee/action.zip'), runtime: 'nodejs:12', web: 'yes'
         },
         'action-zip': {
-          function: path.normalize('dist/actions/action-zip.zip'), runtime: 'nodejs:12', web: 'yes'
+          function: path.normalize('dist/actions/bobby-mcgee/action-zip.zip'), runtime: 'nodejs:12', web: 'yes'
         }
       }
     })
@@ -889,16 +889,78 @@ test('ims stage: if actions are deployed with the headless validator and custom 
   })
 })
 
-it('should filter the manifest', async () => {
+test('use deployConfig.filterEntities.byBuiltActions, package with no action', async () => {
+  addSampleAppFiles()
+  runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
+  // fake a previous build
+  const fakeFiles = {}
+  const buildDir = global.sampleAppConfig.actions.dist
+  fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action.zip')] = 'fakecontent'
+  fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action-zip.zip')] = 'fake-content'
+  global.fakeFileSystem.addJson(fakeFiles)
+
+  const multiPackageConfig = deepCopy(global.sampleAppConfig)
+  multiPackageConfig.manifest.full.packages.extrapkg = deepCopy(multiPackageConfig.manifest.full.packages.__APP_PACKAGE__)
+  delete multiPackageConfig.manifest.full.packages.extrapkg.actions
+
+  const expectedMultiDistManifest = deepCopy(expectedDistManifest)
+  expectedMultiDistManifest.packages.extrapkg = deepCopy(expectedMultiDistManifest.packages['sample-app-1.0.0'])
+  delete expectedMultiDistManifest.packages.extrapkg.actions
+
+  await deployActions(multiPackageConfig, {
+    filterEntities: {
+      byBuiltActions: true
+    }
+  })
+
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
+
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedMultiDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
+})
+
+test('use deployConfig.filterEntities.byBuiltActions, deploy package with no actions to redeploy', async () => {
   addSampleAppFiles()
   runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
 
   const buildDir = global.sampleAppConfig.actions.dist
   // fake a previous build
   const fakeFiles = {}
-  fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
-  fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
+  fakeFiles[path.join(buildDir, 'not-action')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)
+
+  const multiPackageConfig = deepCopy(global.sampleAppConfig)
+
+  const expectedMultiDistManifest = deepCopy(expectedDistManifest)
+  expectedMultiDistManifest.packages['sample-app-1.0.0'].actions = {}
+
+  await deployActions(multiPackageConfig, {
+    filterEntities: {
+      byBuiltActions: true
+    }
+  })
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
+
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedMultiDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
+})
+
+it('should filter the manifest, ignore the legacy action build', async () => {
+  addSampleAppFiles()
+  runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
+
+  const buildDir = global.sampleAppConfig.actions.dist
+  // fake a previous build
+  const fakeFiles = {}
+  fakeFiles[path.join(buildDir, 'action-zip.js')] = 'fakecontent'
+  fakeFiles[path.join(buildDir, 'action-temp')] = 'fakecontent'
+  fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action.js')] = 'fakecontent'
+  fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action-zip.zip')] = 'fake-content'
+  fakeFiles[path.join(buildDir, 'sample-app-1.0.0/action-zip-temp')] = 'fake-content'
+  global.fakeFileSystem.addJson(fakeFiles)
+
   await deployActions(global.sampleAppConfig, {
     filterEntities: {
       byBuiltActions: true
@@ -911,7 +973,7 @@ it('should filter the manifest', async () => {
       version: '1.0.0',
       actions: {
         'action-zip': {
-          function: path.normalize('dist/actions/action-zip.zip'),
+          function: path.normalize('dist/actions/sample-app-1.0.0/action-zip.zip'),
           runtime: 'nodejs:12',
           web: 'yes'
         }

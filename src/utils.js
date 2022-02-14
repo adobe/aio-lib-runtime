@@ -1844,9 +1844,10 @@ function checkOpenWhiskCredentials (config) {
  * @param {object} appConfig app config
  * @param {boolean} isRemoteDev remote dev
  * @param {boolean} isLocalDev local dev
+ * @param {boolean} legacy default false add backwards compatibility for urls keys.
  * @returns {object} urls of actions
  */
-function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false) {
+function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false, legacy = false) {
   // sets action urls [{ name: url }]
   const config = replacePackagePlaceHolder(appConfig)
   const cleanApihost = removeProtocolFromURL(config.ow.apihost)
@@ -1916,11 +1917,20 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   // populate urls
   const actionsAndSequences = {}
   Object.entries(config.manifest.full.packages).forEach(([pkgName, pkg]) => {
+    const defaultPkg = pkgName === config.ow.package
     Object.entries(pkg.actions || {}).forEach(([actionName, action]) => {
-      actionsAndSequences[getActionZipFileName(pkgName, actionName, pkgName === config.ow.package)] = action
+      if (defaultPkg && legacy) {
+        // keep old action url key for backwards compatibility
+        actionsAndSequences[getActionZipFileName(pkgName, actionName, defaultPkg)] = action
+      }
+      actionsAndSequences[getActionZipFileName(pkgName, actionName, false)] = action
     })
     Object.entries(pkg.sequences || {}).forEach(([actionName, action]) => {
-      actionsAndSequences[getActionZipFileName(pkgName, actionName, pkgName === config.ow.package)] = action
+      if (defaultPkg && legacy) {
+        // keep old action url key for backwards compatibility
+        actionsAndSequences[getActionZipFileName(pkgName, actionName, defaultPkg)] = action
+      }
+      actionsAndSequences[getActionZipFileName(pkgName, actionName, false)] = action
     })
   })
   const urls = {}
@@ -2010,7 +2020,7 @@ function getActionZipFileName (pkgName, actionName, defaultPkg) {
  * Returns the action name based on the zipFile name.
  *
  * @param {string} zipFile name of the zip file
- * @returns {string} name of the action
+ * @returns {string} name of the action or empty string.
  */
 function getActionNameFromZipFile (zipFile) {
   const ZIP_EXTENSION = '.zip'
@@ -2042,14 +2052,17 @@ function activationLogBanner (logFunc, activation, activationLogs) {
  * Will tell if the action was built before based on it's contentHash.
  *
  * @param {string} lastBuildsData Data with the last builds
- * @param {object} actionBuildData Object which contains action name and contentHash.
+ * @param {object} buildData Object where key is the name of the action and value is its contentHash
  * @returns {boolean} true if the action was built before
  */
-function actionBuiltBefore (lastBuildsData, actionBuildData) {
-  if (actionBuildData && Object.keys(actionBuildData).length > 0) {
-    const [actionName, contenthash] = Object.entries(actionBuildData)[0]
+function actionBuiltBefore (lastBuildsData, buildData) {
+  if (buildData && Object.keys(buildData).length > 0) {
+    // buildData = { [actionName]: contentHash }
+    const [actionName, contentHash] = Object.entries(buildData)[0]
     const storedData = safeParse(lastBuildsData)
-    return storedData[actionName] === contenthash
+    if (contentHash) {
+      return storedData[actionName] === contentHash
+    }
   }
   aioLogger.debug('actionBuiltBefore > Invalid actionBuiltData')
   return false
@@ -2065,10 +2078,7 @@ function actionBuiltBefore (lastBuildsData, actionBuildData) {
  */
 async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prevBuildData) {
   try {
-    if (!fs.existsSync(lastBuiltActionsPath)) {
-      aioLogger.debug('Deployments log file not found, creating a new one...')
-      await fs.createFile(lastBuiltActionsPath)
-    }
+    fs.ensureFileSync(lastBuiltActionsPath)
     const textData = JSON.stringify({ ...prevBuildData, ...actionBuildData })
     await fs.writeFile(lastBuiltActionsPath, textData)
   } catch (e) {

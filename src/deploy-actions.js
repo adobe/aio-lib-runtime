@@ -59,34 +59,46 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const manifest = modifiedConfig.manifest.full
   const relDist = utils._relApp(config.root, config.actions.dist)
+
   if (deployConfig.filterEntities && deployConfig.filterEntities.byBuiltActions) {
-    /* Filter manifest actions based on the already built actions */
     aioLogger.debug('Trimming out the manifest\'s actions...')
     filterEntities = undefined
-    const distFiles = fs.readdirSync(path.resolve(__dirname, dist))
     const builtActions = []
-    distFiles.forEach(fileName => {
-      const actionName = utils.getActionNameFromZipFile(fileName)
-      if (actionName) {
-        builtActions.push(actionName)
+    const distFiles = fs.readdirSync(path.resolve(__dirname, dist))
+    distFiles.forEach(distFile => {
+      const packageFolder = path.resolve(__dirname, dist, distFile)
+      // validate that distFile is a package folder.
+      if (manifest.packages[distFile] && fs.statSync(packageFolder).isDirectory()) {
+        const pkgFolder = fs.readdirSync(packageFolder)
+        for (const actionFiles of pkgFolder) {
+          const actionName = utils.getActionNameFromZipFile(actionFiles)
+          actionName && builtActions.push(actionName)
+        }
       }
     })
-    Object.entries(manifest.packages).forEach(([packageName, pkg]) => {
-      const packageActions = pkg.actions
-      manifest.packages[packageName].actions = Object.keys(packageActions).reduce((newActions, actionKey) => {
-        if (builtActions.includes(actionKey)) {
-          // eslint-disable-next-line no-param-reassign
-          newActions[actionKey] = packageActions[actionKey]
-        }
-        return newActions
-      }, {})
+    if (builtActions.length === 0) {
+      log('No changes detected.')
+      log('Deployment of actions skipped.')
+    }
+    Object.entries(manifest.packages).forEach(([pgkName, pkg]) => {
+      const packageActions = pkg.actions || {}
+      const actionKeys = Object.keys(packageActions)
+      if (actionKeys.length > 0) {
+        manifest.packages[pgkName].actions = actionKeys.reduce((newActions, actionKey) => {
+          if (builtActions.includes(actionKey)) {
+            // eslint-disable-next-line no-param-reassign
+            newActions[actionKey] = packageActions[actionKey]
+          }
+          return newActions
+        }, {})
+      }
     })
   }
   for (const [pkgName, pkg] of Object.entries(manifest.packages)) {
     pkg.version = config.app.version
     for (const [name, action] of Object.entries(pkg.actions || {})) {
       // change path to built action
-      const zipFileName = utils.getActionZipFileName(pkgName, name, modifiedConfig.ow.package === pkgName) + '.zip'
+      const zipFileName = utils.getActionZipFileName(pkgName, name, false) + '.zip'
       action.function = path.join(relDist, zipFileName)
     }
   }
@@ -112,9 +124,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
     deployedEntities.actions = deployedEntities.actions.map(action => {
       const retAction = deepCopy(action)
-      // the key in actionUrlsFromManifest would not have pkg name for actions in default package
-      const actionKey = action.name.replace(modifiedConfig.ow.package + '/', '')
-      const url = actionUrlsFromManifest[actionKey]
+      const url = actionUrlsFromManifest[action.name]
       if (url) {
         retAction.url = url
       }

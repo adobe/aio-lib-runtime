@@ -99,25 +99,28 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
 /**
  * @typedef ActionBuild
  * @type {object}
- * @property {string} outPath zip output path
- * @property {object} actionBuildData Object where key is the name of the action and value is its contentHash
+ * @property {string} actionName The name of the action
+ * @property {object} buildHash Map with key as the name of the action and value its contentHash
+ * @property {boolean} legacy Indicate legacy action support
  * @property {string} tempBuildDir path of temp build
  * @property {string} tempActionName name of the action file.
+ * @property {string} outPath zip output path
  */
 
 /**
  *  Will return data about an action ready to be built.
  *
- * @param {string} zipFileName the action's build file name without the .zip extension.
  * @param {object} action  Data about the Action.
  * @param {string} root root of the project.
  * @param {string} dist Path to the minimized version of the action code
  * @returns {Promise<ActionBuild>} Relevant data for the zip process..
  */
-const prepareToBuildAction = async (zipFileName, action, root, dist) => {
+const prepareToBuildAction = async (action, root, dist) => {
+  const { name: actionName, defaultPackage, packageName } = action
+  const zipFileName = utils.getActionZipFileName(packageName, actionName, false)
+
   // path.resolve supports both relative and absolute action.function
   const actionPath = path.resolve(root, action.function)
-
   const outPath = path.join(dist, `${zipFileName}.zip`)
   const tempBuildDir = path.join(dist, `${zipFileName}-temp`) // build all to tempDir first
   const actionFileStats = fs.lstatSync(actionPath)
@@ -177,23 +180,25 @@ const prepareToBuildAction = async (zipFileName, action, root, dist) => {
       })
     })
   }
-  let actionBuildData
+  let buildHash
   let tempActionName
   let contentHash
   if (isDirectory) {
     contentHash = actionFileStats.mtime.valueOf()
-    actionBuildData = { [zipFileName]: contentHash }
+    buildHash = { [zipFileName]: contentHash }
   } else {
     [tempActionName] = await fs.readdir(tempBuildDir) // eg: index.25d8f992944c60aa2e62.js
     contentHash = tempActionName && tempActionName.split('.')[1]
-    actionBuildData = { [zipFileName]: contentHash }
+    buildHash = { [zipFileName]: contentHash }
   }
 
   return {
-    tempActionName,
+    actionName,
+    buildHash,
+    legacy: defaultPackage,
     outPath,
-    actionBuildData,
-    tempBuildDir
+    tempBuildDir,
+    tempActionName
   }
 }
 
@@ -202,12 +207,13 @@ const prepareToBuildAction = async (zipFileName, action, root, dist) => {
  *  By default only actions which were not built before will be zipped.
  *  Last built actions data will be used to validate which action needs zipping.
  *
- * @param {Array<ActionBuild>} buildsList Array with data about actions available to be zipped.
+ * @param {Array<ActionBuild>} buildsList Array of data about actions available to be zipped.
  * @param {string} lastBuildsPath Path to the last built actions data.
- * @param {boolean} skipCheck when true will zip all the actions from the buildsList
+ * @param {string} distFolder Path to the output root.
+ * @param {boolean} skipCheck If true, zip all the actions from the buildsList
  * @returns {string[]} Array of zipped actions.
  */
-const zipActions = async (buildsList, lastBuildsPath, skipCheck) => {
+const zipActions = async (buildsList, lastBuildsPath, distFolder, skipCheck) => {
   let dumpData = {}
   const builtList = []
   let lastBuiltData = ''
@@ -215,15 +221,23 @@ const zipActions = async (buildsList, lastBuildsPath, skipCheck) => {
     lastBuiltData = await fs.readFile(lastBuildsPath, 'utf8')
   }
   for (const build of buildsList) {
-    const { outPath, actionBuildData, tempBuildDir, tempActionName } = build
-    const builtBefore = utils.actionBuiltBefore(lastBuiltData, actionBuildData)
+    const { outPath, buildHash, tempBuildDir, tempActionName, legacy, actionName } = build
+    const builtBefore = utils.actionBuiltBefore(lastBuiltData, buildHash)
     if (!builtBefore || skipCheck) {
-      dumpData = { ...dumpData, ...actionBuildData }
+      dumpData = { ...dumpData, ...buildHash }
       if (tempActionName) {
         // rename index.[contentHash] to index.js
         fs.renameSync(path.join(tempBuildDir, tempActionName), path.join(tempBuildDir, 'index.js'))
       }
       await utils.zip(tempBuildDir, outPath)
+      // create symlink for default package actions.
+      // this assure legacy support for the old output path.
+      if (legacy) {
+        const legacyActionBuild = path.join(distFolder, `${actionName}.zip`)
+        const legacyActionTemp = path.join(distFolder, `${actionName}-temp`)
+        fs.symlink(outPath, legacyActionBuild)
+        fs.symlink(tempBuildDir, legacyActionTemp)
+      }
       builtList.push(outPath)
     }
   }
@@ -243,9 +257,10 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
     // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
     sanitizedFilterActions = sanitizedFilterActions.map(actionName => actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
   }
+  const distFolder = config.actions.dist
 
   // clear out dist dir
-  fs.emptyDirSync(config.actions.dist)
+  fs.emptyDirSync(distFolder)
   const toBuildList = []
   const lastBuiltActionsPath = path.join(config.root, 'dist', 'last-built-actions.json')
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
@@ -257,17 +272,14 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
       if (Array.isArray(sanitizedFilterActions) && !sanitizedFilterActions.includes(actionFullName)) {
         continue
       }
-      // const out =  // todo: log output of each action as it is built
-      // need config.root
-      // config.actions.dist
-      // zipFileName would be <actionName>.zip for default package and
-      // <pkgName>/<actionName>.zip for non default packages for backward compatibility
-      const zipFileName = utils.getActionZipFileName(pkgName, actionName, modifiedConfig.ow.package === pkgName)
-      toBuildList.push(await prepareToBuildAction(zipFileName, action, config.root, config.actions.dist))
+      action.name = actionName
+      action.packageName = pkgName
+      action.defaultPackage = modifiedConfig.ow.package === pkgName
+      toBuildList.push(await prepareToBuildAction(action, config.root, distFolder))
     }
   }
 
-  return zipActions(toBuildList, lastBuiltActionsPath, skipCheck)
+  return zipActions(toBuildList, lastBuiltActionsPath, distFolder, skipCheck)
 }
 
 module.exports = buildActions
