@@ -617,6 +617,20 @@ describe('createActionObject', () => {
       name: 'fake'
     }))
   })
+  test('action supported limits', () => {
+    readFileSyncSpy.mockImplementation(() => 'some source code')
+    const res = utils.createActionObject('fake', {
+      function: 'fake.js',
+      runtime: 'something',
+      limits: {
+        memorySize: 1,
+        logSize: 2,
+        timeout: 3,
+        concurrentActivations: 4
+      }
+    })
+    expect(res).toEqual({ action: 'some source code', annotations: { 'raw-http': false, 'web-export': false }, exec: { kind: 'something' }, limits: { logs: 2, memory: 1, timeout: 3, concurrency: 4 }, name: 'fake' })
+  })
 })
 
 describe('deployPackage', () => {
