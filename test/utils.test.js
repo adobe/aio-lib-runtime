@@ -617,19 +617,44 @@ describe('createActionObject', () => {
       name: 'fake'
     }))
   })
-  test('action supported limits', () => {
-    readFileSyncSpy.mockImplementation(() => 'some source code')
-    const res = utils.createActionObject('fake', {
+
+  describe('action supported limits', () => {
+    const manifestAction = {
       function: 'fake.js',
-      runtime: 'something',
-      limits: {
+      runtime: 'something'
+    }
+    test('action supported limits, concurrentActivations set', () => {
+      manifestAction.limits = {
         memorySize: 1,
         logSize: 2,
         timeout: 3,
         concurrentActivations: 4
       }
+      readFileSyncSpy.mockImplementation(() => 'some source code')
+      const res = utils.createActionObject('fake', manifestAction)
+      expect(res).toEqual({ action: 'some source code', annotations: { 'raw-http': false, 'web-export': false }, exec: { kind: 'something' }, limits: { logs: 2, memory: 1, timeout: 3, concurrency: 4 }, name: 'fake' })
     })
-    expect(res).toEqual({ action: 'some source code', annotations: { 'raw-http': false, 'web-export': false }, exec: { kind: 'something' }, limits: { logs: 2, memory: 1, timeout: 3, concurrency: 4 }, name: 'fake' })
+    test('action supported limits, concurrency set', () => {
+      manifestAction.limits = {
+        memorySize: 1,
+        logSize: 2,
+        timeout: 3,
+        concurrency: 4
+      }
+      readFileSyncSpy.mockImplementation(() => 'some source code')
+      const res = utils.createActionObject('fake', manifestAction)
+      expect(res).toEqual({ action: 'some source code', annotations: { 'raw-http': false, 'web-export': false }, exec: { kind: 'something' }, limits: { logs: 2, memory: 1, timeout: 3, concurrency: 4 }, name: 'fake' })
+    })
+    test('action supported limits, concurrency | concurrentActivations not set', () => {
+      manifestAction.limits = {
+        memorySize: 1,
+        logSize: 2,
+        timeout: 3
+      }
+      readFileSyncSpy.mockImplementation(() => 'some source code')
+      const res = utils.createActionObject('fake', manifestAction)
+      expect(res).toEqual({ action: 'some source code', annotations: { 'raw-http': false, 'web-export': false }, exec: { kind: 'something' }, limits: { logs: 2, memory: 1, timeout: 3 }, name: 'fake' })
+    })
   })
 })
 
