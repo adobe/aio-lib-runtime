@@ -1006,15 +1006,15 @@ function createActionObject (fullName, manifestAction) {
   }
 
   if (manifestAction.limits) {
-    const limits = {
+    const concurrencyLimit = manifestAction.limits.concurrentActivations || manifestAction.limits.concurrency
+    objAction.limits = {
       memory: manifestAction.limits.memorySize || 256,
       logs: manifestAction.limits.logSize || 10,
       timeout: manifestAction.limits.timeout || 60000
     }
-    if (manifestAction.limits.concurrency) {
-      limits.concurrency = manifestAction.limits.concurrency
+    if (concurrencyLimit) {
+      objAction.limits.concurrency = concurrencyLimit
     }
-    objAction.limits = limits
   }
   objAction.annotations = returnAnnotations(manifestAction)
   return objAction
