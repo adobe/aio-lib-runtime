@@ -78,10 +78,10 @@ with valid options argument</p>
 ## Functions
 
 <dl>
-<dt><a href="#prepareToBuildAction">prepareToBuildAction(zipFileName, action, root, dist)</a> ⇒ <code><a href="#ActionBuild">Promise.&lt;ActionBuild&gt;</a></code></dt>
+<dt><a href="#prepareToBuildAction">prepareToBuildAction(action, root, dist)</a> ⇒ <code><a href="#ActionBuild">Promise.&lt;ActionBuild&gt;</a></code></dt>
 <dd><p>Will return data about an action ready to be built.</p>
 </dd>
-<dt><a href="#zipActions">zipActions(buildsList, lastBuildsPath, skipCheck)</a> ⇒ <code>Array.&lt;string&gt;</code></dt>
+<dt><a href="#zipActions">zipActions(buildsList, lastBuildsPath, distFolder, skipCheck)</a> ⇒ <code>Array.&lt;string&gt;</code></dt>
 <dd><p>Will zip actions.
  By default only actions which were not built before will be zipped.
  Last built actions data will be used to validate which action needs zipping.</p>
@@ -249,7 +249,7 @@ for syncing managed projects.</p>
 <dt><a href="#checkOpenWhiskCredentials">checkOpenWhiskCredentials(config)</a></dt>
 <dd><p>Checks the existence of required openwhisk credentials</p>
 </dd>
-<dt><a href="#getActionUrls">getActionUrls(appConfig, isRemoteDev, isLocalDev)</a> ⇒ <code>object</code></dt>
+<dt><a href="#getActionUrls">getActionUrls(appConfig, isRemoteDev, isLocalDev, legacy)</a> ⇒ <code>object</code></dt>
 <dd><p>Returns action URLs based on the manifest config</p>
 </dd>
 <dt><a href="#urlJoin">urlJoin(...args)</a> ⇒ <code>string</code></dt>
@@ -271,7 +271,7 @@ for syncing managed projects.</p>
 <dt><a href="#activationLogBanner">activationLogBanner(logFunc, activation, activationLogs)</a></dt>
 <dd><p>Creates an info banner for an activation.</p>
 </dd>
-<dt><a href="#actionBuiltBefore">actionBuiltBefore(lastBuildsData, actionBuildData)</a> ⇒ <code>boolean</code></dt>
+<dt><a href="#actionBuiltBefore">actionBuiltBefore(lastBuildsData, buildData)</a> ⇒ <code>boolean</code></dt>
 <dd><p>Will tell if the action was built before based on it&#39;s contentHash.</p>
 </dd>
 <dt><a href="#dumpActionsBuiltInfo">dumpActionsBuiltInfo(lastBuiltActionsPath, actionBuildData, prevBuildData)</a> ⇒ <code>Promise.&lt;boolean&gt;</code></dt>
@@ -546,7 +546,7 @@ Deletes a trigger and associated feeds
 
 <a name="prepareToBuildAction"></a>
 
-## prepareToBuildAction(zipFileName, action, root, dist) ⇒ [<code>Promise.&lt;ActionBuild&gt;</code>](#ActionBuild)
+## prepareToBuildAction(action, root, dist) ⇒ [<code>Promise.&lt;ActionBuild&gt;</code>](#ActionBuild)
 Will return data about an action ready to be built.
 
 **Kind**: global function  
@@ -554,14 +554,13 @@ Will return data about an action ready to be built.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| zipFileName | <code>string</code> | the action's build file name without the .zip extension. |
 | action | <code>object</code> | Data about the Action. |
 | root | <code>string</code> | root of the project. |
 | dist | <code>string</code> | Path to the minimized version of the action code |
 
 <a name="zipActions"></a>
 
-## zipActions(buildsList, lastBuildsPath, skipCheck) ⇒ <code>Array.&lt;string&gt;</code>
+## zipActions(buildsList, lastBuildsPath, distFolder, skipCheck) ⇒ <code>Array.&lt;string&gt;</code>
 Will zip actions.
  By default only actions which were not built before will be zipped.
  Last built actions data will be used to validate which action needs zipping.
@@ -571,9 +570,10 @@ Will zip actions.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| buildsList | [<code>Array.&lt;ActionBuild&gt;</code>](#ActionBuild) | Array with data about actions available to be zipped. |
+| buildsList | [<code>Array.&lt;ActionBuild&gt;</code>](#ActionBuild) | Array of data about actions available to be zipped. |
 | lastBuildsPath | <code>string</code> | Path to the last built actions data. |
-| skipCheck | <code>boolean</code> | when true will zip all the actions from the buildsList |
+| distFolder | <code>string</code> | Path to the output root. |
+| skipCheck | <code>boolean</code> | If true, zip all the actions from the buildsList |
 
 <a name="deployActions"></a>
 
@@ -1310,7 +1310,7 @@ Checks the existence of required openwhisk credentials
 
 <a name="getActionUrls"></a>
 
-## getActionUrls(appConfig, isRemoteDev, isLocalDev) ⇒ <code>object</code>
+## getActionUrls(appConfig, isRemoteDev, isLocalDev, legacy) ⇒ <code>object</code>
 Returns action URLs based on the manifest config
 
 **Kind**: global function  
@@ -1321,6 +1321,7 @@ Returns action URLs based on the manifest config
 | appConfig | <code>object</code> |  | app config |
 | isRemoteDev | <code>boolean</code> | <code>false</code> | remote dev |
 | isLocalDev | <code>boolean</code> | <code>false</code> | local dev |
+| legacy | <code>boolean</code> | <code>false</code> | default false add backwards compatibility for urls keys. |
 
 <a name="urlJoin"></a>
 
@@ -1385,7 +1386,7 @@ Returns the action's build file name without the .zip extension
 Returns the action name based on the zipFile name.
 
 **Kind**: global function  
-**Returns**: <code>string</code> - name of the action  
+**Returns**: <code>string</code> - name of the action or empty string.  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -1406,7 +1407,7 @@ Creates an info banner for an activation.
 
 <a name="actionBuiltBefore"></a>
 
-## actionBuiltBefore(lastBuildsData, actionBuildData) ⇒ <code>boolean</code>
+## actionBuiltBefore(lastBuildsData, buildData) ⇒ <code>boolean</code>
 Will tell if the action was built before based on it's contentHash.
 
 **Kind**: global function  
@@ -1415,7 +1416,7 @@ Will tell if the action was built before based on it's contentHash.
 | Param | Type | Description |
 | --- | --- | --- |
 | lastBuildsData | <code>string</code> | Data with the last builds |
-| actionBuildData | <code>object</code> | Object which contains action name and contentHash. |
+| buildData | <code>object</code> | Object where key is the name of the action and value is its contentHash |
 
 <a name="dumpActionsBuiltInfo"></a>
 
@@ -1439,10 +1440,12 @@ Will dump the previously actions built data information.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| outPath | <code>string</code> | zip output path |
-| actionBuildData | <code>object</code> | Object where key is the name of the action and value is its contentHash |
+| actionName | <code>string</code> | The name of the action |
+| buildHash | <code>object</code> | Map with key as the name of the action and value its contentHash |
+| legacy | <code>boolean</code> | Indicate legacy action support |
 | tempBuildDir | <code>string</code> | path of temp build |
 | tempActionName | <code>string</code> | name of the action file. |
+| outPath | <code>string</code> | zip output path |
 
 <a name="OpenwhiskOptions"></a>
 
