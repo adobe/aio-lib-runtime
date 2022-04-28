@@ -1,4 +1,4 @@
-name: version-bump-publish
+name: publish-prerelease
 on:
   workflow_dispatch:
     inputs:
