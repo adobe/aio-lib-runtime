@@ -95,8 +95,11 @@ async function getIncludesForAction (action) {
       } else {
         throw new Error('Invalid manifest `include` entry: ' + elem.toString())
       }
-      const pair = { dest: elem[1] }
-      pair.sources = await globby(elem[0])
+      const globbyPattern = elem[0].split('\\').join('/')
+      const pair = {
+        dest: elem[1],
+        sources: await globby(globbyPattern)
+      }
       return pair
     }))
     includeFiles.push(...files)
