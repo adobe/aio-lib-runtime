@@ -34,9 +34,11 @@ const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...package
  * @param {Array} [deployConfig.filterEntities.apis] filter list of apis to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.dependencies] filter list of package dependencies to deploy, e.g. ['name1', ..]
  * @param {object} [logFunc] custom logger function
+ * @param {object} [options={}] options object to store flag values
+ * @param {boolean} [options.noCode] flag if true prevents action code deployment
  * @returns {Promise<object>} deployedEntities
  */
-async function deployActions (config, deployConfig = {}, logFunc) {
+async function deployActions (config, deployConfig = {}, logFunc, options) {
   if (!config.app.hasBackend) throw new Error('cannot deploy actions, app has no backend')
 
   const isLocalDev = deployConfig.isLocalDev
@@ -117,7 +119,8 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     modifiedConfig,
     manifest,
     log,
-    filterEntities
+    filterEntities,
+    options
   )
   // enrich actions array with urls
   if (Array.isArray(deployedEntities.actions)) {
@@ -139,9 +142,11 @@ async function deployActions (config, deployConfig = {}, logFunc) {
  * @param {object} manifestContent manifest
  * @param {object} logFunc custom logger function
  * @param {object} filterEntities entities (actions, sequences, triggers, rules etc) to be filtered
+ * @param {object} [options={}] options object to store flag values
+ * @param {boolean} [options.noCode] flag if true prevents action code deployment
  * @returns {Promise<object>} deployedEntities
  */
-async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities) {
+async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities, options) {
   const packageName = scriptConfig.ow.package
   const manifestPath = scriptConfig.manifest.src
   const owOptions = {
@@ -193,7 +198,7 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
   }
 
   // note we must filter before processPackage, as it expect all built actions to be there
-  const entities = utils.processPackage(packages, {}, {}, {}, false, owOptions)
+  const entities = utils.processPackage(packages, {}, {}, {}, false, owOptions, options)
 
   /* BEGIN temporary workaround for handling require-adobe-auth */
   // Note this is a tmp workaround and should be removed once the app-registry validator can be used for headless applications

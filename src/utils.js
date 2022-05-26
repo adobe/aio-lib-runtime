@@ -982,17 +982,23 @@ function checkWebFlags (flag) {
  *
  * @param {string} fullName the full action name prefixed with the package, e.g. `pkg/action`
  * @param {ManifestAction} manifestAction the action object as parsed from the manifest
+ * @param {object} [options={}] options object to store flag values
+ * @param {boolean} [options.noCode] flag if true prevents action code deployment
  * @returns {OpenWhiskEntitiesAction} the action entity object
  */
-function createActionObject (fullName, manifestAction) {
+function createActionObject (fullName, manifestAction, options) {
   const objAction = { name: fullName }
   if (manifestAction.function.endsWith('.zip')) {
     if (!manifestAction.runtime && !manifestAction.docker) {
       throw (new Error(`Invalid or missing property "runtime" in the manifest for this action: ${objAction && objAction.name}`))
     }
-    objAction.action = fs.readFileSync(manifestAction.function)
+    if (!options.noCode) {
+      objAction.action = fs.readFileSync(manifestAction.function)
+    }
   } else {
-    objAction.action = fs.readFileSync(manifestAction.function, { encoding: 'utf8' })
+    if (!options.noCode) {
+      objAction.action = fs.readFileSync(manifestAction.function, { encoding: 'utf8' })
+    }
   }
 
   if (manifestAction.main || manifestAction.docker || manifestAction.runtime) {
@@ -1159,6 +1165,8 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
  * @param {object} params the package params
  * @param {boolean} [namesOnly=false] if false, set the namespaces as well
  * @param {object} [owOptions={}] additional OpenWhisk options
+ * @param {object} [options={}] options object to store flag values
+ * @param {boolean} [options.noCode] flag if true prevents action code deployment
  * @returns {OpenWhiskEntities} deployment entities
  */
 function processPackage (packages,
@@ -1166,7 +1174,8 @@ function processPackage (packages,
   deploymentTriggers,
   params,
   namesOnly = false,
-  owOptions = {}) {
+  owOptions = {},
+  options) {
   // eslint - do not rewrite function arguments
   let pkgs = packages
   let deploymentPkgs = deploymentPackages
@@ -1248,7 +1257,7 @@ function processPackage (packages,
         const thisAction = pkgs[key].actions[actionName]
         let objAction = { name: `${key}/${actionName}` }
         if (!namesOnly) {
-          objAction = createActionObject(objAction.name, thisAction)
+          objAction = createActionObject(objAction.name, thisAction, options)
           let deploymentInputs = {}
           const packageInputs = thisAction.inputs || {}
           if (deploymentPkgs[key] && deploymentPkgs[key].actions && deploymentPkgs[key].actions[actionName]) {
