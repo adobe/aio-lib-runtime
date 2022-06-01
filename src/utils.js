@@ -982,8 +982,8 @@ function checkWebFlags (flag) {
  *
  * @param {string} fullName the full action name prefixed with the package, e.g. `pkg/action`
  * @param {ManifestAction} manifestAction the action object as parsed from the manifest
- * @param {object} [options={}] options object to store flag values
- * @param {boolean} [options.noCode] flag if true prevents action code deployment
+ * @param {object} [options={}] options object to store params
+ * @param {boolean} [options.actionCode] param: if false, skips action code deployment
  * @returns {OpenWhiskEntitiesAction} the action entity object
  */
 function createActionObject (fullName, manifestAction, options) {
@@ -992,11 +992,11 @@ function createActionObject (fullName, manifestAction, options) {
     if (!manifestAction.runtime && !manifestAction.docker) {
       throw (new Error(`Invalid or missing property "runtime" in the manifest for this action: ${objAction && objAction.name}`))
     }
-    if (!options.noCode) {
+    if (options.actionCode) {
       objAction.action = fs.readFileSync(manifestAction.function)
     }
   } else {
-    if (!options.noCode) {
+    if (options.actionCode) {
       objAction.action = fs.readFileSync(manifestAction.function, { encoding: 'utf8' })
     }
   }
@@ -1165,8 +1165,8 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
  * @param {object} params the package params
  * @param {boolean} [namesOnly=false] if false, set the namespaces as well
  * @param {object} [owOptions={}] additional OpenWhisk options
- * @param {object} [options={}] options object to store flag values
- * @param {boolean} [options.noCode] flag if true prevents action code deployment
+ * @param {object} [options={}] options object to store params
+ * @param {boolean} [options.actionCode] param: if false, skips action code deployment
  * @returns {OpenWhiskEntities} deployment entities
  */
 function processPackage (packages,

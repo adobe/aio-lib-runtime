@@ -34,8 +34,8 @@ const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...package
  * @param {Array} [deployConfig.filterEntities.apis] filter list of apis to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.dependencies] filter list of package dependencies to deploy, e.g. ['name1', ..]
  * @param {object} [logFunc] custom logger function
- * @param {object} [options={}] options object to store flag values
- * @param {boolean} [options.noCode] flag if true prevents action code deployment
+ * @param {object} [options={}] options object to store params
+ * @param {boolean} [options.actionCode] param: if false, skips action code deployment
  * @returns {Promise<object>} deployedEntities
  */
 async function deployActions (config, deployConfig = {}, logFunc, options) {
@@ -142,8 +142,8 @@ async function deployActions (config, deployConfig = {}, logFunc, options) {
  * @param {object} manifestContent manifest
  * @param {object} logFunc custom logger function
  * @param {object} filterEntities entities (actions, sequences, triggers, rules etc) to be filtered
- * @param {object} [options={}] options object to store flag values
- * @param {boolean} [options.noCode] flag if true prevents action code deployment
+ * @param {object} [options={}] options object to store params
+ * @param {boolean} [options.actionCode] param: if false, skips action code deployment
  * @returns {Promise<object>} deployedEntities
  */
 async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities, options) {
