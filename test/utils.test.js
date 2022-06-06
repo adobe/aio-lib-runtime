@@ -2177,3 +2177,54 @@ describe('validateActionRuntime', () => {
     expect(utils.getActionZipFileName('pk1', 'action', true)).toEqual('action')
   })
 })
+
+describe('getSupportedRuntimes', () => {
+  const APIHOST = 'https://some-server.net'
+
+  test('success', async () => {
+    const result = {
+      runtimes: {
+        nodejs: [
+          { kind: 'nodejs:14' },
+          { kind: 'nodejs:16' }
+        ]
+      }
+    }
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => result
+    })
+
+    await expect(utils.getSupportedRuntimes(APIHOST))
+      .resolves.toEqual([
+        'nodejs:14',
+        'nodejs:16'
+      ])
+  })
+
+  test('http error', async () => {
+    mockFetch.mockResolvedValue({
+      status: 403,
+      ok: false
+    })
+
+    await expect(utils.getSupportedRuntimes(APIHOST))
+      .rejects.toThrow('HTTP 403 - An error occurred when retrieving supported runtimes.')
+  })
+
+  test('json error', async () => {
+    const result = {
+      runtimes: {}
+    }
+
+    mockFetch.mockResolvedValue({
+      status: 200,
+      ok: true,
+      json: () => result
+    })
+
+    await expect(utils.getSupportedRuntimes(APIHOST))
+      .rejects.toThrowError()
+  })
+})
