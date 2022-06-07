@@ -105,6 +105,8 @@ const mockEntities = { fake: true }
 //   rules: [{ name: 'rule' }]
 // }
 
+const expectedOptions = { actionCode: true }
+
 test('deploy full manifest', async () => {
   addSampleAppFiles()
   runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
@@ -119,7 +121,7 @@ test('deploy full manifest', async () => {
   await deployActions(global.sampleAppConfig)
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistManifest.packages, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
 
@@ -147,7 +149,7 @@ test('deploy full manifest with package name specified', async () => {
   await deployActions(global.namedPackageConfig)
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedNamedPackage, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedNamedPackage, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('bobby-mcgee', global.sampleAppConfig.manifest.src, { packages: expectedNamedPackage }, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
@@ -173,7 +175,7 @@ test('deploy full manifest with extra package present', async () => {
   await deployActions(multiPackageConfig)
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedMultiDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
@@ -199,7 +201,7 @@ test('deploy full manifest with a package that does not have any actions', async
   await deployActions(multiPackageConfig)
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedMultiDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
@@ -223,7 +225,7 @@ test('should not fail if default package does not have any actions', async () =>
   await deployActions(multiPackageConfig)
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedMultiDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
@@ -261,7 +263,7 @@ test('use deployConfig.filterEntities to deploy only one action', async () => {
   }
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
@@ -303,7 +305,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action'
   }
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
@@ -352,7 +354,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action 
   }
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
@@ -401,7 +403,7 @@ test('use deployConfig.filterEntities to deploy only one action and one api', as
   }
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
@@ -451,7 +453,7 @@ test('use deployConfig.filterEntities to deploy only two actions and one sequenc
   }
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
@@ -487,7 +489,7 @@ test('use deployConfig.filterEntities to deploy only one pkg dependency', async 
   }
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
@@ -537,7 +539,7 @@ test('use deployConfig.filterEntities on non existing pkgEntity should work', as
   }
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-reduced-1.0.0', global.sampleAppConfig.manifest.src, expectedDistReducedManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, false)
@@ -658,7 +660,7 @@ test('custom package and action filter', async () => {
         }
       }
     })
-  }, {}, {}, {}, false, expect.any(Object))
+  }, {}, {}, {}, false, expect.any(Object), expectedOptions)
 })
 
 test('if actions are deployed with the headless validator and there is a UI it should rewrite the sequence with the app-registry validator', async () => {
@@ -914,7 +916,7 @@ test('use deployConfig.filterEntities.byBuiltActions, package with no action', a
   })
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedMultiDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
@@ -941,7 +943,7 @@ test('use deployConfig.filterEntities.byBuiltActions, deploy package with no act
     }
   })
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedMultiDistManifest.packages, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedMultiDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
@@ -987,7 +989,7 @@ it('should filter the manifest, ignore the legacy action build', async () => {
   }
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistPackagesFiltered, {}, {}, {}, false, expectedOWOptions, expectedOptions)
 })
 
 test('No backend is present', async () => {

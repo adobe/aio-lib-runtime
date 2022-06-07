@@ -986,7 +986,7 @@ function checkWebFlags (flag) {
  * @param {boolean} [options.actionCode] param: if false, skips action code deployment
  * @returns {OpenWhiskEntitiesAction} the action entity object
  */
-function createActionObject (fullName, manifestAction, options) {
+function createActionObject (fullName, manifestAction, options = { actionCode: true }) {
   const objAction = { name: fullName }
   if (manifestAction.function.endsWith('.zip')) {
     if (!manifestAction.runtime && !manifestAction.docker) {
@@ -1175,7 +1175,7 @@ function processPackage (packages,
   params,
   namesOnly = false,
   owOptions = {},
-  options) {
+  options = { actionCode: true }) {
   // eslint - do not rewrite function arguments
   let pkgs = packages
   let deploymentPkgs = deploymentPackages

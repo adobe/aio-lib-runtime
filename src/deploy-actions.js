@@ -38,11 +38,10 @@ const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...package
  * @param {boolean} [options.actionCode] param: if false, skips action code deployment
  * @returns {Promise<object>} deployedEntities
  */
-async function deployActions (config, deployConfig = {}, logFunc, options) {
+async function deployActions (config, deployConfig = {}, logFunc = console.log, options = { actionCode: true }) {
   if (!config.app.hasBackend) throw new Error('cannot deploy actions, app has no backend')
 
   const isLocalDev = deployConfig.isLocalDev
-  const log = logFunc || console.log
   let filterEntities = deployConfig.filterEntities
 
   // checks
@@ -79,8 +78,8 @@ async function deployActions (config, deployConfig = {}, logFunc, options) {
       }
     })
     if (builtActions.length === 0) {
-      log('No changes detected.')
-      log('Deployment of actions skipped.')
+      logFunc('No changes detected.')
+      logFunc('Deployment of actions skipped.')
     }
     Object.entries(manifest.packages).forEach(([pgkName, pkg]) => {
       const packageActions = pkg.actions || {}
@@ -118,7 +117,7 @@ async function deployActions (config, deployConfig = {}, logFunc, options) {
   const deployedEntities = await deployWsk(
     modifiedConfig,
     manifest,
-    log,
+    logFunc,
     filterEntities,
     options
   )
@@ -146,7 +145,7 @@ async function deployActions (config, deployConfig = {}, logFunc, options) {
  * @param {boolean} [options.actionCode] param: if false, skips action code deployment
  * @returns {Promise<object>} deployedEntities
  */
-async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities, options) {
+async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities, options = { actionCode: true }) {
   const packageName = scriptConfig.ow.package
   const manifestPath = scriptConfig.manifest.src
   const owOptions = {
