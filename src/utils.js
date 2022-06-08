@@ -1472,7 +1472,7 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
  */
 async function deployPackage (entities, ow, logger, imsOrgId) {
   const opts = await ow.actions.client.options
-  const ns = opts.namespace
+  const { namespace: ns, apihost } = opts
 
   /* this is a temporary workaround to setup Adobe auth dependencies */
   await setupAdobeAuth(entities.actions, opts, imsOrgId)
@@ -1482,8 +1482,15 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
     await ow.packages.update(pkg)
     logger(`Info: package [${pkg.name}] has been successfully deployed.\n`)
   }
+
   for (const action of entities.actions) {
-    validateActionRuntime(action)
+    try {
+      validateActionRuntime(action)
+    } catch (e) {
+      const supportedServerRuntimes = await getSupportedServerRuntimes(apihost)
+      throw new Error(`${e.message}. Supported runtimes on ${apihost}: ${supportedServerRuntimes}`)
+    }
+
     if (action.exec && action.exec.kind === 'sequence') {
       action.exec.components = action.exec.components.map(sequence => {
         /*
@@ -2002,7 +2009,7 @@ function validateActionRuntime (action) {
   // comes from action: runtime: in manifest -jm
   if (action.exec && action.exec.kind && action.exec.kind.toLowerCase().startsWith('nodejs:')) {
     if (!SupportedRuntimes.includes(action.exec.kind)) {
-      throw new Error(`Unsupported node version in action ${action.name}. Supported versions are ${SupportedRuntimes}`)
+      throw new Error(`Unsupported node version '${action.exec.kind}' in action ${action.name}. Supported versions are ${SupportedRuntimes}`)
     }
   }
 }
@@ -2096,7 +2103,7 @@ async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prev
  * @param {string} apihost the URL of the runtime apihost
  * @returns {Array<string>} a list of runtime kinds supported by the runtime apihost
  */
-async function getSupportedRuntimes (apihost) {
+async function getSupportedServerRuntimes (apihost) {
   aioLogger.debug(`Getting supported runtimes from ${apihost}`)
 
   const fetch = createFetch()
@@ -2111,7 +2118,7 @@ async function getSupportedRuntimes (apihost) {
 }
 
 module.exports = {
-  getSupportedRuntimes,
+  getSupportedServerRuntimes,
   checkOpenWhiskCredentials,
   getActionEntryFile,
   getIncludesForAction,

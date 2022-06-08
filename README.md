@@ -277,7 +277,7 @@ for syncing managed projects.</p>
 <dt><a href="#dumpActionsBuiltInfo">dumpActionsBuiltInfo(lastBuiltActionsPath, actionBuildData, prevBuildData)</a> ⇒ <code>Promise.&lt;boolean&gt;</code></dt>
 <dd><p>Will dump the previously actions built data information.</p>
 </dd>
-<dt><a href="#getSupportedRuntimes">getSupportedRuntimes(apihost)</a> ⇒ <code>Array.&lt;string&gt;</code></dt>
+<dt><a href="#getSupportedServerRuntimes">getSupportedServerRuntimes(apihost)</a> ⇒ <code>Array.&lt;string&gt;</code></dt>
 <dd><p>Gets a list of the supported runtime kinds from the apihost.</p>
 </dd>
 </dl>
@@ -1435,9 +1435,9 @@ Will dump the previously actions built data information.
 | actionBuildData | <code>object</code> | Object which contains action name and contentHash. |
 | prevBuildData | <code>object</code> | Object which contains info about all the previously built actions |
 
-<a name="getSupportedRuntimes"></a>
+<a name="getSupportedServerRuntimes"></a>
 
-## getSupportedRuntimes(apihost) ⇒ <code>Array.&lt;string&gt;</code>
+## getSupportedServerRuntimes(apihost) ⇒ <code>Array.&lt;string&gt;</code>
 Gets a list of the supported runtime kinds from the apihost.
 
 **Kind**: global function  
