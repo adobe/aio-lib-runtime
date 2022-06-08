@@ -2099,7 +2099,28 @@ async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prev
   }
 }
 
+/**
+ * Gets a list of the supported runtime kinds from the apihost.
+ *
+ * @param {string} apihost the URL of the runtime apihost
+ * @returns {Array<string>} a list of runtime kinds supported by the runtime apihost
+ */
+async function getSupportedRuntimes (apihost) {
+  aioLogger.debug(`Getting supported runtimes from ${apihost}`)
+
+  const fetch = createFetch()
+  const response = await fetch(apihost)
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} - An error occurred when retrieving supported runtimes.`)
+  }
+
+  const json = await response.json()
+  aioLogger.debug(`Result from ${apihost}: ${JSON.stringify(json, null, 2)}`)
+  return json.runtimes.nodejs.map(item => item.kind)
+}
+
 module.exports = {
+  getSupportedRuntimes,
   checkOpenWhiskCredentials,
   getActionEntryFile,
   getIncludesForAction,
