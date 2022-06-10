@@ -145,7 +145,7 @@ async function deployActions (config, deployConfig = {}, logFunc = console.log, 
  * @param {boolean} [options.actionCode] param: if false, skips action code deployment
  * @returns {Promise<object>} deployedEntities
  */
-async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities, options = { actionCode: true }) {
+async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities, options) {
   const packageName = scriptConfig.ow.package
   const manifestPath = scriptConfig.manifest.src
   const owOptions = {
