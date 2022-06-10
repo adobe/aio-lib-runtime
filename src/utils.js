@@ -21,7 +21,7 @@ const globby = require('globby')
 const path = require('path')
 const archiver = require('archiver')
 // this is a static list that comes from here: https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
-const SupportedRuntimes = ['nodejs:10', 'nodejs:12', 'nodejs:14']
+const SupportedRuntimes = ['nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16']
 
 /**
  *
@@ -1481,7 +1481,7 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
  */
 async function deployPackage (entities, ow, logger, imsOrgId) {
   const opts = await ow.actions.client.options
-  const ns = opts.namespace
+  const { namespace: ns, apihost } = opts
 
   /* this is a temporary workaround to setup Adobe auth dependencies */
   await setupAdobeAuth(entities.actions, opts, imsOrgId)
@@ -1491,8 +1491,15 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
     await ow.packages.update(pkg)
     logger(`Info: package [${pkg.name}] has been successfully deployed.\n`)
   }
+
   for (const action of entities.actions) {
-    validateActionRuntime(action)
+    try {
+      validateActionRuntime(action)
+    } catch (e) {
+      const supportedServerRuntimes = await getSupportedServerRuntimes(apihost)
+      throw new Error(`${e.message}. Supported runtimes on ${apihost}: ${supportedServerRuntimes}`)
+    }
+
     if (action.exec && action.exec.kind === 'sequence') {
       action.exec.components = action.exec.components.map(sequence => {
         /*
@@ -2011,7 +2018,7 @@ function validateActionRuntime (action) {
   // comes from action: runtime: in manifest -jm
   if (action.exec && action.exec.kind && action.exec.kind.toLowerCase().startsWith('nodejs:')) {
     if (!SupportedRuntimes.includes(action.exec.kind)) {
-      throw new Error(`Unsupported node version in action ${action.name}. Supported versions are ${SupportedRuntimes}`)
+      throw new Error(`Unsupported node version '${action.exec.kind}' in action ${action.name}. Supported versions are ${SupportedRuntimes}`)
     }
   }
 }
@@ -2099,7 +2106,28 @@ async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prev
   }
 }
 
+/**
+ * Gets a list of the supported runtime kinds from the apihost.
+ *
+ * @param {string} apihost the URL of the runtime apihost
+ * @returns {Array<string>} a list of runtime kinds supported by the runtime apihost
+ */
+async function getSupportedServerRuntimes (apihost) {
+  aioLogger.debug(`Getting supported runtimes from ${apihost}`)
+
+  const fetch = createFetch()
+  const response = await fetch(apihost)
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} - An error occurred when retrieving supported runtimes.`)
+  }
+
+  const json = await response.json()
+  aioLogger.debug(`Result from ${apihost}: ${JSON.stringify(json, null, 2)}`)
+  return json.runtimes.nodejs.map(item => item.kind)
+}
+
 module.exports = {
+  getSupportedServerRuntimes,
   checkOpenWhiskCredentials,
   getActionEntryFile,
   getIncludesForAction,

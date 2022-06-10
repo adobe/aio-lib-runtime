@@ -47,6 +47,7 @@ beforeEach(() => {
     'hello.js': global.fixtureFile('/deploy/hello.js'),
     'goodbye.js': global.fixtureFile('/deploy/goodbye.js'),
     'basic_manifest.json': global.fixtureFile('/deploy/basic_manifest.json'),
+    'basic_manifest_unsupported_kind.json': global.fixtureFile('/deploy/basic_manifest_unsupported_kind.json'),
     'basic_manifest_res.json': global.fixtureFile('/deploy/basic_manifest_res.json'),
     'pkgparam_manifest_res.json': global.fixtureFile('/deploy/pkgparam_manifest_res.json'),
     'pkgparam_manifest_res_multi.json': global.fixtureFile('/deploy/pkgparam_manifest_res_multi.json'),
@@ -102,6 +103,7 @@ describe('utils has the right functions', () => {
     expect(typeof utils.getActionNameFromZipFile).toEqual('function')
     expect(typeof utils.dumpActionsBuiltInfo).toEqual('function')
     expect(typeof utils.actionBuiltBefore).toEqual('function')
+    expect(typeof utils.getSupportedServerRuntimes).toEqual('function')
 
     expect(utils.urlJoin).toBeDefined()
     expect(typeof utils.urlJoin).toBe('function')
@@ -713,6 +715,34 @@ describe('deployPackage', () => {
         headers: { Authorization: 'Basic bXkta2V5', 'Content-Type': 'application/json' },
         method: 'post'
       })
+  })
+
+  test('basic manifest - unsupported kind', async () => {
+    const imsOrgId = 'MyIMSOrgId'
+    const mockLogger = jest.fn()
+    const owOptions = { apiKey: 'my-key', namespace: 'my-namespace', apihost: 'https://adobeio.adobeioruntime.net' }
+    ow.mockResolvedProperty('actions.client.options', owOptions)
+
+    const result = {
+      runtimes: {
+        nodejs: [
+          { kind: 'nodejs:14' },
+          { kind: 'nodejs:16' }
+        ]
+      }
+    }
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => result
+    })
+
+    const supportedClientRuntimes = ['nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16']
+    const supportedServerRuntimes = await utils.getSupportedServerRuntimes(owOptions.apihost)
+
+    await expect(() =>
+      utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_unsupported_kind.json')), ow, mockLogger, imsOrgId)
+    ).rejects.toThrow(`Unsupported node version 'nodejs:8' in action hello/helloAction. Supported versions are ${supportedClientRuntimes}. Supported runtimes on ${owOptions.apihost}: ${supportedServerRuntimes}`)
   })
 
   test('basic manifest (fetch error)', async () => {
@@ -2199,5 +2229,56 @@ describe('validateActionRuntime', () => {
   })
   test('getActionZipFileName, defaultPkg:true  (coverage)', () => {
     expect(utils.getActionZipFileName('pk1', 'action', true)).toEqual('action')
+  })
+})
+
+describe('getSupportedServerRuntimes', () => {
+  const APIHOST = 'https://some-server.net'
+
+  test('success', async () => {
+    const result = {
+      runtimes: {
+        nodejs: [
+          { kind: 'nodejs:14' },
+          { kind: 'nodejs:16' }
+        ]
+      }
+    }
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => result
+    })
+
+    await expect(utils.getSupportedServerRuntimes(APIHOST))
+      .resolves.toEqual([
+        'nodejs:14',
+        'nodejs:16'
+      ])
+  })
+
+  test('http error', async () => {
+    mockFetch.mockResolvedValue({
+      status: 403,
+      ok: false
+    })
+
+    await expect(utils.getSupportedServerRuntimes(APIHOST))
+      .rejects.toThrow('HTTP 403 - An error occurred when retrieving supported runtimes.')
+  })
+
+  test('json error', async () => {
+    const result = {
+      runtimes: {}
+    }
+
+    mockFetch.mockResolvedValue({
+      status: 200,
+      ok: true,
+      json: () => result
+    })
+
+    await expect(utils.getSupportedServerRuntimes(APIHOST))
+      .rejects.toThrowError()
   })
 })
