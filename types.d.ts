@@ -939,5 +939,5 @@ declare function dumpActionsBuiltInfo(lastBuiltActionsPath: string, actionBuildD
  * @param apihost - the URL of the runtime apihost
  * @returns a list of runtime kinds supported by the runtime apihost
  */
-declare function getSupportedRuntimes(apihost: string): string[];
+declare function getSupportedServerRuntimes(apihost: string): string[];
 
