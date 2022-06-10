@@ -565,6 +565,30 @@ describe('createActionObject', () => {
     expect(res).toEqual({ action: 'fake source code', annotations: { 'raw-http': false, 'web-export': false }, exec: { image: 'docker', kind: 'blackbox', main: 'fakeSrcMain' }, limits: { concurrency: 12, logs: 10, memory: 256, timeout: 60000 }, name: 'fake' })
   })
 
+  test('action js - runtime prop w/ docker, actionCode false', () => {
+    readFileSyncSpy.mockImplementation(() => 'fake source code')
+    const res = utils.createActionObject('fake', {
+      function: 'fake.zip',
+      runtime: 'something',
+      docker: 'docker',
+      main: 'fakeSrcMain',
+      limits: { concurrency: 12 }
+    }, { actionCode: false })
+    expect(res).toEqual({ annotations: { 'raw-http': false, 'web-export': false }, exec: { image: 'docker', kind: 'blackbox', main: 'fakeSrcMain' }, limits: { concurrency: 12, logs: 10, memory: 256, timeout: 60000 }, name: 'fake' })
+  })
+
+  test('action zip - runtime prop w/ docker, actionCode false', () => {
+    readFileSyncSpy.mockImplementation(() => 'fake source code')
+    const res = utils.createActionObject('fake', {
+      function: 'fake.js',
+      runtime: 'something',
+      docker: 'docker',
+      main: 'fakeSrcMain',
+      limits: { concurrency: 12 }
+    }, { actionCode: false })
+    expect(res).toEqual({ annotations: { 'raw-http': false, 'web-export': false }, exec: { image: 'docker', kind: 'blackbox', main: 'fakeSrcMain' }, limits: { concurrency: 12, logs: 10, memory: 256, timeout: 60000 }, name: 'fake' })
+  })
+
   test('action js - runtime prop w/ docker, no main', () => {
     readFileSyncSpy.mockImplementation(() => 'fake source code')
     const res = utils.createActionObject('fake', {
