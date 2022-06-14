@@ -38,7 +38,7 @@ const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...package
  * @param {boolean} [options.actionCode] param: if false, skips action code deployment
  * @returns {Promise<object>} deployedEntities
  */
-async function deployActions (config, deployConfig = {}, logFunc = console.log, options = { actionCode: true }) {
+async function deployActions (config, deployConfig = {}, logFunc = console.log, options = {}) {
   if (!config.app.hasBackend) throw new Error('cannot deploy actions, app has no backend')
 
   const isLocalDev = deployConfig.isLocalDev
@@ -54,6 +54,11 @@ async function deployActions (config, deployConfig = {}, logFunc = console.log, 
     (!fs.pathExistsSync(dist) || !fs.lstatSync(dist).isDirectory() || !fs.readdirSync(dist).length === 0)
   ) {
     throw new Error(`missing files in ${utils._relApp(config.root, dist)}, maybe you forgot to build your actions ?`)
+  }
+  /// c. options param missing actionCode property
+  let optionsParam = options
+  if (optionsParam.actionCode === undefined) {
+    optionsParam = { actionCode: true }
   }
 
   // 1. rewrite wskManifest config
@@ -119,7 +124,7 @@ async function deployActions (config, deployConfig = {}, logFunc = console.log, 
     manifest,
     logFunc,
     filterEntities,
-    options
+    optionsParam
   )
   // enrich actions array with urls
   if (Array.isArray(deployedEntities.actions)) {

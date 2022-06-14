@@ -814,6 +814,14 @@ describe('processPackage', () => {
     expect(entities).toMatchObject(res)
   })
 
+  test('basic manifest with non-empty options param', async () => {
+    const entities = utils.processPackage(JSON.parse(fs.readFileSync('/basic_manifest.json')), {}, {}, {}, false, {}, { actionCode: true })
+    const res = JSON.parse(fs.readFileSync('/basic_manifest_res.json'))
+    res.actions[0].action = res.actions[0].action.split('\n').join(os.EOL)
+    res.actions[1].action = res.actions[1].action.split('\n').join(os.EOL)
+    expect(entities).toMatchObject(res)
+  })
+
   test('basic manifest with namesOnly flag', async () => {
     const entities = utils.processPackage(JSON.parse(fs.readFileSync('/basic_manifest.json')), {}, {}, {}, true, {})
     expect(entities).toMatchObject(JSON.parse(fs.readFileSync('/basic_manifest_res_namesonly.json')))

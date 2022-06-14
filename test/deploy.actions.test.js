@@ -128,6 +128,27 @@ test('deploy full manifest', async () => {
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
 })
 
+test('deploy full manifest with non-empty options param', async () => {
+  addSampleAppFiles()
+  runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
+
+  const buildDir = global.sampleAppConfig.actions.dist
+  // fake a previous build
+  const fakeFiles = {}
+  fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
+  fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
+  global.fakeFileSystem.addJson(fakeFiles)
+
+  await deployActions(global.sampleAppConfig, {}, console.log, { actionCode: true })
+
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistManifest.packages, {}, {}, {}, false, expectedOWOptions, expectedOptions)
+
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
+
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
+})
+
 test('deploy full manifest with package name specified', async () => {
   addNamedPackageFiles()
   runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))

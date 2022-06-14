@@ -986,7 +986,11 @@ function checkWebFlags (flag) {
  * @param {boolean} [options.actionCode] param: if false, skips action code deployment
  * @returns {OpenWhiskEntitiesAction} the action entity object
  */
-function createActionObject (fullName, manifestAction, options = { actionCode: true }) {
+function createActionObject (fullName, manifestAction, options = {}) {
+  /// c. options param missing actionCode property
+  if (options.actionCode === undefined) {
+    options = { actionCode: true }
+  }
   const objAction = { name: fullName }
   if (manifestAction.function.endsWith('.zip')) {
     if (!manifestAction.runtime && !manifestAction.docker) {
@@ -1175,7 +1179,7 @@ function processPackage (packages,
   params,
   namesOnly = false,
   owOptions = {},
-  options = { actionCode: true }) {
+  options = {}) {
   // eslint - do not rewrite function arguments
   let pkgs = packages
   let deploymentPkgs = deploymentPackages
@@ -1186,7 +1190,10 @@ function processPackage (packages,
     pkgs = newPackages
     deploymentPkgs = newDeploymentPackages
   }
-
+  /// c. options param missing actionCode property
+  if (options.actionCode === undefined) {
+    options = { actionCode: true }
+  }
   const pkgAndDeps = []
   const actions = []
   const routes = []
