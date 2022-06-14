@@ -1480,11 +1480,12 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
  * @param {string} imsOrgId the IMS Org ID
  */
 async function deployPackage (entities, ow, logger, imsOrgId) {
-  const opts = await ow.actions.client.options
-  const { namespace: ns, apihost } = opts
+  const actionOpts = await ow.actions.client.options
+  const ns = actionOpts.namespace
+  const { apihost } = ow.initOptions
 
   /* this is a temporary workaround to setup Adobe auth dependencies */
-  await setupAdobeAuth(entities.actions, opts, imsOrgId)
+  await setupAdobeAuth(entities.actions, actionOpts, imsOrgId)
 
   for (const pkg of entities.pkgAndDeps) {
     logger(`Info: Deploying package [${pkg.name}]...`)

@@ -36,6 +36,7 @@ const owPackageDel = 'packages.delete'
 const owRulesDel = 'rules.delete'
 const owTriggerDel = 'triggers.delete'
 const owAPIDel = 'routes.delete'
+const owInitOptions = 'initOptions'
 
 const libEnv = require('@adobe/aio-lib-env')
 const { STAGE_ENV, PROD_ENV } = jest.requireActual('@adobe/aio-lib-env')
@@ -693,6 +694,7 @@ describe('deployPackage', () => {
     const cmdAPI = ow.mockResolved(owAPI, '')
     const cmdTrigger = ow.mockResolved(owTriggers, '')
     const cmdRule = ow.mockResolved(owRules, '')
+    ow.mockResolvedProperty(owInitOptions, {})
     ow.mockResolvedProperty('actions.client.options', { apiKey: 'my-key', namespace: 'my-namespace' })
 
     mockFetch.mockResolvedValue({
@@ -720,8 +722,15 @@ describe('deployPackage', () => {
   test('basic manifest - unsupported kind', async () => {
     const imsOrgId = 'MyIMSOrgId'
     const mockLogger = jest.fn()
-    const owOptions = { apiKey: 'my-key', namespace: 'my-namespace', apihost: 'https://adobeio.adobeioruntime.net' }
-    ow.mockResolvedProperty('actions.client.options', owOptions)
+    const actionOptions = {
+      apiKey: 'my-key',
+      namespace: 'my-namespace'
+    }
+    const initOptions = {
+      apihost: 'https://adobeio.adobeioruntime.net'
+    }
+    ow.mockResolvedProperty('actions.client.options', actionOptions)
+    ow.mockResolvedProperty(owInitOptions, initOptions)
 
     const result = {
       runtimes: {
@@ -738,11 +747,11 @@ describe('deployPackage', () => {
     })
 
     const supportedClientRuntimes = ['nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16']
-    const supportedServerRuntimes = await utils.getSupportedServerRuntimes(owOptions.apihost)
+    const supportedServerRuntimes = await utils.getSupportedServerRuntimes(initOptions.apihost)
 
     await expect(() =>
       utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_unsupported_kind.json')), ow, mockLogger, imsOrgId)
-    ).rejects.toThrow(`Unsupported node version 'nodejs:8' in action hello/helloAction. Supported versions are ${supportedClientRuntimes}. Supported runtimes on ${owOptions.apihost}: ${supportedServerRuntimes}`)
+    ).rejects.toThrow(`Unsupported node version 'nodejs:8' in action hello/helloAction. Supported versions are ${supportedClientRuntimes}. Supported runtimes on ${initOptions.apihost}: ${supportedServerRuntimes}`)
   })
 
   test('basic manifest (fetch error)', async () => {
@@ -750,6 +759,7 @@ describe('deployPackage', () => {
     const imsOrgId = 'MyIMSOrgId'
     const mockLogger = jest.fn()
     ow.mockResolvedProperty('actions.client.options', { apiKey: 'my-key', namespace: 'my-namespace' })
+    ow.mockResolvedProperty(owInitOptions, {})
 
     const res = {
       ok: false,
@@ -765,6 +775,7 @@ describe('deployPackage', () => {
   test('basic manifest (no IMS Org Id)', async () => {
     // this test is specific to the tmp implementation of the require-adobe-annotation
     const mockLogger = jest.fn()
+    ow.mockResolvedProperty(owInitOptions, {})
 
     await expect(utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, null))
       .rejects.toThrowError(new Error('imsOrgId must be defined when using the Adobe headless auth validator'))
@@ -1148,6 +1159,7 @@ describe('syncProject', () => {
     ow.mockResolved('actions.list', [])
     ow.mockResolved('triggers.list', [])
     ow.mockResolved('rules.list', [])
+    ow.mockResolvedProperty(owInitOptions, {})
 
     const resultObject = {
       annotations: [
