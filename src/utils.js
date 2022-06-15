@@ -988,7 +988,7 @@ function checkWebFlags (flag) {
  */
 function createActionObject (fullName, manifestAction, options = {}) {
   /// c. options param missing actionCode property
-  const optionsParam = options
+  const optionsParam = cloneDeep(options)
   if (optionsParam.actionCode === undefined) {
     optionsParam.actionCode = true
   }
@@ -1192,7 +1192,7 @@ function processPackage (packages,
     deploymentPkgs = newDeploymentPackages
   }
   /// c. options param missing actionCode property
-  const optionsParam = options
+  const optionsParam = cloneDeep(options)
   if (optionsParam.actionCode === undefined) {
     optionsParam.actionCode = true
   }

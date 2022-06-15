@@ -56,7 +56,7 @@ async function deployActions (config, deployConfig = {}, logFunc = console.log, 
     throw new Error(`missing files in ${utils._relApp(config.root, dist)}, maybe you forgot to build your actions ?`)
   }
   /// c. options param missing actionCode property
-  const optionsParam = options
+  const optionsParam = deepCopy(options)
   if (optionsParam.actionCode === undefined) {
     optionsParam.actionCode = true
   }
