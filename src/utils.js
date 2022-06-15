@@ -988,19 +988,20 @@ function checkWebFlags (flag) {
  */
 function createActionObject (fullName, manifestAction, options = {}) {
   /// c. options param missing actionCode property
-  if (options.actionCode === undefined) {
-    options = { actionCode: true }
+  const optionsParam = options
+  if (optionsParam.actionCode === undefined) {
+    optionsParam.actionCode = true
   }
   const objAction = { name: fullName }
   if (manifestAction.function.endsWith('.zip')) {
     if (!manifestAction.runtime && !manifestAction.docker) {
       throw (new Error(`Invalid or missing property "runtime" in the manifest for this action: ${objAction && objAction.name}`))
     }
-    if (options.actionCode) {
+    if (optionsParam.actionCode) {
       objAction.action = fs.readFileSync(manifestAction.function)
     }
   } else {
-    if (options.actionCode) {
+    if (optionsParam.actionCode) {
       objAction.action = fs.readFileSync(manifestAction.function, { encoding: 'utf8' })
     }
   }
@@ -1191,8 +1192,9 @@ function processPackage (packages,
     deploymentPkgs = newDeploymentPackages
   }
   /// c. options param missing actionCode property
-  if (options.actionCode === undefined) {
-    options = { actionCode: true }
+  const optionsParam = options
+  if (optionsParam.actionCode === undefined) {
+    optionsParam.actionCode = true
   }
   const pkgAndDeps = []
   const actions = []
@@ -1264,7 +1266,7 @@ function processPackage (packages,
         const thisAction = pkgs[key].actions[actionName]
         let objAction = { name: `${key}/${actionName}` }
         if (!namesOnly) {
-          objAction = createActionObject(objAction.name, thisAction, options)
+          objAction = createActionObject(objAction.name, thisAction, optionsParam)
           let deploymentInputs = {}
           const packageInputs = thisAction.inputs || {}
           if (deploymentPkgs[key] && deploymentPkgs[key].actions && deploymentPkgs[key].actions[actionName]) {
