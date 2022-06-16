@@ -128,7 +128,7 @@ test('deploy full manifest', async () => {
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
 })
 
-test('deploy full manifest with non-empty options param', async () => {
+test('deploy full manifest with actionCode as false', async () => {
   addSampleAppFiles()
   runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
 
@@ -139,10 +139,10 @@ test('deploy full manifest with non-empty options param', async () => {
   fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
   global.fakeFileSystem.addJson(fakeFiles)
 
-  await deployActions(global.sampleAppConfig, {}, console.log, { actionCode: true })
+  await deployActions(global.sampleAppConfig, {}, console.log, { actionCode: false })
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistManifest.packages, {}, {}, {}, false, expectedOWOptions, expectedOptions)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistManifest.packages, {}, {}, {}, false, expectedOWOptions, { actionCode: false })
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
 

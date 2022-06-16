@@ -57,7 +57,7 @@ async function deployActions (config, deployConfig = {}, logFunc = console.log, 
   }
   /// c. options param missing actionCode property
   const optionsParam = deepCopy(options)
-  if (optionsParam.actionCode === undefined) {
+  if (optionsParam.actionCode !== false) {
     optionsParam.actionCode = true
   }
 

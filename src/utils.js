@@ -989,7 +989,7 @@ function checkWebFlags (flag) {
 function createActionObject (fullName, manifestAction, options = {}) {
   /// c. options param missing actionCode property
   const optionsParam = cloneDeep(options)
-  if (optionsParam.actionCode === undefined) {
+  if (optionsParam.actionCode !== false) {
     optionsParam.actionCode = true
   }
   const objAction = { name: fullName }
@@ -1193,7 +1193,7 @@ function processPackage (packages,
   }
   /// c. options param missing actionCode property
   const optionsParam = cloneDeep(options)
-  if (optionsParam.actionCode === undefined) {
+  if (optionsParam.actionCode !== false) {
     optionsParam.actionCode = true
   }
   const pkgAndDeps = []
