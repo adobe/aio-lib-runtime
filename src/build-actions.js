@@ -23,11 +23,18 @@ const uniqueArr = (items) => {
   return [...new Set(items)]
 }
 
-const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename) => {
+/**
+ *  Searches for a webpack config file, starting at the action path and working
+ *  towards the root of the project. Will return the first one it finds. 
+ *
+ * @param {string} actionPath Path of the action
+ * @param {string} root Root of the project
+ * @returns {Promise<string>} Webpack config file path, will be 'null' if not found
+ */
+const getWebpackConfigPath = async (actionPath, root) => {
   let parentDir = path.dirname(actionPath)
   const rootParent = path.resolve(path.dirname(root))
   let configPath = null
-  const cliEnv = getCliEnv()
 
   do {
     const paths = await globby([path.join(parentDir, '*webpack-config.js')])
@@ -36,63 +43,92 @@ const getWebpackConfig = async (actionPath, root, tempBuildDir, outBuildFilename
     }
     parentDir = path.dirname(parentDir)
   } while (parentDir !== rootParent && !configPath)
-  // default empty
-  const userConfig = configPath ? require(configPath) : {}
-  // needs cloning because require has a cache, so we make sure to not touch the userConfig
-  const config = cloneDeep(userConfig)
-
-  // entry [] must include action path
-  config.entry = config.entry || []
-  config.entry.push(actionPath)
-  config.entry = uniqueArr(config.entry)
-  // make sure filePaths are resolved from the config dir
-  config.entry = config.entry.map(f => {
-    if (!path.isAbsolute(f)) {
-      return path.resolve(path.dirname(configPath), f)
-    }
-    return f
-  })
-
-  // if output exists, default to commonjs2
-  config.output = config.output || {}
-  if (config.output.libraryTarget === undefined) {
-    config.output.libraryTarget = 'commonjs2'
-  }
-  config.output.path = tempBuildDir
-  config.output.filename = outBuildFilename
-  // target MUST be node
-  config.target = 'node'
-  // default to production mode
-  config.mode = config.mode || 'production'
-  // default optimization to NOT minimize
-  config.optimization = config.optimization || {}
-  if (config.optimization.minimize === undefined) {
-    // error on minification for some libraries
-    config.optimization.minimize = false
-  }
-  // the following lines are used to require es6 module, e.g.node-fetch which is used by azure sdk
-  config.resolve = config.resolve || {}
-  // extensions needs to include .js and .json
-  config.resolve.extensions = config.resolve.extensions || []
-  config.resolve.extensions.push('.js', '.json')
-  config.resolve.extensions = uniqueArr(config.resolve.extensions)
-
-  // mainFields needs to include 'main'
-  config.resolve.mainFields = config.resolve.mainFields || []
-  config.resolve.mainFields.push('main')
-  config.resolve.mainFields = uniqueArr(config.resolve.mainFields)
-
-  // we have 1 required plugin to make sure is present
-  config.plugins = config.plugins || []
-  config.plugins.push(new webpack.DefinePlugin({
-    WEBPACK_ACTION_BUILD: 'true',
-    'process.env.AIO_CLI_ENV': `"${cliEnv}"`
-  }))
-  // NOTE: no need to make the array unique here, all plugins are different and created via new
-
-  aioLogger.debug(`merged webpack config : ${JSON.stringify(config, 0, 2)}`)
-  return config
+  return configPath
 }
+
+/**
+ *  Loads a Webpack config file from the config path provided. Sets fields required
+ *  for Runtime actions. Returns an object that can be passed to the Webpack library. 
+ *
+ * @param {string} configPath Path of the Webpack config file
+ * @param {string} actionPath Path of the action 
+ * @param {string} tempBuildDir Path of the output directory for the bundle
+ * @param {string} outBuildFilename Name of the output file for the action
+ * @returns {Promise<object>} Webpack config, can be passed to the Webpack library
+ */
+const loadWebpackConfig = async (configPath, actionPath, tempBuildDir, outBuildFilename) => {
+  let configs = [] 
+  const cliEnv = getCliEnv()
+  let importConfig = configPath ? require(configPath) : {}
+
+  if (!Array.isArray(importConfig)) {
+    importConfig = [importConfig]
+  }
+
+  for (let userConfig of importConfig) {
+    if (typeof userConfig === "function") {
+      userConfig = await userConfig()
+    }
+  
+    // needs cloning because require has a cache, so we make sure to not touch the userConfig
+    const config = cloneDeep(userConfig)
+  
+    // entry [] must include action path
+    config.entry = config.entry || []
+    config.entry.push(actionPath)
+    config.entry = uniqueArr(config.entry)
+    // make sure filePaths are resolved from the config dir
+    config.entry = config.entry.map(f => {
+      if (!path.isAbsolute(f)) {
+        return path.resolve(path.dirname(configPath), f)
+      }
+      return f
+    })
+  
+    // if output exists, default to commonjs2
+    config.output = config.output || {}
+    if (config.output.libraryTarget === undefined) {
+      config.output.libraryTarget = 'commonjs2'
+    }
+    config.output.path = tempBuildDir
+    config.output.filename = outBuildFilename
+    // target MUST be node
+    config.target = 'node'
+    // default to production mode
+    config.mode = config.mode || 'production'
+    // default optimization to NOT minimize
+    config.optimization = config.optimization || {}
+    if (config.optimization.minimize === undefined) {
+      // error on minification for some libraries
+      config.optimization.minimize = false
+    }
+    // the following lines are used to require es6 module, e.g.node-fetch which is used by azure sdk
+    config.resolve = config.resolve || {}
+    // extensions needs to include .js and .json
+    config.resolve.extensions = config.resolve.extensions || []
+    config.resolve.extensions.push('.js', '.json')
+    config.resolve.extensions = uniqueArr(config.resolve.extensions)
+  
+    // mainFields needs to include 'main'
+    config.resolve.mainFields = config.resolve.mainFields || []
+    config.resolve.mainFields.push('main')
+    config.resolve.mainFields = uniqueArr(config.resolve.mainFields)
+  
+    // we have 1 required plugin to make sure is present
+    config.plugins = config.plugins || []
+    config.plugins.push(new webpack.DefinePlugin({
+      WEBPACK_ACTION_BUILD: 'true',
+      'process.env.AIO_CLI_ENV': `"${cliEnv}"`
+    }))
+    // NOTE: no need to make the array unique here, all plugins are different and created via new
+  
+    aioLogger.debug(`merged webpack config : ${JSON.stringify(config, 0, 2)}`)
+    configs.push(config)  
+  }
+
+  return configs
+}
+
 // need config.root
 // config.actions.dist
 
@@ -159,7 +195,8 @@ const prepareToBuildAction = async (action, root, dist) => {
   } else {
     const outBuildFilename = 'index.[contenthash].js' // `${name}.tmp.js`
     // if not directory => package and minify to single file
-    const webpackConfig = await getWebpackConfig(actionPath, root, tempBuildDir, outBuildFilename)
+    const webpackConfigPath = await getWebpackConfigPath(actionPath, root)
+    const webpackConfig = await loadWebpackConfig(webpackConfigPath, actionPath, tempBuildDir, outBuildFilename)
     const compiler = webpack(webpackConfig)
 
     // run the compiler and wait for a result
