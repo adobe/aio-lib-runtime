@@ -62,7 +62,7 @@ const loadWebpackConfig = async (configPath, actionPath, tempBuildDir, outBuildF
   let importConfig = configPath ? require(configPath) : {}
 
   if (typeof importConfig === 'function') {
-    importConfig = await importConfig()
+    importConfig = await importConfig(process.env)
   }
 
   if (!Array.isArray(importConfig)) {
@@ -71,7 +71,7 @@ const loadWebpackConfig = async (configPath, actionPath, tempBuildDir, outBuildF
 
   for (let userConfig of importConfig) {
     if (typeof userConfig === 'function') {
-      userConfig = await userConfig()
+      userConfig = await userConfig(process.env)
     }
 
     // needs cloning because require has a cache, so we make sure to not touch the userConfig
