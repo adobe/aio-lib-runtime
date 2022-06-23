@@ -25,7 +25,7 @@ const uniqueArr = (items) => {
 
 /**
  *  Searches for a webpack config file, starting at the action path and working
- *  towards the root of the project. Will return the first one it finds. 
+ *  towards the root of the project. Will return the first one it finds.
  *
  * @param {string} actionPath Path of the action
  * @param {string} root Root of the project
@@ -48,31 +48,35 @@ const getWebpackConfigPath = async (actionPath, root) => {
 
 /**
  *  Loads a Webpack config file from the config path provided. Sets fields required
- *  for Runtime actions. Returns an object that can be passed to the Webpack library. 
+ *  for Runtime actions. Returns an object that can be passed to the Webpack library.
  *
  * @param {string} configPath Path of the Webpack config file
- * @param {string} actionPath Path of the action 
+ * @param {string} actionPath Path of the action
  * @param {string} tempBuildDir Path of the output directory for the bundle
  * @param {string} outBuildFilename Name of the output file for the action
  * @returns {Promise<object>} Webpack config, can be passed to the Webpack library
  */
 const loadWebpackConfig = async (configPath, actionPath, tempBuildDir, outBuildFilename) => {
-  let configs = [] 
+  const configs = []
   const cliEnv = getCliEnv()
   let importConfig = configPath ? require(configPath) : {}
+
+  if (typeof importConfig === 'function') {
+    importConfig = await importConfig()
+  }
 
   if (!Array.isArray(importConfig)) {
     importConfig = [importConfig]
   }
 
   for (let userConfig of importConfig) {
-    if (typeof userConfig === "function") {
+    if (typeof userConfig === 'function') {
       userConfig = await userConfig()
     }
-  
+
     // needs cloning because require has a cache, so we make sure to not touch the userConfig
     const config = cloneDeep(userConfig)
-  
+
     // entry [] must include action path
     config.entry = config.entry || []
     config.entry.push(actionPath)
@@ -84,7 +88,7 @@ const loadWebpackConfig = async (configPath, actionPath, tempBuildDir, outBuildF
       }
       return f
     })
-  
+
     // if output exists, default to commonjs2
     config.output = config.output || {}
     if (config.output.libraryTarget === undefined) {
@@ -108,12 +112,12 @@ const loadWebpackConfig = async (configPath, actionPath, tempBuildDir, outBuildF
     config.resolve.extensions = config.resolve.extensions || []
     config.resolve.extensions.push('.js', '.json')
     config.resolve.extensions = uniqueArr(config.resolve.extensions)
-  
+
     // mainFields needs to include 'main'
     config.resolve.mainFields = config.resolve.mainFields || []
     config.resolve.mainFields.push('main')
     config.resolve.mainFields = uniqueArr(config.resolve.mainFields)
-  
+
     // we have 1 required plugin to make sure is present
     config.plugins = config.plugins || []
     config.plugins.push(new webpack.DefinePlugin({
@@ -121,9 +125,9 @@ const loadWebpackConfig = async (configPath, actionPath, tempBuildDir, outBuildF
       'process.env.AIO_CLI_ENV': `"${cliEnv}"`
     }))
     // NOTE: no need to make the array unique here, all plugins are different and created via new
-  
+
     aioLogger.debug(`merged webpack config : ${JSON.stringify(config, 0, 2)}`)
-    configs.push(config)  
+    configs.push(config)
   }
 
   return configs
