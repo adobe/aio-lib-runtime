@@ -638,6 +638,81 @@ describe('build by bundling js action file with webpack', () => {
       path.normalize('/dist/actions/sample-app-include-1.0.0/action.zip'))
   })
 
+  test('should bundle a single action file using webpack and zip it with includes using webpack-config.js as a promise that returns an array of objects in actions folder', async () => {
+    // global.loadFs(vol, 'sample-app-includes')
+    global.fakeFileSystem.reset()
+    global.fakeFileSystem.addJson({
+      'actions/actionname/action.js': global.fixtureFile('/custom-webpack/actions/actionname/action.js'),
+      'manifest.yml': global.fixtureFile('/custom-webpack/manifest.yml')
+    })
+    // first call to globby is for processing includes, second call is to get/find webpack config
+    globby.mockReturnValueOnce([])
+    globby.mockReturnValueOnce([]) // call is to actions/actionname/*.config.js
+    globby.mockReturnValueOnce(['actions/actionname/mock.promise.array.objects.webpack-config.js'])
+
+    jest.mock('actions/actionname/mock.promise.array.objects.webpack-config.js', () => {
+      return new Promise((resolve, reject) => resolve([{
+        mode: 'none',
+        optimization: { somefakefield: true, minimize: true },
+        output: { fake: false, libraryTarget: 'fake' },
+        entry: ['file.js'],
+        resolve: {
+          extensions: ['html', 'json', 'css'],
+          mainFields: ['another'],
+          anotherFake: ['yo']
+        },
+        plugins: ['hello'],
+        target: 'cannotovewrite'
+      },
+      {
+        mode: 'development',
+        optimization: { somefakefield: true, minimize: true },
+        output: { fake: false, libraryTarget: 'fake' },
+        entry: ['file.js'],
+        resolve: {
+          extensions: ['html', 'json', 'css'],
+          mainFields: ['another'],
+          anotherFake: ['yo']
+        },
+        plugins: ['hello'],
+        target: 'cannotovewrite'
+      }]))
+    }, { virtual: true })
+
+    const clonedConfig = deepClone(global.sampleAppIncludesConfig)
+    clonedConfig.manifest.full.packages.__APP_PACKAGE__.actions.action.function = 'actions/actionname/action.js'
+    await buildActions(clonedConfig)
+    expect(webpackMock.run).toHaveBeenCalledTimes(1)
+    expect(webpack).toHaveBeenCalledWith([{
+      entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
+      mode: 'none',
+      optimization: { minimize: true, somefakefield: true },
+      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      plugins: ['hello', {}],
+      resolve: {
+        anotherFake: ['yo'],
+        extensions: ['html', 'json', 'css', '.js', '.json'],
+        mainFields: ['another', 'main']
+      },
+      target: 'node'
+    },
+    {
+      entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
+      mode: 'development',
+      optimization: { minimize: true, somefakefield: true },
+      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      plugins: ['hello', {}],
+      resolve: {
+        anotherFake: ['yo'],
+        extensions: ['html', 'json', 'css', '.js', '.json'],
+        mainFields: ['another', 'main']
+      },
+      target: 'node'
+    }])
+    expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp'),
+      path.normalize('/dist/actions/sample-app-include-1.0.0/action.zip'))
+  })
+
   test('should bundle a single action file using webpack and zip it with includes using webpack-config.js as an array of objects in actions folder', async () => {
     // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()

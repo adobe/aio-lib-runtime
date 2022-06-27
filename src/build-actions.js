@@ -63,6 +63,10 @@ const loadWebpackConfig = async (configPath, actionPath, tempBuildDir, outBuildF
 
   if (typeof importConfig === 'function') {
     importConfig = await importConfig(process.env)
+  } else {
+    // If the config file exported a Promise, resolve the Promise.
+    // Otherwise this is a no-op.
+    importConfig = await importConfig
   }
 
   if (!Array.isArray(importConfig)) {
@@ -72,6 +76,10 @@ const loadWebpackConfig = async (configPath, actionPath, tempBuildDir, outBuildF
   for (let userConfig of importConfig) {
     if (typeof userConfig === 'function') {
       userConfig = await userConfig(process.env)
+    } else {
+      // If the config file exported a Promise, resolve the Promise.
+      // Otherwise this is a no-op.
+      userConfig = await userConfig
     }
 
     // needs cloning because require has a cache, so we make sure to not touch the userConfig
