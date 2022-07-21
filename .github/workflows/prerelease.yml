@@ -34,6 +34,8 @@ jobs:
         uses: adobe/update-prerelease-npm-version@v1.0.2
         with:
           pre-release-tag: ${{ github.event.inputs.pre-release-tag }}
+          dependencies-to-update: ${{ github.event.inputs.dependencies-to-update }}
+          dependencies-to-update-version-tag: ${{ github.event.inputs.dist-tag }}
       - run: echo pre-release-version - ${{ steps.pre-release-version.outputs.pre-release-version }}           
       - uses: JS-DevTools/npm-publish@v1
         with:
