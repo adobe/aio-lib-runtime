@@ -626,6 +626,14 @@ describe('createActionObject', () => {
       function: 'fake.js',
       runtime: 'something'
     }
+    test('action supported limits alternative name memory', () => {
+      manifestAction.limits = {
+        memory: 1
+      }
+      readFileSyncSpy.mockImplementation(() => 'some source code')
+      const res = utils.createActionObject('fake', manifestAction)
+      expect(res.limits.memory).toEqual(1)
+    })
     test('action supported limits, concurrentActivations set', () => {
       manifestAction.limits = {
         memorySize: 1,
