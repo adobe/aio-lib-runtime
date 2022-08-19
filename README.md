@@ -78,6 +78,14 @@ with valid options argument</p>
 ## Functions
 
 <dl>
+<dt><a href="#getWebpackConfigPath">getWebpackConfigPath(actionPath, root)</a> ⇒ <code>Promise.&lt;string&gt;</code></dt>
+<dd><p>Searches for a webpack config file, starting at the action path and working
+ towards the root of the project. Will return the first one it finds.</p>
+</dd>
+<dt><a href="#loadWebpackConfig">loadWebpackConfig(configPath, actionPath, tempBuildDir, outBuildFilename)</a> ⇒ <code>Promise.&lt;object&gt;</code></dt>
+<dd><p>Loads a Webpack config file from the config path provided. Sets fields required
+ for Runtime actions. Returns an object that can be passed to the Webpack library.</p>
+</dd>
 <dt><a href="#prepareToBuildAction">prepareToBuildAction(action, root, dist)</a> ⇒ <code><a href="#ActionBuild">Promise.&lt;ActionBuild&gt;</a></code></dt>
 <dd><p>Will return data about an action ready to be built.</p>
 </dd>
@@ -546,6 +554,36 @@ Deletes a trigger and associated feeds
 | Param | Type | Description |
 | --- | --- | --- |
 | options | <code>object</code> | options with the `name` of the trigger |
+
+<a name="getWebpackConfigPath"></a>
+
+## getWebpackConfigPath(actionPath, root) ⇒ <code>Promise.&lt;string&gt;</code>
+Searches for a webpack config file, starting at the action path and working
+ towards the root of the project. Will return the first one it finds.
+
+**Kind**: global function  
+**Returns**: <code>Promise.&lt;string&gt;</code> - Webpack config file path, will be 'null' if not found  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| actionPath | <code>string</code> | Path of the action |
+| root | <code>string</code> | Root of the project |
+
+<a name="loadWebpackConfig"></a>
+
+## loadWebpackConfig(configPath, actionPath, tempBuildDir, outBuildFilename) ⇒ <code>Promise.&lt;object&gt;</code>
+Loads a Webpack config file from the config path provided. Sets fields required
+ for Runtime actions. Returns an object that can be passed to the Webpack library.
+
+**Kind**: global function  
+**Returns**: <code>Promise.&lt;object&gt;</code> - Webpack config, can be passed to the Webpack library  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| configPath | <code>string</code> | Path of the Webpack config file |
+| actionPath | <code>string</code> | Path of the action |
+| tempBuildDir | <code>string</code> | Path of the output directory for the bundle |
+| outBuildFilename | <code>string</code> | Name of the output file for the action |
 
 <a name="prepareToBuildAction"></a>
 
