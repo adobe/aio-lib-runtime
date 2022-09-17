@@ -1011,7 +1011,7 @@ function createActionObject (fullName, manifestAction) {
   if (manifestAction.limits) {
     const concurrencyLimit = manifestAction.limits.concurrentActivations || manifestAction.limits.concurrency
     objAction.limits = {
-      memory: manifestAction.limits.memorySize || 256,
+      memory: manifestAction.limits.memorySize || manifestAction.limits.memory || 256,
       logs: manifestAction.limits.logSize || 10,
       timeout: manifestAction.limits.timeout || 60000
     }
