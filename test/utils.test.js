@@ -1965,6 +1965,20 @@ describe('getActionUrls', () => {
     expect(result).toEqual(expected)
   })
 
+  test('some non web actions, with ui, http://localhost custom apihost, no custom hostname', () => {
+    const expected = {
+      'sample-app-1.0.0/action': 'http://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'http://localhost:3030/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'http://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'http://localhost:3030/api/v1/web/fake_ns/pkg2/thataction',
+      'pkg2/thatsequence': 'http://localhost:3030/api/v1/web/fake_ns/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'http://localhost:3030'
+    delete config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expected)
+  })
+
   test('some non web actions, with ui, remote dev, no custom apihost, no custom hostname', () => {
     const expected = {
       'sample-app-1.0.0/action': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action',
