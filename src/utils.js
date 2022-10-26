@@ -1881,8 +1881,12 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   const config = replacePackagePlaceHolder(appConfig)
   const cleanApihost = removeProtocolFromURL(config.ow.apihost)
   const cleanHostname = removeProtocolFromURL(config.app.hostname)
+
   const apihostIsCustom = cleanApihost !== removeProtocolFromURL(config.ow.defaultApihost)
   const hostnameIsCustom = cleanHostname !== removeProtocolFromURL(config.app.defaultHostname)
+
+  // second condition allows users to point to its own http local ow stack
+  const isHttp = isLocalDev || !!config.ow.apihost.match(/^http:\/\/localhost/)
 
   /** @private */
   function getActionUrl (pkgAndActionName, action) {
@@ -1922,7 +1926,7 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
       // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
       // or https://custom-ow-host.xyz/api/v1/web/<ns>/<package>/<action>
       return urlJoin(
-        isLocalDev ? 'http://' : 'https://',
+        isHttp ? 'http://' : 'https://',
         cleanApihost,
         'api',
         config.ow.apiversion,
