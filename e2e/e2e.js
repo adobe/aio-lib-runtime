@@ -201,26 +201,52 @@ describe('print logs', () => {
   })
 })
 
-test('triggers', async () => {
-  // Delete non existing trigger
-  const call = sdkClient.triggers.delete({ name: 'e2eTrigger' })
-  await expect(call).rejects.toThrow('The requested resource does not exist')
+test('delete non-existing trigger', async () => {
+  const now = new Date()
+  const triggerName = `e2eTrigger${now.getTime()}`
 
-  // Create
-  expect(await sdkClient.triggers.create({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
-  // Get
-  expect(await sdkClient.triggers.get({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
-  // Delete
-  expect(await sdkClient.triggers.delete({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
+  // Delete non existing trigger
+  const call = sdkClient.triggers.delete({ name: triggerName })
+  await expect(call).rejects.toThrow('The requested resource does not exist')
 })
 
-test('triggers with feed', async () => {
+test('basic trigger', async () => {
+  const now = new Date()
+  const triggerName = `e2eTrigger${now.getTime()}`
+
   // Create
-  expect(await sdkClient.triggers.create({ name: 'e2eTrigger', trigger: { feed: '/whisk.system/alarms/alarm', parameters: [{ key: 'cron', value: '* * * * *' }] } })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1', annotations: expect.arrayContaining([expect.objectContaining({ key: 'feed' })]) }))
+  expect(await sdkClient.triggers.create({ name: triggerName })).toEqual(expect.objectContaining({ name: triggerName, version: '0.0.1' }))
   // Get
-  expect(await sdkClient.triggers.get({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
+  expect(await sdkClient.triggers.get({ name: triggerName })).toEqual(expect.objectContaining({ name: triggerName, version: '0.0.1' }))
   // Delete
-  expect(await sdkClient.triggers.delete({ name: 'e2eTrigger' })).toEqual(expect.objectContaining({ name: 'e2eTrigger', version: '0.0.1' }))
+  expect(await sdkClient.triggers.delete({ name: triggerName })).toEqual(expect.objectContaining({ name: triggerName, version: '0.0.1' }))
+})
+
+test('trigger with feed /whisk.system/alarms/alarm', async () => {
+  const now = new Date()
+  const triggerName = `e2eTrigger${now.getTime()}`
+
+  // Create
+  expect(await sdkClient.triggers.create({ name: triggerName, trigger: { feed: '/whisk.system/alarms/alarm', parameters: [{ key: 'cron', value: '* * * * *' }] } })).toEqual(expect.objectContaining({ name: triggerName, version: '0.0.1', annotations: expect.arrayContaining([expect.objectContaining({ key: 'feed' })]) }))
+  // Get
+  expect(await sdkClient.triggers.get({ name: triggerName })).toEqual(expect.objectContaining({ name: triggerName, version: '0.0.1' }))
+  // Delete
+  expect(await sdkClient.triggers.delete({ name: triggerName })).toEqual(expect.objectContaining({ name: triggerName, version: '0.0.1' }))
+})
+
+test('trigger with feed /whisk.system/alarms/once', async () => {
+  const now = new Date()
+  const triggerName = `e2eTrigger${now.getTime()}`
+
+  // add 1 day. "now" is 1 day later. need this for the future alarm
+  now.setDate(now.getDate() + 1)
+
+  // Create
+  expect(await sdkClient.triggers.create({ name: triggerName, trigger: { feed: '/whisk.system/alarms/once', parameters: [{ key: 'date', value: now.toISOString() }] } })).toEqual(expect.objectContaining({ name: triggerName, version: '0.0.1', annotations: expect.arrayContaining([expect.objectContaining({ key: 'feed' })]) }))
+  // Get
+  expect(await sdkClient.triggers.get({ name: triggerName })).toEqual(expect.objectContaining({ name: triggerName, version: '0.0.1' }))
+  // Delete
+  expect(await sdkClient.triggers.delete({ name: triggerName })).toEqual(expect.objectContaining({ name: triggerName, version: '0.0.1' }))
 })
 
 describe('filter manifest based on built actions', () => {
