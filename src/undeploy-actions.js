@@ -43,6 +43,32 @@ async function undeployActions (config, logFunc) {
   }
 }
 
+/** @private */
+async function getDeployedPackage (ow, packageName) {
+  if (packageName === utils.DEFAULT_PACKAGE_RESERVED_NAME) {
+    const pkg = { actions: [] }
+    const actionList = await ow.actions.list()
+    actionList.forEach(action => { // only get the actions from the default package
+      const { namespace } = utils.parsePackageName(action.name)
+      if (namespace === '_') {
+        pkg.actions.push(action)
+      }
+    })
+    return pkg
+  } else {
+    return await ow.packages.get(packageName)
+  }
+}
+
+/** @private */
+function getDeployedActionName (actionName, packageName) {
+  if (packageName === utils.DEFAULT_PACKAGE_RESERVED_NAME) {
+    return actionName
+  } else {
+    return `${packageName}/${actionName}`
+  }
+}
+
 /**
  * @param {string} packageName name of the package to be undeployed
  * @param {object} manifestContent manifest
@@ -57,7 +83,7 @@ async function undeployWsk (packageName, manifestContent, owOptions, logger) {
   // 1. make sure that the package exists
   let deployedPackage
   try {
-    deployedPackage = await ow.packages.get(packageName)
+    deployedPackage = await getDeployedPackage(ow, packageName)
   } catch (e) {
     if (e.statusCode === 404) throw new Error(`cannot undeploy actions for package ${packageName}, as it was not deployed.`)
     throw e
@@ -73,7 +99,7 @@ async function undeployWsk (packageName, manifestContent, owOptions, logger) {
   // todo undeploy other entities too, not only actions
   const actionNames = new Set(entities.actions.map(a => a.name))
   deployedPackage.actions.forEach(a => {
-    const deployedActionName = `${packageName}/${a.name}`
+    const deployedActionName = getDeployedActionName(a.name, packageName)
     if (!actionNames.has(deployedActionName)) {
       entities.actions.push({ name: deployedActionName })
     }
