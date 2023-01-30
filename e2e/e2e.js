@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Adobe. All rights reserved.
+Copyright 2023 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -89,7 +89,7 @@ describe('build, deploy, invoke and undeploy of actions', () => {
     /* skip checking previously built actions */
     utils.dumpActionsBuiltInfo = jest.fn(() => false)
     utils.actionBuiltBefore = jest.fn(() => false)
-    // console.log(config)
+
     // Build
     expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
       expect.stringContaining('action.zip'),
@@ -130,7 +130,7 @@ describe('build, deploy, invoke and undeploy of actions', () => {
     config.actions.src = path.resolve(config.root + '/' + config.actions.src)
     config.actions.dist = path.resolve(config.root + '/' + config.actions.dist)
     config.manifest.src = path.resolve(config.root + '/' + 'manifest.yml')
-    // console.log(config)
+
     // Build
     expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
       expect.stringContaining('action.zip')
@@ -158,8 +158,43 @@ describe('build, deploy, invoke and undeploy of actions', () => {
     }
   })
 
+  test('manifest with default package', async () => {
+    config = deepClone(global.sampleAppIncludesConfig)
+    config.ow.namespace = namespace
+    config.ow.auth = apiKey
+    config.root = path.resolve('./test/__fixtures__/sample-app-reduced-default-package')
+    config.actions.src = path.resolve(config.root + '/' + config.actions.src)
+    config.actions.dist = path.resolve(config.root + '/' + config.actions.dist)
+    config.manifest.src = path.resolve(config.root + '/' + 'manifest.yml')
+
+    // Build
+    expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
+      expect.stringContaining('action.zip')
+    ]))
+
+    // Deploy
+    config.root = path.resolve('./')
+    const deployedEntities = await sdk.deployActions(config)
+    expect(deployedEntities.actions[0].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-reduced-default-package-1.0.0/action')).toEqual(true)
+
+    // Cleanup build files
+    fs.emptydirSync(config.actions.dist)
+    fs.rmdirSync(config.actions.dist)
+
+    // Verify actions created in openwhisk
+    let actions = await sdkClient.actions.list({ limit: 3 })
+    expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'action', namespace: expect.stringContaining('/sample-app-reduced-default-package-1.0.0') })]))
+    await sdkClient.actions.invoke('sample-app-reduced-default-package-1.0.0/action')
+
+    // Undeploy
+    await sdk.undeployActions(config)
+    actions = await sdkClient.actions.list({ limit: 1 })
+    if (actions.length > 0) {
+      expect(actions[0].name).not.toEqual('action')
+    }
+  })
+
   test('basic manifest with filter', async () => {
-    // console.log(config)
     // Build
     expect(await sdk.buildActions(config, ['action'])).toEqual([expect.stringContaining('action.zip')])
 
