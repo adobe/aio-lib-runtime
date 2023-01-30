@@ -18,9 +18,13 @@ runtimeLibUtils.undeployPackage = jest.fn()
 jest.mock('../src/RuntimeAPI')
 const ioruntime = require('../src/RuntimeAPI')
 const owGetPackageMock = jest.fn()
+const owListActionsMock = jest.fn()
 const owMock = {
   packages: {
     get: owGetPackageMock
+  },
+  actions: {
+    list: owListActionsMock
   }
 }
 ioruntime.mockImplementation(() => {
@@ -36,6 +40,7 @@ beforeEach(async () => {
   global.addSampleAppFiles()
   ioruntime.mockClear()
   owGetPackageMock.mockReset()
+  owListActionsMock.mockReset()
   runtimeLibUtils.getProjectEntities.mockReset()
   runtimeLibUtils.processPackage.mockReset()
   runtimeLibUtils.undeployPackage.mockReset()
@@ -44,9 +49,7 @@ beforeEach(async () => {
 const setOwGetPackageMockResponse = (packageName, actions) => {
   owGetPackageMock.mockResolvedValue({
     actions: actions.map(actionName => ({
-      // annotations: [{ key: 'fake', value: true }],
-      name: actionName // ,
-      // version: '0.0.42'
+      name: actionName
     })),
     annotations: [],
     binding: {},
@@ -59,17 +62,16 @@ const setOwGetPackageMockResponse = (packageName, actions) => {
   })
 }
 
+const setOwListActionsMockResponse = (actions) => {
+  owListActionsMock.mockResolvedValue(actions.map(actionName => ({
+    name: actionName
+  })))
+}
+
 const setRuntimeGetProjectEntitiesMock = (packageName, actions) => {
   runtimeLibUtils.getProjectEntities.mockResolvedValue({
     actions: actions.map(actionName => ({
-      // annotations: [{ key: 'fake', value: true }],
-      // exec: { binary: true },
-      // limits: { concurrency: 200, logs: 10, memory: 256, timeout: 60000 },
-      name: packageName + '/' + actionName // ,
-      // namespace: global.fakeConfig.tvm.runtime.namespace + '/' + packageName, // weird but this is what it returns
-      // publish: false,
-      // updated: 626569200000,
-      // version: '0.0.42'
+      name: (packageName === runtimeLibUtils.DEFAULT_PACKAGE_RESERVED_NAME) ? actionName : (packageName + '/' + actionName)
     })),
     triggers: [],
     rules: [],
@@ -108,6 +110,25 @@ test('should undeploy two already deployed actions', async () => {
   }
 
   await undeployActions(global.sampleAppConfig)
+  expect(runtimeLibUtils.undeployPackage).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.undeployPackage).toHaveBeenCalledWith(expectedEntities, owMock, expect.anything())
+})
+
+test('should undeploy already deployed actions (default package)', async () => {
+  setOwListActionsMockResponse(['action', 'somepackage/someaction'])
+  setRuntimeGetProjectEntitiesMock('default', ['action'])
+  runtimeLibUtils.processPackage.mockReturnValue({ apis: [], rules: [] })
+
+  const expectedEntities = {
+    actions: [{ name: 'action' }],
+    pkgAndDeps: [],
+    triggers: [],
+    rules: [],
+    apis: []
+  }
+
+  console.log('config', global.sampleAppDefaultPackageConfig)
+  await undeployActions(global.sampleAppDefaultPackageConfig)
   expect(runtimeLibUtils.undeployPackage).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.undeployPackage).toHaveBeenCalledWith(expectedEntities, owMock, expect.anything())
 })

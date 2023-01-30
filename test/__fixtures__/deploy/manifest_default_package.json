@@ -1,0 +1,63 @@
+{
+    "pkgAndDeps": [
+        {
+            "name": "default",
+            "package": {
+                "parameters": []
+              }
+        }
+    ],
+    "apis": [],
+    "triggers": [],
+    "rules": [],
+    "actions": [
+        {
+            "name": "default/helloAction",
+            "annotations": {
+                "web-export": true
+            },
+            "params": {
+                "param1": "value1"
+            }
+        },
+        {
+            "name": "default/goodbyeAction",
+            "annotations": {
+                "web-export": true
+            },
+            "params": {
+                "param1": "value1"
+            }
+        },
+        {
+            "action": "",
+            "annotations": {
+                "raw-http": false,
+                "web-export": false
+            },
+            "exec": {
+                "components": [
+                  "default/helloAction",
+                  "default/goodbyeAction"
+                ],
+                "kind": "sequence"
+            },
+            "name": "default/my_sequence"
+        },
+        {
+            "action": "",
+            "annotations": {
+                "raw-http": false,
+                "web-export": false
+            },
+            "exec": {
+                "components": [
+                    "/adobeio/shared-validators-v1/headless-v2",
+                    "default/helloAction"
+                ],
+                "kind": "sequence"
+            },
+            "name": "default/headless_sequence"
+        }
+    ]
+}

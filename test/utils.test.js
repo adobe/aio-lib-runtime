@@ -48,6 +48,7 @@ beforeEach(() => {
     'hello.js': global.fixtureFile('/deploy/hello.js'),
     'goodbye.js': global.fixtureFile('/deploy/goodbye.js'),
     'basic_manifest.json': global.fixtureFile('/deploy/basic_manifest.json'),
+    'manifest_default_package.json': global.fixtureFile('/deploy/manifest_default_package.json'),
     'basic_manifest_unsupported_kind.json': global.fixtureFile('/deploy/basic_manifest_unsupported_kind.json'),
     'basic_manifest_res.json': global.fixtureFile('/deploy/basic_manifest_res.json'),
     'pkgparam_manifest_res.json': global.fixtureFile('/deploy/pkgparam_manifest_res.json'),
@@ -111,6 +112,8 @@ describe('utils has the right functions', () => {
 
     expect(utils.zip).toBeDefined()
     expect(typeof utils.zip).toBe('function')
+
+    expect(typeof utils.DEFAULT_PACKAGE_RESERVED_NAME).toBe('string')
   })
 })
 
@@ -692,6 +695,38 @@ describe('deployPackage', () => {
     expect(cmdAPI).toHaveBeenCalled()
     expect(cmdTrigger).toHaveBeenCalled()
     expect(cmdRule).toHaveBeenCalled()
+
+    // this assertion is specific to the tmp implementation of the require-adobe-annotation
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://adobeio.adobeioruntime.net/api/v1/web/state/put',
+      {
+        body: '{"namespace":"my-namespace","key":"__aio","value":{"project":{"org":{"ims_org_id":"MyIMSOrgId"}}},"ttl":-1}',
+        headers: { Authorization: 'Basic bXkta2V5', 'Content-Type': 'application/json' },
+        method: 'post'
+      })
+  })
+
+  test('simple manifest (default package)', async () => {
+    const imsOrgId = 'MyIMSOrgId'
+    const mockLogger = jest.fn()
+    const cmdPkg = ow.mockResolved(owPackage, '')
+    const cmdAction = ow.mockResolved(owAction, '')
+    const cmdAPI = ow.mockResolved(owAPI, '')
+    const cmdTrigger = ow.mockResolved(owTriggers, '')
+    const cmdRule = ow.mockResolved(owRules, '')
+    ow.mockResolvedProperty(owInitOptions, {})
+    ow.mockResolvedProperty('actions.client.options', { apiKey: 'my-key', namespace: 'my-namespace' })
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn()
+    })
+    await utils.deployPackage(JSON.parse(fs.readFileSync('/manifest_default_package.json')), ow, mockLogger, imsOrgId)
+    expect(cmdPkg).not.toHaveBeenCalled()
+    expect(cmdAction).toHaveBeenCalled()
+    expect(cmdAPI).not.toHaveBeenCalled()
+    expect(cmdTrigger).not.toHaveBeenCalled()
+    expect(cmdRule).not.toHaveBeenCalled()
 
     // this assertion is specific to the tmp implementation of the require-adobe-annotation
     expect(mockFetch).toHaveBeenCalledWith(
