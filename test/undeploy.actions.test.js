@@ -63,8 +63,9 @@ const setOwGetPackageMockResponse = (packageName, actions) => {
 }
 
 const setOwListActionsMockResponse = (actions) => {
-  owListActionsMock.mockResolvedValue(actions.map(actionName => ({
-    name: actionName
+  owListActionsMock.mockResolvedValue(actions.map(action => ({
+    name: action.name,
+    namespace: action.namespace
   })))
 }
 
@@ -115,7 +116,10 @@ test('should undeploy two already deployed actions', async () => {
 })
 
 test('should undeploy already deployed actions (default package)', async () => {
-  setOwListActionsMockResponse(['action', 'somepackage/someaction'])
+  setOwListActionsMockResponse([
+    { name: 'action', namespace: 'foxy-bear-123' },
+    { name: 'someaction', namespace: 'foxy-bear-123/somepackage' }
+  ])
   setRuntimeGetProjectEntitiesMock('default', ['action'])
   runtimeLibUtils.processPackage.mockReturnValue({ apis: [], rules: [] })
 
@@ -127,7 +131,6 @@ test('should undeploy already deployed actions (default package)', async () => {
     apis: []
   }
 
-  console.log('config', global.sampleAppDefaultPackageConfig)
   await undeployActions(global.sampleAppDefaultPackageConfig)
   expect(runtimeLibUtils.undeployPackage).toHaveBeenCalledTimes(1)
   expect(runtimeLibUtils.undeployPackage).toHaveBeenCalledWith(expectedEntities, owMock, expect.anything())

@@ -49,7 +49,7 @@ async function getDeployedPackage (ow, packageName) {
     const pkg = { actions: [] }
     const actionList = await ow.actions.list()
     actionList.forEach(action => { // only get the actions from the default package
-      const { namespace } = utils.parsePackageName(action.name)
+      const { namespace } = utils.parsePackageName(action.namespace)
       if (namespace === '_') {
         pkg.actions.push(action)
       }
