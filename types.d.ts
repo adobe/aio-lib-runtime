@@ -19,6 +19,26 @@ declare function getWebpackConfigPath(actionPath: string, root: string): Promise
 declare function loadWebpackConfig(configPath: string, actionPath: string, tempBuildDir: string, outBuildFilename: string): Promise<object>;
 
 /**
+ * Searches for a webpack config file, starting at the action path and working
+ *  towards the root of the project. Will return the first one it finds.
+ * @param actionPath - Path of the action
+ * @param root - Root of the project
+ * @returns Webpack config file path, will be 'null' if not found
+ */
+declare function getWebpackConfigPath(actionPath: string, root: string): Promise<string>;
+
+/**
+ * Loads a Webpack config file from the config path provided. Sets fields required
+ *  for Runtime actions. Returns an object that can be passed to the Webpack library.
+ * @param configPath - Path of the Webpack config file
+ * @param actionPath - Path of the action
+ * @param tempBuildDir - Path of the output directory for the bundle
+ * @param outBuildFilename - Name of the output file for the action
+ * @returns Webpack config, can be passed to the Webpack library
+ */
+declare function loadWebpackConfig(configPath: string, actionPath: string, tempBuildDir: string, outBuildFilename: string): Promise<object>;
+
+/**
  * @property actionName - The name of the action
  * @property buildHash - Map with key as the name of the action and value its contentHash
  * @property legacy - Indicate legacy action support
@@ -343,8 +363,8 @@ declare type ManifestAction = {
     inputs?: any;
     limits?: object[];
     web?: string;
-    web-export?: string;
-    raw-http?: boolean;
+    'web-export'?: string;
+    'raw-http'?: boolean;
     docker?: string;
     annotations?: object[];
 };
