@@ -1,4 +1,127 @@
 /**
+ * Searches for a webpack config file, starting at the action path and working
+ towards the root of the project. Will return the first one it finds.
+ * @param actionPath - Path of the action
+ * @param root - Root of the project
+ * @returns Webpack config file path, will be 'null' if not found
+ */
+declare function getWebpackConfigPath(actionPath: string, root: string): Promise<string>;
+
+/**
+ * Loads a Webpack config file from the config path provided. Sets fields required
+ for Runtime actions. Returns an object that can be passed to the Webpack library.
+ * @param configPath - Path of the Webpack config file
+ * @param actionPath - Path of the action
+ * @param tempBuildDir - Path of the output directory for the bundle
+ * @param outBuildFilename - Name of the output file for the action
+ * @returns Webpack config, can be passed to the Webpack library
+ */
+declare function loadWebpackConfig(configPath: string, actionPath: string, tempBuildDir: string, outBuildFilename: string): Promise<object>;
+
+/**
+ * Searches for a webpack config file, starting at the action path and working
+ *  towards the root of the project. Will return the first one it finds.
+ * @param actionPath - Path of the action
+ * @param root - Root of the project
+ * @returns Webpack config file path, will be 'null' if not found
+ */
+declare function getWebpackConfigPath(actionPath: string, root: string): Promise<string>;
+
+/**
+ * Loads a Webpack config file from the config path provided. Sets fields required
+ *  for Runtime actions. Returns an object that can be passed to the Webpack library.
+ * @param configPath - Path of the Webpack config file
+ * @param actionPath - Path of the action
+ * @param tempBuildDir - Path of the output directory for the bundle
+ * @param outBuildFilename - Name of the output file for the action
+ * @returns Webpack config, can be passed to the Webpack library
+ */
+declare function loadWebpackConfig(configPath: string, actionPath: string, tempBuildDir: string, outBuildFilename: string): Promise<object>;
+
+/**
+ * @property actionName - The name of the action
+ * @property buildHash - Map with key as the name of the action and value its contentHash
+ * @property legacy - Indicate legacy action support
+ * @property tempBuildDir - path of temp build
+ * @property tempActionName - name of the action file.
+ * @property outPath - zip output path
+ */
+declare type ActionBuild = {
+    actionName: string;
+    buildHash: any;
+    legacy: boolean;
+    tempBuildDir: string;
+    tempActionName: string;
+    outPath: string;
+};
+
+/**
+ * Will return data about an action ready to be built.
+ * @param action - Data about the Action.
+ * @param root - root of the project.
+ * @param dist - Path to the minimized version of the action code
+ * @returns Relevant data for the zip process..
+ */
+declare function prepareToBuildAction(action: any, root: string, dist: string): Promise<ActionBuild>;
+
+/**
+ * Will zip actions.
+ By default only actions which were not built before will be zipped.
+ Last built actions data will be used to validate which action needs zipping.
+ * @param buildsList - Array of data about actions available to be zipped.
+ * @param lastBuildsPath - Path to the last built actions data.
+ * @param distFolder - Path to the output root.
+ * @param skipCheck - If true, zip all the actions from the buildsList
+ * @returns Array of zipped actions.
+ */
+declare function zipActions(buildsList: ActionBuild[], lastBuildsPath: string, distFolder: string, skipCheck: boolean): string[];
+
+/**
+ * runs the command
+ * @param config - app config
+ * @param [deployConfig = {}] - deployment config
+ * @param [deployConfig.isLocalDev] - local dev flag
+ * @param [deployConfig.filterEntities] - add filters to deploy only specified OpenWhisk entities
+ * @param [deployConfig.filterEntities.actions] - filter list of actions to deploy by provided array, e.g. ['name1', ..]
+ * @param [deployConfig.filterEntities.byBuiltActions] - if true, trim actions from the manifest based on the already built actions
+ * @param [deployConfig.filterEntities.sequences] - filter list of sequences to deploy, e.g. ['name1', ..]
+ * @param [deployConfig.filterEntities.triggers] - filter list of triggers to deploy, e.g. ['name1', ..]
+ * @param [deployConfig.filterEntities.rules] - filter list of rules to deploy, e.g. ['name1', ..]
+ * @param [deployConfig.filterEntities.apis] - filter list of apis to deploy, e.g. ['name1', ..]
+ * @param [deployConfig.filterEntities.dependencies] - filter list of package dependencies to deploy, e.g. ['name1', ..]
+ * @param [logFunc] - custom logger function
+ * @returns deployedEntities
+ */
+declare function deployActions(config: any, deployConfig?: {
+    isLocalDev?: boolean;
+    filterEntities?: {
+        actions?: any[];
+        byBuiltActions?: boolean;
+        sequences?: any[];
+        triggers?: any[];
+        rules?: any[];
+        apis?: any[];
+        dependencies?: any[];
+    };
+}, logFunc?: any): Promise<object>;
+
+/**
+ * @param scriptConfig - config
+ * @param manifestContent - manifest
+ * @param logFunc - custom logger function
+ * @param filterEntities - entities (actions, sequences, triggers, rules etc) to be filtered
+ * @returns deployedEntities
+ */
+declare function deployWsk(scriptConfig: any, manifestContent: any, logFunc: any, filterEntities: any): Promise<object>;
+
+/**
+ * Returns a Promise that resolves with a new RuntimeAPI object.
+ * @param options - options for initialization
+ * @returns a Promise with a RuntimeAPI object
+ */
+declare function init(options: OpenwhiskOptions): Promise<OpenwhiskClient>;
+
+/**
  * Log Forwarding management API
  */
 declare class LogForwarding {
@@ -72,9 +195,27 @@ declare class LogForwardingLocalDestinationsProvider {
 }
 
 /**
+ * Prints action logs.
+ * @param config - openwhisk config
+ * @param logger - an instance of a logger to emit messages to
+ * @param limit - maximum number of activations to fetch logs from
+ * @param filterActions - array of actions to fetch logs from
+   examples:-
+   ['pkg1/'] = logs of all deployed actions under package pkg1
+   ['pkg1/action'] = logs of action 'action' under package 'pkg1'
+   [] = logs of all actions in the namespace
+ * @param strip - if true, strips the timestamp which prefixes every log line
+ * @param tail - if true, logs are fetched continuously
+ * @param fetchLogsInterval - number of seconds to wait before fetching logs again when tail is set to true
+ * @param startTime - time in milliseconds. Only logs after this time will be fetched
+ * @returns activation timestamp of the last retrieved activation or null
+ */
+declare function printActionLogs(config: any, logger: any, limit: number, filterActions: any[], strip: boolean, tail: boolean, fetchLogsInterval?: number, startTime: number): any;
+
+/**
  * This class provides methods to call your RuntimeAPI APIs.
- * Before calling any method initialize the instance by calling the `init` method on it
- * with valid options argument
+Before calling any method initialize the instance by calling the `init` method on it
+with valid options argument
  */
 declare class RuntimeAPI {
     /**
@@ -84,107 +225,6 @@ declare class RuntimeAPI {
      */
     init(options: OpenwhiskOptions): Promise<OpenwhiskClient>;
 }
-
-/**
- * @property actionName - The name of the action
- * @property buildHash - Map with key as the name of the action and value its contentHash
- * @property legacy - Indicate legacy action support
- * @property tempBuildDir - path of temp build
- * @property tempActionName - name of the action file.
- * @property outPath - zip output path
- */
-declare type ActionBuild = {
-    actionName: string;
-    buildHash: any;
-    legacy: boolean;
-    tempBuildDir: string;
-    tempActionName: string;
-    outPath: string;
-};
-
-/**
- * Will return data about an action ready to be built.
- * @param action - Data about the Action.
- * @param root - root of the project.
- * @param dist - Path to the minimized version of the action code
- * @returns Relevant data for the zip process..
- */
-declare function prepareToBuildAction(action: any, root: string, dist: string): Promise<ActionBuild>;
-
-/**
- * Will zip actions.
- *  By default only actions which were not built before will be zipped.
- *  Last built actions data will be used to validate which action needs zipping.
- * @param buildsList - Array of data about actions available to be zipped.
- * @param lastBuildsPath - Path to the last built actions data.
- * @param distFolder - Path to the output root.
- * @param skipCheck - If true, zip all the actions from the buildsList
- * @returns Array of zipped actions.
- */
-declare function zipActions(buildsList: ActionBuild[], lastBuildsPath: string, distFolder: string, skipCheck: boolean): string[];
-
-/**
- * runs the command
- * @param config - app config
- * @param [deployConfig = {}] - deployment config
- * @param [deployConfig.isLocalDev] - local dev flag
- * @param [deployConfig.filterEntities] - add filters to deploy only specified OpenWhisk entities
- * @param [deployConfig.filterEntities.actions] - filter list of actions to deploy by provided array, e.g. ['name1', ..]
- * @param [deployConfig.filterEntities.byBuiltActions] - if true, trim actions from the manifest based on the already built actions
- * @param [deployConfig.filterEntities.sequences] - filter list of sequences to deploy, e.g. ['name1', ..]
- * @param [deployConfig.filterEntities.triggers] - filter list of triggers to deploy, e.g. ['name1', ..]
- * @param [deployConfig.filterEntities.rules] - filter list of rules to deploy, e.g. ['name1', ..]
- * @param [deployConfig.filterEntities.apis] - filter list of apis to deploy, e.g. ['name1', ..]
- * @param [deployConfig.filterEntities.dependencies] - filter list of package dependencies to deploy, e.g. ['name1', ..]
- * @param [logFunc] - custom logger function
- * @returns deployedEntities
- */
-declare function deployActions(config: any, deployConfig?: {
-    isLocalDev?: boolean;
-    filterEntities?: {
-        actions?: any[];
-        byBuiltActions?: boolean;
-        sequences?: any[];
-        triggers?: any[];
-        rules?: any[];
-        apis?: any[];
-        dependencies?: any[];
-    };
-}, logFunc?: any): Promise<object>;
-
-/**
- * @param scriptConfig - config
- * @param manifestContent - manifest
- * @param logFunc - custom logger function
- * @param filterEntities - entities (actions, sequences, triggers, rules etc) to be filtered
- * @returns deployedEntities
- */
-declare function deployWsk(scriptConfig: any, manifestContent: any, logFunc: any, filterEntities: any): Promise<object>;
-
-/**
- * Returns a Promise that resolves with a new RuntimeAPI object.
- * @param options - options for initialization
- * @returns a Promise with a RuntimeAPI object
- */
-declare function init(options: OpenwhiskOptions): Promise<OpenwhiskClient>;
-
-/**
- * Prints action logs.
- * @param config - openwhisk config
- * @param logger - an instance of a logger to emit messages to
- * @param limit - maximum number of activations to fetch logs from
- * @param filterActions - array of actions to fetch logs from
- *    examples:-
- *    ['pkg1/'] = logs of all deployed actions under package pkg1
- *    ['pkg1/action'] = logs of action 'action' under package 'pkg1'
- *    [] = logs of all actions in the namespace
- * @param strip - if true, strips the timestamp which prefixes every log line
- * @param tail - if true, logs are fetched continuously
- * @param fetchLogsInterval - number of seconds to wait before fetching logs again when tail is set to true
- * @param startTime - time in milliseconds. Only logs after this time will be fetched
- * @returns activation timestamp of the last retrieved activation or null
- */
-declare function printActionLogs(config: any, logger: any, limit: number, filterActions: any[], strip: boolean, tail: boolean, fetchLogsInterval?: number, startTime: number): any;
 
 /**
  * A class to manage triggers
@@ -272,7 +312,7 @@ declare function undeployWsk(packageName: string, manifestContent: any, owOption
 
 /**
  * The entry point to the information read from the manifest, this can be extracted using
- * [setPaths](#setpaths).
+[setPaths](#setpaths).
  */
 declare type ManifestPackages = ManifestPackage[];
 
@@ -303,15 +343,15 @@ declare type ManifestPackage = {
  * @property [version] - the manifest action version
  * @property function - the path to the action code
  * @property runtime - the runtime environment or kind in which the action
- *                    executes, e.g. 'nodejs:12'
+                   executes, e.g. 'nodejs:12'
  * @property [main] - the entry point to the function
  * @property [inputs] - the list of action default parameters
  * @property [limits] - limits for the action
  * @property [web] - indicate if an action should be exported as web, can take the
- *                    value of: true | false | yes | no | raw
+                   value of: true | false | yes | no | raw
  * @property [web-export] - same as web
  * @property [raw-http] - indicate if an action should be exported as raw web action, this
- *                     option is only valid if `web` or `web-export` is set to true
+                    option is only valid if `web` or `web-export` is set to true
  * @property [docker] - the docker container to run the action into
  * @property [annotations] - the manifest action annotations
  */
@@ -323,8 +363,8 @@ declare type ManifestAction = {
     inputs?: any;
     limits?: object[];
     web?: string;
-    web-export?: string;
-    raw-http?: boolean;
+    'web-export'?: string;
+    'raw-http'?: boolean;
     docker?: string;
     annotations?: object[];
 };
@@ -347,7 +387,7 @@ declare function getIncludesForAction(action: ManifestAction): Promise<IncludeEn
 
 /**
  * The manifest sequence definition
- * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md
+TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md
  * @property actions - Comma separated list of actions in the sequence
  */
 declare type ManifestSequence = {
@@ -356,7 +396,7 @@ declare type ManifestSequence = {
 
 /**
  * The manifest trigger definition
- * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_triggers.md
+TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_triggers.md
  * @property [inputs] - inputs like cron and trigger_payload
  * @property [feed] - feed associated with the trigger.
  * @property [annotations] - annotations
@@ -369,7 +409,7 @@ declare type ManifestTrigger = {
 
 /**
  * The manifest rule definition
- * TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_rules.md
+TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_rules.md
  * @property trigger - trigger name
  * @property action - action name
  */
@@ -380,7 +420,7 @@ declare type ManifestRule = {
 
 /**
  * The manifest dependency definition
- * TODO
+TODO
  * @property location - package to bind to
  * @property [inputs] - package parameters
  */
@@ -391,7 +431,7 @@ declare type ManifestDependency = {
 
 /**
  * The OpenWhisk entities definitions, which are compatible with the `openwhisk` node
- * client module. Can be obtained using (processpackage)[#processpackage] (with `onlyNames=true` for un-deployment)
+client module. Can be obtained using (processpackage)[#processpackage] (with `onlyNames=true` for un-deployment)
  * @property apis - the array of route entities
  * @property actions - the array of action entities
  * @property triggers - the array of trigger entities
@@ -426,7 +466,7 @@ declare type OpenWhiskEntitiesRoute = {
 
 /**
  * The action entity definition
- * TODO
+TODO
  * @property action - blank
  * @property name - name
  * @property exec - exec object
@@ -439,7 +479,7 @@ declare type OpenWhiskEntitiesAction = {
 
 /**
  * The rule entity definition
- * TODO
+TODO
  * @property trigger - trigger name
  * @property action - action name
  */
@@ -450,7 +490,7 @@ declare type OpenWhiskEntitiesRule = {
 
 /**
  * The trigger entity definition
- * TODO
+TODO
  * @property [feed] - feed associated with the trigger
  * @property [annotations] - annotations
  * @property [parameters] - parameters
@@ -463,7 +503,7 @@ declare type OpenWhiskEntitiesTrigger = {
 
 /**
  * The package entity definition
- * TODO
+TODO
  * @property [publish] - true for shared package
  * @property [parameters] - parameters
  */
@@ -474,8 +514,8 @@ declare type OpenWhiskEntitiesPackage = {
 
 /**
  * The entry point to the information read from the deployment file, this can be extracted using
- * [setPaths](#setpaths).
- * TODO
+[setPaths](#setpaths).
+TODO
  */
 declare type DeploymentPackages = object[];
 
@@ -510,9 +550,9 @@ declare function printLogs(activation: any, strip: boolean, logger: any): void;
  * @param logger - an instance of a logger to emit messages to (may optionally provide logFunc and bannerFunc to customize logging)
  * @param limit - maximum number of activations to fetch logs from
  * @param filterActions - array of actions to fetch logs from
- *    ['pkg1/'] = logs of all deployed actions under package pkg1
- *    ['pkg1/action'] = logs of action 'action' under package 'pkg1'
- *    [] = logs of all actions in the namespace
+   ['pkg1/'] = logs of all deployed actions under package pkg1
+   ['pkg1/action'] = logs of action 'action' under package 'pkg1'
+   [] = logs of all actions in the namespace
  * @param strip - if true, strips the timestamp which prefixes every log line
  * @param startTime - time in milliseconds. Only logs after this time will be fetched
  * @returns activation timestamp of the last retrieved activation or null
@@ -521,7 +561,7 @@ declare function printFilteredActionLogs(runtime: any, logger: any, limit: numbe
 
 /**
  * returns path to main function as defined in package.json OR default of index.js
- * note: file MUST exist, caller's responsibility, this method will throw if it does not exist
+note: file MUST exist, caller's responsibility, this method will throw if it does not exist
  * @param pkgJsonPath - : path to a package.json file
  * @returns path to the entry file
  */
@@ -680,7 +720,7 @@ declare function returnAnnotations(action: ManifestAction): any;
 
 /**
  * Creates an array of route definitions from the given manifest-based package.
- * See https://github.com/apache/openwhisk-wskdeploy/blob/master/parsers/manifest_parser.go#L1187
+See https://github.com/apache/openwhisk-wskdeploy/blob/master/parsers/manifest_parser.go#L1187
  * @param pkg - The package definition from the manifest.
  * @param pkgName - The name of the package.
  * @param apiName - The name of the HTTP API definition from the manifest.
@@ -736,15 +776,15 @@ declare function setPaths(flags: any): DeploymentFileComponents;
 
 /**
  * Handle Adobe auth action dependency
- *
- * This is a temporary solution and needs to be removed when headless apps will be able to
- * validate against app-registry
- *
- * This function stores the IMS organization id in the Adobe I/O cloud state library which
- * is required by the headless validator.
- *
- * The IMS org id must be stored beforehand in `@adobe/aio-lib-core-config` under the
- * `'project.org.ims_org_id'` key. TODO: pass in imsOrgId
+
+This is a temporary solution and needs to be removed when headless apps will be able to
+validate against app-registry
+
+This function stores the IMS organization id in the Adobe I/O cloud state library which
+is required by the headless validator.
+
+The IMS org id must be stored beforehand in `@adobe/aio-lib-core-config` under the
+`'project.org.ims_org_id'` key. TODO: pass in imsOrgId
  * @param actions - the array of action deployment entities
  * @param owOptions - OpenWhisk options
  * @param imsOrgId - the IMS Org Id
@@ -762,7 +802,7 @@ declare function deployPackage(entities: OpenWhiskEntitiesAction, ow: any, logge
 
 /**
  * Undeploy all processed entities: can undeploy packages, actions, triggers, rules and apis.
- * Entity definitions do not need to be complete, only the names are needed for un-deployment.
+Entity definitions do not need to be complete, only the names are needed for un-deployment.
  * @param entities - the processed entities, only names are enough for undeploy
  * @param ow - the OpenWhisk object
  * @param logger - the logger
@@ -771,11 +811,11 @@ declare function undeployPackage(entities: any, ow: any, logger: any): void;
 
 /**
  * Sync a project. This is a higher level function that can be used to sync a local
- * manifest with deployed entities.
- *
- * `syncProject` doesn't only deploy entities it might also undeploy entities that are not
- * defined in the manifest. This behavior can be disabled via the `deleteEntities` boolean
- * parameter.
+manifest with deployed entities.
+
+`syncProject` doesn't only deploy entities it might also undeploy entities that are not
+defined in the manifest. This behavior can be disabled via the `deleteEntities` boolean
+parameter.
  * @param projectName - the project name
  * @param manifestPath - the manifest path
  * @param manifestContent - the manifest content, needed to compute hash
@@ -789,12 +829,12 @@ declare function syncProject(projectName: string, manifestPath: string, manifest
 
 /**
  * Get deployed entities for a managed project. This methods retrieves all the deployed
- * entities for a given project name or project hash. This only works if the project was
- * deployed using the `whisk-managed` annotation. This annotation can be set
- * pre-deployement using `[addManagedProjectAnnotations](#addmanagedprojectannotations)`.
- *
- * Note that returned apis will always be empty as they don't support annotations and
- * hence are not managed as part of a project.
+entities for a given project name or project hash. This only works if the project was
+deployed using the `whisk-managed` annotation. This annotation can be set
+pre-deployement using `[addManagedProjectAnnotations](#addmanagedprojectannotations)`.
+
+Note that returned apis will always be empty as they don't support annotations and
+hence are not managed as part of a project.
  * @param project - the project name or hash
  * @param isProjectHash - set to true if the project is a hash, and not the name
  * @param ow - the OpenWhisk client object
@@ -804,7 +844,7 @@ declare function getProjectEntities(project: string, isProjectHash: boolean, ow:
 
 /**
  * Add the `whisk-managed` annotation to processed entities. This is needed for syncing
- * managed projects.
+managed projects.
  * @param entities - the processed entities
  * @param manifestPath - the manifest path
  * @param projectName - the project name
@@ -814,7 +854,7 @@ declare function addManagedProjectAnnotations(entities: OpenWhiskEntities, manif
 
 /**
  * Compute the project hash based on the manifest content string. This is used
- * for syncing managed projects.
+for syncing managed projects.
  * @param manifestContent - the manifest content
  * @returns the project hash
  */

@@ -63,6 +63,10 @@ class RuntimeAPI {
       clonedOptions.retry = { retries: 2, minTimeout: 200 }
     }
 
+    // check for env var NODE_TLS_REJECT_UNAUTHORIZED=0, if set to 0, ignore_certs should be true
+    const shouldIgnoreCerts = process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0'
+    clonedOptions.ignore_certs = clonedOptions.ignore_certs || shouldIgnoreCerts
+
     this.ow = ow(clonedOptions)
     const self = this
 
