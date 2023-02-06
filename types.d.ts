@@ -343,8 +343,8 @@ declare type ManifestAction = {
     inputs?: any;
     limits?: object[];
     web?: string;
-    web-export?: string;
-    raw-http?: boolean;
+    'web-export'?: string;
+    'raw-http'?: boolean;
     docker?: string;
     annotations?: object[];
 };
