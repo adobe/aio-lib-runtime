@@ -49,6 +49,9 @@ async function getDeployedPackage (ow, packageName) {
     const pkg = { actions: [] }
     const actionList = await ow.actions.list()
     actionList.forEach(action => { // only get the actions from the default package
+      // NOTE: this is a quirk of the Openwhish actions.list call.
+      // the action.namespace here is in the form "namespace/package" (if there is a package) or "namespace" (if it is the default package)
+      // if it's the default package, the `namespace` property for the parsePackageName function will return "_"
       const { namespace } = utils.parsePackageName(action.namespace)
       if (namespace === '_') {
         pkg.actions.push(action)
