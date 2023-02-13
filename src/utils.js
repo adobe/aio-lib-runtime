@@ -22,6 +22,7 @@ const path = require('path')
 const archiver = require('archiver')
 // this is a static list that comes from here: https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
 const SupportedRuntimes = ['nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16']
+const DEFAULT_PACKAGE_RESERVED_NAME = 'default'
 
 /**
  *
@@ -1479,21 +1480,26 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
   await setupAdobeAuth(entities.actions, actionOpts, imsOrgId)
 
   for (const pkg of entities.pkgAndDeps) {
-    logger(`Info: Deploying package [${pkg.name}]...`)
-    await ow.packages.update(pkg)
-    logger(`Info: package [${pkg.name}] has been successfully deployed.\n`)
+    if (pkg.name === DEFAULT_PACKAGE_RESERVED_NAME) { // reserved package name, do not create
+      logger(`Info: Skipped creating package [${pkg.name}] because it is a reserved package.`)
+    } else {
+      logger(`Info: Deploying package [${pkg.name}]...`)
+      await ow.packages.update(pkg)
+      logger(`Info: package [${pkg.name}] has been successfully deployed.\n`)
+    }
   }
 
   for (const action of entities.actions) {
+    const retAction = cloneDeep(action)
     try {
-      validateActionRuntime(action)
+      validateActionRuntime(retAction)
     } catch (e) {
       const supportedServerRuntimes = await getSupportedServerRuntimes(apihost)
       throw new Error(`${e.message}. Supported runtimes on ${apihost}: ${supportedServerRuntimes}`)
     }
 
-    if (action.exec && action.exec.kind === 'sequence') {
-      action.exec.components = action.exec.components.map(sequence => {
+    if (retAction.exec && action.exec.kind === 'sequence') {
+      retAction.exec.components = retAction.exec.components.map(sequence => {
         /*
           Input => Output
           spackage/saction => /ns/spackage/saction
@@ -1508,9 +1514,13 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
           : `/${ns}/${normalizedSequence}`
       })
     }
-    logger(`Info: Deploying action [${action.name}]...`)
-    await ow.actions.update(action)
-    logger(`Info: action [${action.name}] has been successfully deployed.\n`)
+
+    if (retAction.name.startsWith(`${DEFAULT_PACKAGE_RESERVED_NAME}/`)) { // remove the default package prefix
+      retAction.name = retAction.name.substring(`${DEFAULT_PACKAGE_RESERVED_NAME}/`.length)
+    }
+    logger(`Info: Deploying action [${retAction.name}]...`)
+    await ow.actions.update(retAction)
+    logger(`Info: action [${retAction.name}] has been successfully deployed.\n`)
   }
 
   for (const route of entities.apis) {
@@ -2175,5 +2185,6 @@ module.exports = {
   getActionNameFromZipFile,
   dumpActionsBuiltInfo,
   actionBuiltBefore,
-  safeParse
+  safeParse,
+  DEFAULT_PACKAGE_RESERVED_NAME
 }
