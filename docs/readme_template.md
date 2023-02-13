@@ -67,7 +67,7 @@ npm install @adobe/aio-lib-runtime
 NODE_TLS_REJECT_UNAUTHORIZED=0 <your_call_here>
 ```
 
-Prepend the `NODE_TLS_REJECT_UNAUTHORIZED` [environment variable](https://nodejs.org/api/cli.html#node_tls_reject_unauthorizedvalue) and `0` value to the call that invokes your function, on the command line. This will ignore any certificate errors when connecting to the Openwhisk server. Usage of this is not recommended, but may be necesary in certain corporate environments.
+Prepend the `NODE_TLS_REJECT_UNAUTHORIZED` [environment variable](https://nodejs.org/api/cli.html#node_tls_reject_unauthorizedvalue) and `0` value to the call that invokes your function, on the command line. This will ignore any certificate errors when connecting to the Openwhisk server. Usage of this is not recommended, but may be necessary in certain corporate environments.
 
 ## Debug Logs
 
