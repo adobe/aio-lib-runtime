@@ -32,8 +32,8 @@ npm install @adobe/aio-lib-runtime
     const sdk = require('@adobe/aio-lib-runtime')
 
     async function sdkTest() {
-      //initialize sdk
-      const client = await sdk.init('<tenant>', 'x-api-key', '<valid auth token>')
+      //initialize sdk. Takes in OpenwhiskOptions
+      const client = await sdk.init({ apihost: 'https://adobeioruntime.net', api_key: 'your_auth_key', namespace: 'your_runtime_namespace' })
     }
     ```
 
@@ -43,8 +43,8 @@ npm install @adobe/aio-lib-runtime
     const sdk = require('@adobe/aio-lib-runtime')
 
     async function sdkTest() {
-      // initialize sdk
-      const client = await sdk.init('<tenant>', 'x-api-key', '<valid auth token>')
+      //initialize sdk. Takes in OpenwhiskOptions
+      const client = await sdk.init({ apihost: 'https://adobeioruntime.net', api_key: 'your_auth_key', namespace: 'your_runtime_namespace' })
 
       // call methods
       try {

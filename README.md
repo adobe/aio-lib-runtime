@@ -32,8 +32,8 @@ npm install @adobe/aio-lib-runtime
     const sdk = require('@adobe/aio-lib-runtime')
 
     async function sdkTest() {
-      //initialize sdk
-      const client = await sdk.init('<tenant>', 'x-api-key', '<valid auth token>')
+      //initialize sdk. Takes in OpenwhiskOptions
+      const client = await sdk.init({ apihost: 'https://adobeioruntime.net', api_key: 'your_auth_key', namespace: 'your_runtime_namespace' })
     }
     ```
 
@@ -43,8 +43,8 @@ npm install @adobe/aio-lib-runtime
     const sdk = require('@adobe/aio-lib-runtime')
 
     async function sdkTest() {
-      // initialize sdk
-      const client = await sdk.init('<tenant>', 'x-api-key', '<valid auth token>')
+      //initialize sdk. Takes in OpenwhiskOptions
+      const client = await sdk.init({ apihost: 'https://adobeioruntime.net', api_key: 'your_auth_key', namespace: 'your_runtime_namespace' })
 
       // call methods
       try {
@@ -1782,7 +1782,7 @@ TODO
 NODE_TLS_REJECT_UNAUTHORIZED=0 <your_call_here>
 ```
 
-Prepend the `NODE_TLS_REJECT_UNAUTHORIZED` [environment variable](https://nodejs.org/api/cli.html#node_tls_reject_unauthorizedvalue) and `0` value to the call that invokes your function, on the command line. This will ignore any certificate errors when connecting to the Openwhisk server. Usage of this is not recommended, but may be necesary in certain corporate environments. This is essentially the same as the `ignore_certs` Openwhisk option.
+Prepend the `NODE_TLS_REJECT_UNAUTHORIZED` [environment variable](https://nodejs.org/api/cli.html#node_tls_reject_unauthorizedvalue) and `0` value to the call that invokes your function, on the command line. This will ignore any certificate errors when connecting to the Openwhisk server. Usage of this is not recommended, but may be necesary in certain corporate environments.
 
 ## Debug Logs
 
