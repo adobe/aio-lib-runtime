@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Adobe. All rights reserved.
+Copyright 2023 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -18,7 +18,7 @@ const { createHttpsProxy } = require('@adobe/aio-lib-test-proxy')
 
 jest.unmock('openwhisk')
 jest.unmock('archiver')
-jest.setTimeout(30000)
+jest.setTimeout(40000)
 
 // load .env values in the e2e folder, if any
 require('dotenv').config({ path: path.join(__dirname, '.env') })
@@ -89,7 +89,7 @@ describe('build, deploy, invoke and undeploy of actions', () => {
     /* skip checking previously built actions */
     utils.dumpActionsBuiltInfo = jest.fn(() => false)
     utils.actionBuiltBefore = jest.fn(() => false)
-    // console.log(config)
+
     // Build
     expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
       expect.stringContaining('action.zip'),
@@ -130,7 +130,7 @@ describe('build, deploy, invoke and undeploy of actions', () => {
     config.actions.src = path.resolve(config.root + '/' + config.actions.src)
     config.actions.dist = path.resolve(config.root + '/' + config.actions.dist)
     config.manifest.src = path.resolve(config.root + '/' + 'manifest.yml')
-    // console.log(config)
+
     // Build
     expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
       expect.stringContaining('action.zip')
@@ -158,8 +158,47 @@ describe('build, deploy, invoke and undeploy of actions', () => {
     }
   })
 
+  test('manifest with default package', async () => {
+    config = deepClone(global.sampleAppReducedDefaultPackageConfig)
+    config.ow.namespace = namespace
+    config.ow.auth = apiKey
+    config.root = path.resolve('./test/__fixtures__/sample-app-reduced-default-package')
+    config.actions.src = path.resolve(config.root + '/' + config.actions.src)
+    config.actions.dist = path.resolve(config.root + '/' + config.actions.dist)
+    config.manifest.src = path.resolve(config.root + '/' + 'manifest.yml')
+
+    // Build
+    expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
+      expect.stringContaining('action.zip')
+    ]))
+
+    // Deploy
+    config.root = path.resolve('./')
+    const deployedEntities = await sdk.deployActions(config)
+    // action is not behind CDN since we don't have static assets
+    expect(deployedEntities.actions[0].url.endsWith('.adobeioruntime.net/api/v1/web/default/action')).toEqual(true)
+
+    // Cleanup build files
+    fs.emptydirSync(config.actions.dist)
+    fs.rmdirSync(config.actions.dist)
+
+    // Verify actions created in openwhisk
+    let actions = await sdkClient.actions.list({ limit: 3 })
+    expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({
+      name: 'action',
+      namespace: expect.not.stringContaining('/default') // if it's the default package, it won't show in the namespace property
+    })]))
+    await sdkClient.actions.invoke('action')
+
+    // Undeploy
+    await sdk.undeployActions(config)
+    actions = await sdkClient.actions.list({ limit: 1 })
+    if (actions.length > 0) {
+      expect(actions[0].name).not.toEqual('action')
+    }
+  })
+
   test('basic manifest with filter', async () => {
-    // console.log(config)
     // Build
     expect(await sdk.buildActions(config, ['action'])).toEqual([expect.stringContaining('action.zip')])
 
@@ -174,10 +213,21 @@ describe('build, deploy, invoke and undeploy of actions', () => {
     fs.rmdirSync(config.actions.dist)
 
     // Verify actions created in openwhisk
-    const actions = await sdkClient.actions.list({ limit: 3 })
+    let actions = await sdkClient.actions.list({ limit: 3 })
     expect(actions).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: 'action', namespace: expect.stringContaining('/sample-app-1.0.0') })]))
     await sdkClient.actions.invoke('sample-app-1.0.0/action')
+
+    // NOTE: undeploy does not have a corresponding filterEntities, we do a quick manual filter
+    delete config.manifest.full.packages.__APP_PACKAGE__.rules.rule1
+    delete config.manifest.package.rules.rule1
+
+    // Undeploy
+    await sdk.undeployActions(config)
+    actions = await sdkClient.actions.list({ limit: 1 })
+    if (actions.length > 0) {
+      expect(actions[0].name).not.toEqual('action')
+    }
   })
 })
 
