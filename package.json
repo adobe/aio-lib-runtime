@@ -31,7 +31,7 @@
   "devDependencies": {
     "@adobe/aio-lib-test-proxy": "^1.0.0",
     "@adobe/eslint-config-aio-lib-config": "^1.4.0",
-    "@types/jest": "^26.0.4",
+    "@types/jest": "^29.4.0",
     "@types/node-fetch": "^2.5.4",
     "babel-runtime": "^6.26.0",
     "codecov": "^3.5.0",
