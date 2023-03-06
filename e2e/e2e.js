@@ -15,10 +15,11 @@ const deepClone = require('lodash.clonedeep')
 const { utils } = require('../src')
 const fs = jest.requireActual('fs-extra')
 const { createHttpsProxy } = require('@adobe/aio-lib-test-proxy')
+const { createFetch } = require('@adobe/aio-lib-core-networking')
 
 jest.unmock('openwhisk')
 jest.unmock('archiver')
-jest.setTimeout(40000)
+jest.setTimeout(60000)
 
 // load .env values in the e2e folder, if any
 require('dotenv').config({ path: path.join(__dirname, '.env') })
@@ -113,6 +114,27 @@ describe('build, deploy, invoke and undeploy of actions', () => {
       expect.objectContaining({ name: 'action-zip', namespace: expect.stringContaining('/sample-app-1.0.0') }),
       expect.objectContaining({ name: 'action', namespace: expect.stringContaining('/sample-app-1.0.0') })]))
     await sdkClient.actions.invoke('sample-app-1.0.0/action')
+
+    // Verify apis created in openwhisk
+    const { apis } = await sdkClient.routes.list({ basepath: 'base', relpath: 'path' })
+    const api = apis[0]
+    const paths = api.value.apidoc.paths
+
+    for (const key of Object.keys(paths)) {
+      if (!key.startsWith('/')) {
+        return
+      }
+
+      const path = paths[key]
+      for (const verb of Object.keys(path)) {
+        const fetch = createFetch()
+        const url = `${api.value.gwApiUrl}${key}`
+        console.log('testing API Url:', url)
+        const response = await fetch(url, { method: verb })
+        console.log('API Url response status:', response.status)
+        expect(response.status).not.toEqual(404)
+      }
+    }
 
     // Undeploy
     await sdk.undeployActions(config)
@@ -247,7 +269,7 @@ describe('print logs', () => {
       expect(err.message).toEqual(expect.stringContaining('503'))
       expect(err.message).toEqual(expect.stringContaining('Service Unavailable'))
     }
-    jest.setTimeout(30000)
+    jest.setTimeout(40000)
   })
 })
 
