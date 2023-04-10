@@ -765,7 +765,7 @@ describe('deployPackage', () => {
       json: () => result
     })
 
-    const supportedClientRuntimes = ['nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16']
+    const supportedClientRuntimes = ['nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18']
     const supportedServerRuntimes = await utils.getSupportedServerRuntimes(initOptions.apihost)
 
     await expect(() =>
@@ -2237,8 +2237,11 @@ describe('validateActionRuntime', () => {
   })
 
   test('all good', async () => {
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:10' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:12' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })).not.toThrow()
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:16' } })).not.toThrow()
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:18' } })).not.toThrow()
   })
 
   test('invalid nodejs version', async () => {
