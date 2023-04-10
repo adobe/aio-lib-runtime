@@ -1388,8 +1388,8 @@ describe('addManagedProjectAnnotations', () => {
   const expectedAnnotation = {
     file: manifestPath,
     projectDeps: [],
-    projectHash: projectHash,
-    projectName: projectName
+    projectHash,
+    projectName
   }
   const managedAnnotation = {
     key: 'whisk-managed',
