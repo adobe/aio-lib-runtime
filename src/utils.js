@@ -275,7 +275,7 @@ function printLogs (activation, strip, logger) {
  */
 async function printFilteredActionLogs (runtime, logger, limit, filterActions = [], strip = false, startTime = 0) {
   // Get activations
-  const listOptions = { limit: limit, skip: 0, since: startTime }
+  const listOptions = { limit, skip: 0, since: startTime }
   const logFunc = logger ? logger.logFunc || logger : console.log
   // This will narrow down the activation list to specific action
   if (filterActions.length === 1 && !filterActions[0].endsWith('/')) {
@@ -1401,12 +1401,12 @@ function setPaths (flags = {}) {
   }
 
   const filecomponents = {
-    packages: packages,
-    deploymentTriggers: deploymentTriggers,
-    deploymentPackages: deploymentPackages,
-    manifestPath: manifestPath,
+    packages,
+    deploymentTriggers,
+    deploymentPackages,
+    manifestPath,
     manifestContent: manifest,
-    projectName: projectName
+    projectName
   }
   return filecomponents
 }
@@ -1689,16 +1689,16 @@ async function addManagedProjectAnnotations (entities, manifestPath, projectName
     pkg.annotations['whisk-managed'] = {
       file: manifestPath,
       projectDeps: [],
-      projectHash: projectHash,
-      projectName: projectName
+      projectHash,
+      projectName
     }
   }
   for (const action of entities.actions) {
     action.annotations['whisk-managed'] = {
       file: manifestPath,
       projectDeps: [],
-      projectHash: projectHash,
-      projectName: projectName
+      projectHash,
+      projectName
     }
   }
 
@@ -1708,8 +1708,8 @@ async function addManagedProjectAnnotations (entities, manifestPath, projectName
       value: {
         file: manifestPath,
         projectDeps: [],
-        projectHash: projectHash,
-        projectName: projectName
+        projectHash,
+        projectName
       }
     }
     if (trigger.trigger && trigger.trigger.annotations) {
