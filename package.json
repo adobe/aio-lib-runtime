@@ -12,7 +12,7 @@
   "dependencies": {
     "@adobe/aio-lib-core-errors": "^3.1.0",
     "@adobe/aio-lib-core-logging": "^2.0.0",
-    "@adobe/aio-lib-core-networking": "^3.0.0",
+    "@adobe/aio-lib-core-networking": "^4.1.0",
     "@adobe/aio-lib-env": "^2.0.0",
     "archiver": "^5.0.0",
     "execa": "^4.0.3",
