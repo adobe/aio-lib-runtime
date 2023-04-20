@@ -1491,11 +1491,14 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
 
   for (const action of entities.actions) {
     const retAction = cloneDeep(action)
-    try {
-      validateActionRuntime(retAction)
-    } catch (e) {
-      const supportedServerRuntimes = await getSupportedServerRuntimes(apihost)
-      throw new Error(`${e.message}. Supported runtimes on ${apihost}: ${supportedServerRuntimes}`)
+    if (!SupportedRuntimes.includes(retAction?.exec?.kind)) {
+      const supportedServerRuntimes = ( await getSupportedServerRuntimes(apihost) ).sort().reverse()
+      if (supportedServerRuntimes.includes(retAction?.exec?.kind)) {
+        aioLogger.debug(`Local node kinds mismatch with server supported kinds ${supportedServerRuntimes}`)
+      } else {
+        throw new Error(`Unsupported node version '${retAction.exec.kind}' in action ${retAction.name}.\n` +
+          `Supported runtimes on ${apihost}: ${supportedServerRuntimes}`)
+      }
     }
 
     if (retAction.exec && action.exec.kind === 'sequence') {
@@ -2017,16 +2020,29 @@ function replacePackagePlaceHolder (config) {
  * Checks the validity of nodejs version in action definition and throws an error if invalid.
  *
  * @param {object} action action object
+ * @deprecated Use isSupportedActionKind instead
  */
 function validateActionRuntime (action) {
   // I suspect we have an issue here with 2 kinds of kinds ...
   // sometimes this method is called with 'sequence' which is a different kind of kind than exec.kind which
   // comes from action: runtime: in manifest -jm
+  // it would be nice if we didn't throw an excption when we could just return a boolean, otherwise the caller
+  // has to wrap this in a try/catch block -jm
   if (action.exec && action.exec.kind && action.exec.kind.toLowerCase().startsWith('nodejs:')) {
     if (!SupportedRuntimes.includes(action.exec.kind)) {
       throw new Error(`Unsupported node version '${action.exec.kind}' in action ${action.name}. Supported versions are ${SupportedRuntimes}`)
     }
   }
+}
+
+/**
+ * Checks the validity of nodejs version in action definition returns true if valid.
+ *
+ * @param {object} action action object
+ * @returns {boolean} true if action kind is supported
+ */
+function isSupportedActionKind (action) {
+  return SupportedRuntimes.includes(action?.exec?.kind?.toLowerCase())
 }
 
 /**
@@ -2186,5 +2202,6 @@ module.exports = {
   dumpActionsBuiltInfo,
   actionBuiltBefore,
   safeParse,
+  isSupportedActionKind,
   DEFAULT_PACKAGE_RESERVED_NAME
 }
