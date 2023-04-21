@@ -765,12 +765,41 @@ describe('deployPackage', () => {
       json: () => result
     })
 
-    const supportedClientRuntimes = ['nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18']
-    const supportedServerRuntimes = await utils.getSupportedServerRuntimes(initOptions.apihost)
+    await expect(() =>
+      utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_unsupported_kind.json')), ow, mockLogger, imsOrgId)
+    ).rejects.toThrow(/Unsupported node version 'nodejs:8/)
+  })
+
+  test('basic manifest - local `kind` list missing', async () => {
+    const imsOrgId = 'MyIMSOrgId'
+    const mockLogger = jest.fn()
+    const actionOptions = {
+      apiKey: 'my-key',
+      namespace: 'my-namespace'
+    }
+    const initOptions = {
+      apihost: 'https://adobeio.adobeioruntime.net'
+    }
+    ow.mockResolvedProperty('actions.client.options', actionOptions)
+    ow.mockResolvedProperty(owInitOptions, initOptions)
+
+    const result = {
+      runtimes: {
+        nodejs: [
+          { kind: 'nodejs:8' }, // server says it supports nodejs:8!
+          { kind: 'nodejs:16' }
+        ]
+      }
+    }
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => result
+    })
 
     await expect(() =>
       utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_unsupported_kind.json')), ow, mockLogger, imsOrgId)
-    ).rejects.toThrow(`Unsupported node version 'nodejs:8' in action hello/helloAction. Supported versions are ${supportedClientRuntimes}. Supported runtimes on ${initOptions.apihost}: ${supportedServerRuntimes}`)
+    ).not.toThrow()
   })
 
   test('basic manifest (fetch error)', async () => {
@@ -2243,10 +2272,20 @@ describe('validateActionRuntime', () => {
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:16' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:18' } })).not.toThrow()
   })
-
-  test('invalid nodejs version', async () => {
-    const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:17' } })
-    expect(func).toThrowError('Unsupported node version')
+  test('no exec', () => {
+    expect(utils.validateActionRuntime({})).toBeUndefined()
+  })
+  test('no runtime kind', () => {
+    expect(utils.validateActionRuntime({ exec: {} })).toBeUndefined()
+  })
+  test('valid runtime kind', () => {
+    expect(utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })).toBeUndefined()
+  })
+  test('valid runtime kind - toLower', () => {
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'NODEJS:14' } })).toThrowError('Unsupported node version')
+  })
+  test('invalid nodejs version', () => {
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:17' } })).toThrowError('Unsupported node version')
   })
 
   test('dumpActionsBuiltInfo might catch some errors under unlikely conditions', async () => {

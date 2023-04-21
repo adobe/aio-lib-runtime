@@ -21,7 +21,7 @@ const globby = require('globby')
 const path = require('path')
 const archiver = require('archiver')
 // this is a static list that comes from here: https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
-const SupportedRuntimes = ['nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18']
+const SupportedRuntimes = ['sequence', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18']
 const DEFAULT_PACKAGE_RESERVED_NAME = 'default'
 
 /**
@@ -1491,12 +1491,12 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
 
   for (const action of entities.actions) {
     const retAction = cloneDeep(action)
-    if (!SupportedRuntimes.includes(retAction?.exec?.kind)) {
-      const supportedServerRuntimes = ( await getSupportedServerRuntimes(apihost) ).sort().reverse()
+    if (retAction?.exec?.kind && !isSupportedActionKind(retAction)) {
+      const supportedServerRuntimes = (await getSupportedServerRuntimes(apihost)).sort().reverse()
       if (supportedServerRuntimes.includes(retAction?.exec?.kind)) {
         aioLogger.debug(`Local node kinds mismatch with server supported kinds ${supportedServerRuntimes}`)
       } else {
-        throw new Error(`Unsupported node version '${retAction.exec.kind}' in action ${retAction.name}.\n` +
+        throw new Error(`Unsupported node version '${retAction?.exec?.kind}' in action ${retAction.name}.\n` +
           `Supported runtimes on ${apihost}: ${supportedServerRuntimes}`)
       }
     }
