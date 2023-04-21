@@ -7,5 +7,8 @@
   },
   "rules": {
     "no-param-reassign": [ "warn", { "props": true }]
-  }
+  },
+  "parserOptions": {
+    "ecmaVersion": "2020"
+}
 }
