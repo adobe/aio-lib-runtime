@@ -72,7 +72,8 @@
   "jest": {
     "collectCoverage": true,
     "collectCoverageFrom": [
-      "src/**/*.js"
+      "src/**/*.js",
+      "!src/types.jsdoc.js"
     ],
     "coverageThreshold": {
       "global": {
