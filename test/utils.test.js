@@ -222,8 +222,11 @@ describe('processInputs', () => {
     process.env.BAR = 'itWorks'
     process.env.BAR_VAR = 'barVar'
     process.env.FOO = 'fooo'
+    process.env['AIO_my-tech-id_from_org'] = 'my-tech-account-id'
+
     const input = {
       a: 'I will be replaced',
+      techId: '$AIO_my-tech-id_from_org',
       stuff: '$BAR_VAR $BAR_VAR, ${ BAR_VAR }, $FOO',
       foo: '${BAR}',
       bar: {
@@ -238,6 +241,7 @@ describe('processInputs', () => {
     }
     const expectedOutput = {
       a: 123,
+      techId: 'my-tech-account-id',
       stuff: 'barVar barVar, barVar, fooo',
       foo: process.env.BAR,
       bar: `${process.env.BAR}, ${process.env.BAR}, ${process.env.FOO}`,
