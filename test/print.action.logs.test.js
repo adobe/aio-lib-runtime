@@ -1,4 +1,3 @@
-
 const runtimeLibUtils = require('../src/utils')
 const printFilteredActionLogsOriginal = runtimeLibUtils.printFilteredActionLogs
 runtimeLibUtils.checkOpenWhiskCredentials = jest.fn()
