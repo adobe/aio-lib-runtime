@@ -268,8 +268,11 @@ for syncing managed projects.</p>
 <dd></dd>
 <dt><a href="#replacePackagePlaceHolder">replacePackagePlaceHolder(config)</a> ⇒ <code>object</code></dt>
 <dd></dd>
-<dt><a href="#validateActionRuntime">validateActionRuntime(action)</a></dt>
+<dt><del><a href="#validateActionRuntime">validateActionRuntime(action)</a></del></dt>
 <dd><p>Checks the validity of nodejs version in action definition and throws an error if invalid.</p>
+</dd>
+<dt><a href="#isSupportedActionKind">isSupportedActionKind(action)</a> ⇒ <code>boolean</code></dt>
+<dd><p>Checks the validity of nodejs version in action definition returns true if valid.</p>
 </dd>
 <dt><a href="#getActionZipFileName">getActionZipFileName(pkgName, actionName, defaultPkg)</a> ⇒ <code>string</code></dt>
 <dd><p>Returns the action&#39;s build file name without the .zip extension</p>
@@ -1399,10 +1402,24 @@ Joins url path parts
 
 <a name="validateActionRuntime"></a>
 
-## validateActionRuntime(action)
+## ~~validateActionRuntime(action)~~
+***Deprecated***
+
 Checks the validity of nodejs version in action definition and throws an error if invalid.
 
 **Kind**: global function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| action | <code>object</code> | action object |
+
+<a name="isSupportedActionKind"></a>
+
+## isSupportedActionKind(action) ⇒ <code>boolean</code>
+Checks the validity of nodejs version in action definition returns true if valid.
+
+**Kind**: global function  
+**Returns**: <code>boolean</code> - true if action kind is supported  
 
 | Param | Type | Description |
 | --- | --- | --- |
