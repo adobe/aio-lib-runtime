@@ -86,38 +86,62 @@ declare class RuntimeAPI {
 }
 
 /**
- * @property outPath - zip output path
- * @property actionBuildData - Object where key is the name of the action and value is its contentHash
+ * Searches for a webpack config file, starting at the action path and working
+ *  towards the root of the project. Will return the first one it finds.
+ * @param actionPath - Path of the action
+ * @param root - Root of the project
+ * @returns Webpack config file path, will be 'null' if not found
+ */
+declare function getWebpackConfigPath(actionPath: string, root: string): Promise<string>;
+
+/**
+ * Loads a Webpack config file from the config path provided. Sets fields required
+ *  for Runtime actions. Returns an object that can be passed to the Webpack library.
+ * @param configPath - Path of the Webpack config file
+ * @param actionPath - Path of the action
+ * @param tempBuildDir - Path of the output directory for the bundle
+ * @param outBuildFilename - Name of the output file for the action
+ * @returns Webpack config, can be passed to the Webpack library
+ */
+declare function loadWebpackConfig(configPath: string, actionPath: string, tempBuildDir: string, outBuildFilename: string): Promise<object>;
+
+/**
+ * @property actionName - The name of the action
+ * @property buildHash - Map with key as the name of the action and value its contentHash
+ * @property legacy - Indicate legacy action support
  * @property tempBuildDir - path of temp build
  * @property tempActionName - name of the action file.
+ * @property outPath - zip output path
  */
 declare type ActionBuild = {
-    outPath: string;
-    actionBuildData: any;
+    actionName: string;
+    buildHash: any;
+    legacy: boolean;
     tempBuildDir: string;
     tempActionName: string;
+    outPath: string;
 };
 
 /**
  * Will return data about an action ready to be built.
- * @param zipFileName - the action's build file name without the .zip extension.
  * @param action - Data about the Action.
  * @param root - root of the project.
  * @param dist - Path to the minimized version of the action code
  * @returns Relevant data for the zip process..
  */
-declare function prepareToBuildAction(zipFileName: string, action: any, root: string, dist: string): Promise<ActionBuild>;
+declare function prepareToBuildAction(action: any, root: string, dist: string): Promise<ActionBuild>;
 
 /**
  * Will zip actions.
  *  By default only actions which were not built before will be zipped.
  *  Last built actions data will be used to validate which action needs zipping.
- * @param buildsList - Array with data about actions available to be zipped.
+ * @param buildsList - Array of data about actions available to be zipped.
  * @param lastBuildsPath - Path to the last built actions data.
- * @param skipCheck - when true will zip all the actions from the buildsList
+ * @param distFolder - Path to the output root.
+ * @param skipCheck - If true, zip all the actions from the buildsList
  * @returns Array of zipped actions.
  */
-declare function zipActions(buildsList: ActionBuild[], lastBuildsPath: string, skipCheck: boolean): string[];
+declare function zipActions(buildsList: ActionBuild[], lastBuildsPath: string, distFolder: string, skipCheck: boolean): string[];
 
 /**
  * runs the command
@@ -859,9 +883,10 @@ declare function checkOpenWhiskCredentials(config: any): void;
  * @param appConfig - app config
  * @param isRemoteDev - remote dev
  * @param isLocalDev - local dev
+ * @param legacy - default false add backwards compatibility for urls keys.
  * @returns urls of actions
  */
-declare function getActionUrls(appConfig: any, isRemoteDev: boolean, isLocalDev: boolean): any;
+declare function getActionUrls(appConfig: any, isRemoteDev: boolean, isLocalDev: boolean, legacy: boolean): any;
 
 /**
  * Joins url path parts
@@ -900,7 +925,7 @@ declare function getActionZipFileName(pkgName: string, actionName: string, defau
 /**
  * Returns the action name based on the zipFile name.
  * @param zipFile - name of the zip file
- * @returns name of the action
+ * @returns name of the action or empty string.
  */
 declare function getActionNameFromZipFile(zipFile: string): string;
 
@@ -915,10 +940,10 @@ declare function activationLogBanner(logFunc: any, activation: any, activationLo
 /**
  * Will tell if the action was built before based on it's contentHash.
  * @param lastBuildsData - Data with the last builds
- * @param actionBuildData - Object which contains action name and contentHash.
+ * @param buildData - Object where key is the name of the action and value is its contentHash
  * @returns true if the action was built before
  */
-declare function actionBuiltBefore(lastBuildsData: string, actionBuildData: any): boolean;
+declare function actionBuiltBefore(lastBuildsData: string, buildData: any): boolean;
 
 /**
  * Will dump the previously actions built data information.
@@ -928,4 +953,11 @@ declare function actionBuiltBefore(lastBuildsData: string, actionBuildData: any)
  * @returns If the contentHash already belongs to the deploymentLogs file
  */
 declare function dumpActionsBuiltInfo(lastBuiltActionsPath: string, actionBuildData: any, prevBuildData: any): Promise<boolean>;
+
+/**
+ * Gets a list of the supported runtime kinds from the apihost.
+ * @param apihost - the URL of the runtime apihost
+ * @returns a list of runtime kinds supported by the runtime apihost
+ */
+declare function getSupportedServerRuntimes(apihost: string): string[];
 

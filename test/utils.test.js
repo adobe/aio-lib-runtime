@@ -36,6 +36,7 @@ const owPackageDel = 'packages.delete'
 const owRulesDel = 'rules.delete'
 const owTriggerDel = 'triggers.delete'
 const owAPIDel = 'routes.delete'
+const owInitOptions = 'initOptions'
 
 const libEnv = require('@adobe/aio-lib-env')
 const { STAGE_ENV, PROD_ENV } = jest.requireActual('@adobe/aio-lib-env')
@@ -47,6 +48,8 @@ beforeEach(() => {
     'hello.js': global.fixtureFile('/deploy/hello.js'),
     'goodbye.js': global.fixtureFile('/deploy/goodbye.js'),
     'basic_manifest.json': global.fixtureFile('/deploy/basic_manifest.json'),
+    'manifest_default_package.json': global.fixtureFile('/deploy/manifest_default_package.json'),
+    'basic_manifest_unsupported_kind.json': global.fixtureFile('/deploy/basic_manifest_unsupported_kind.json'),
     'basic_manifest_res.json': global.fixtureFile('/deploy/basic_manifest_res.json'),
     'pkgparam_manifest_res.json': global.fixtureFile('/deploy/pkgparam_manifest_res.json'),
     'pkgparam_manifest_res_multi.json': global.fixtureFile('/deploy/pkgparam_manifest_res_multi.json'),
@@ -102,12 +105,15 @@ describe('utils has the right functions', () => {
     expect(typeof utils.getActionNameFromZipFile).toEqual('function')
     expect(typeof utils.dumpActionsBuiltInfo).toEqual('function')
     expect(typeof utils.actionBuiltBefore).toEqual('function')
+    expect(typeof utils.getSupportedServerRuntimes).toEqual('function')
 
     expect(utils.urlJoin).toBeDefined()
     expect(typeof utils.urlJoin).toBe('function')
 
     expect(utils.zip).toBeDefined()
     expect(typeof utils.zip).toBe('function')
+
+    expect(typeof utils.DEFAULT_PACKAGE_RESERVED_NAME).toBe('string')
   })
 })
 
@@ -216,8 +222,11 @@ describe('processInputs', () => {
     process.env.BAR = 'itWorks'
     process.env.BAR_VAR = 'barVar'
     process.env.FOO = 'fooo'
+    process.env['AIO_my-tech-id_from_org'] = 'my-tech-account-id'
+
     const input = {
       a: 'I will be replaced',
+      techId: '$AIO_my-tech-id_from_org',
       stuff: '$BAR_VAR $BAR_VAR, ${ BAR_VAR }, $FOO',
       foo: '${BAR}',
       bar: {
@@ -232,6 +241,7 @@ describe('processInputs', () => {
     }
     const expectedOutput = {
       a: 123,
+      techId: 'my-tech-account-id',
       stuff: 'barVar barVar, barVar, fooo',
       foo: process.env.BAR,
       bar: `${process.env.BAR}, ${process.env.BAR}, ${process.env.FOO}`,
@@ -623,6 +633,14 @@ describe('createActionObject', () => {
       function: 'fake.js',
       runtime: 'something'
     }
+    test('action supported limits alternative name memory', () => {
+      manifestAction.limits = {
+        memory: 1
+      }
+      readFileSyncSpy.mockImplementation(() => 'some source code')
+      const res = utils.createActionObject('fake', manifestAction)
+      expect(res.limits.memory).toEqual(1)
+    })
     test('action supported limits, concurrentActivations set', () => {
       manifestAction.limits = {
         memorySize: 1,
@@ -667,6 +685,7 @@ describe('deployPackage', () => {
     const cmdAPI = ow.mockResolved(owAPI, '')
     const cmdTrigger = ow.mockResolved(owTriggers, '')
     const cmdRule = ow.mockResolved(owRules, '')
+    ow.mockResolvedProperty(owInitOptions, {})
     ow.mockResolvedProperty('actions.client.options', { apiKey: 'my-key', namespace: 'my-namespace' })
 
     mockFetch.mockResolvedValue({
@@ -691,11 +710,108 @@ describe('deployPackage', () => {
       })
   })
 
+  test('simple manifest (default package)', async () => {
+    const imsOrgId = 'MyIMSOrgId'
+    const mockLogger = jest.fn()
+    const cmdPkg = ow.mockResolved(owPackage, '')
+    const cmdAction = ow.mockResolved(owAction, '')
+    const cmdAPI = ow.mockResolved(owAPI, '')
+    const cmdTrigger = ow.mockResolved(owTriggers, '')
+    const cmdRule = ow.mockResolved(owRules, '')
+    ow.mockResolvedProperty(owInitOptions, {})
+    ow.mockResolvedProperty('actions.client.options', { apiKey: 'my-key', namespace: 'my-namespace' })
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn()
+    })
+    await utils.deployPackage(JSON.parse(fs.readFileSync('/manifest_default_package.json')), ow, mockLogger, imsOrgId)
+    expect(cmdPkg).not.toHaveBeenCalled()
+    expect(cmdAction).toHaveBeenCalled()
+    expect(cmdAPI).not.toHaveBeenCalled()
+    expect(cmdTrigger).not.toHaveBeenCalled()
+    expect(cmdRule).not.toHaveBeenCalled()
+
+    // this assertion is specific to the tmp implementation of the require-adobe-annotation
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://adobeio.adobeioruntime.net/api/v1/web/state/put',
+      {
+        body: '{"namespace":"my-namespace","key":"__aio","value":{"project":{"org":{"ims_org_id":"MyIMSOrgId"}}},"ttl":-1}',
+        headers: { Authorization: 'Basic bXkta2V5', 'Content-Type': 'application/json' },
+        method: 'post'
+      })
+  })
+
+  test('basic manifest - unsupported kind', async () => {
+    const imsOrgId = 'MyIMSOrgId'
+    const mockLogger = jest.fn()
+    const actionOptions = {
+      apiKey: 'my-key',
+      namespace: 'my-namespace'
+    }
+    const initOptions = {
+      apihost: 'https://adobeio.adobeioruntime.net'
+    }
+    ow.mockResolvedProperty('actions.client.options', actionOptions)
+    ow.mockResolvedProperty(owInitOptions, initOptions)
+
+    const result = {
+      runtimes: {
+        nodejs: [
+          { kind: 'nodejs:14' },
+          { kind: 'nodejs:16' }
+        ]
+      }
+    }
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => result
+    })
+
+    await expect(() =>
+      utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_unsupported_kind.json')), ow, mockLogger, imsOrgId)
+    ).rejects.toThrow(/Unsupported node version 'nodejs:8/)
+  })
+
+  test('basic manifest - local `kind` list missing', async () => {
+    const imsOrgId = 'MyIMSOrgId'
+    const mockLogger = jest.fn()
+    const actionOptions = {
+      apiKey: 'my-key',
+      namespace: 'my-namespace'
+    }
+    const initOptions = {
+      apihost: 'https://adobeio.adobeioruntime.net'
+    }
+    ow.mockResolvedProperty('actions.client.options', actionOptions)
+    ow.mockResolvedProperty(owInitOptions, initOptions)
+
+    const result = {
+      runtimes: {
+        nodejs: [
+          { kind: 'nodejs:8' }, // server says it supports nodejs:8!
+          { kind: 'nodejs:16' }
+        ]
+      }
+    }
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => result
+    })
+
+    await expect(() =>
+      utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_unsupported_kind.json')), ow, mockLogger, imsOrgId)
+    ).not.toThrow()
+  })
+
   test('basic manifest (fetch error)', async () => {
     // this test is specific to the tmp implementation of the require-adobe-annotation
     const imsOrgId = 'MyIMSOrgId'
     const mockLogger = jest.fn()
     ow.mockResolvedProperty('actions.client.options', { apiKey: 'my-key', namespace: 'my-namespace' })
+    ow.mockResolvedProperty(owInitOptions, {})
 
     const res = {
       ok: false,
@@ -711,6 +827,7 @@ describe('deployPackage', () => {
   test('basic manifest (no IMS Org Id)', async () => {
     // this test is specific to the tmp implementation of the require-adobe-annotation
     const mockLogger = jest.fn()
+    ow.mockResolvedProperty(owInitOptions, {})
 
     await expect(utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, null))
       .rejects.toThrowError(new Error('imsOrgId must be defined when using the Adobe headless auth validator'))
@@ -1094,6 +1211,7 @@ describe('syncProject', () => {
     ow.mockResolved('actions.list', [])
     ow.mockResolved('triggers.list', [])
     ow.mockResolved('rules.list', [])
+    ow.mockResolvedProperty(owInitOptions, {})
 
     const resultObject = {
       annotations: [
@@ -1303,8 +1421,8 @@ describe('addManagedProjectAnnotations', () => {
   const expectedAnnotation = {
     file: manifestPath,
     projectDeps: [],
-    projectHash: projectHash,
-    projectName: projectName
+    projectHash,
+    projectName
   }
   const managedAnnotation = {
     key: 'whisk-managed',
@@ -1915,6 +2033,20 @@ describe('getActionUrls', () => {
     expect(result).toEqual(expected)
   })
 
+  test('some non web actions, with ui, http://localhost custom apihost, no custom hostname', () => {
+    const expected = {
+      'sample-app-1.0.0/action': 'http://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'http://localhost:3030/api/v1/fake_ns/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'http://localhost:3030/api/v1/web/fake_ns/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'http://localhost:3030/api/v1/web/fake_ns/pkg2/thataction',
+      'pkg2/thatsequence': 'http://localhost:3030/api/v1/web/fake_ns/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'http://localhost:3030'
+    delete config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expected)
+  })
+
   test('some non web actions, with ui, remote dev, no custom apihost, no custom hostname', () => {
     const expected = {
       'sample-app-1.0.0/action': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action',
@@ -2138,13 +2270,26 @@ describe('validateActionRuntime', () => {
   })
 
   test('all good', async () => {
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:10' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:12' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })).not.toThrow()
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:16' } })).not.toThrow()
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:18' } })).not.toThrow()
   })
-
-  test('invalid nodejs version', async () => {
-    const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:17' } })
-    expect(func).toThrowError('Unsupported node version')
+  test('no exec', () => {
+    expect(utils.validateActionRuntime({})).toBeUndefined()
+  })
+  test('no runtime kind', () => {
+    expect(utils.validateActionRuntime({ exec: {} })).toBeUndefined()
+  })
+  test('valid runtime kind', () => {
+    expect(utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })).toBeUndefined()
+  })
+  test('valid runtime kind - toLower', () => {
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'NODEJS:14' } })).toThrowError('Unsupported node version')
+  })
+  test('invalid nodejs version', () => {
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:17' } })).toThrowError('Unsupported node version')
   })
 
   test('dumpActionsBuiltInfo might catch some errors under unlikely conditions', async () => {
@@ -2175,5 +2320,56 @@ describe('validateActionRuntime', () => {
   })
   test('getActionZipFileName, defaultPkg:true  (coverage)', () => {
     expect(utils.getActionZipFileName('pk1', 'action', true)).toEqual('action')
+  })
+})
+
+describe('getSupportedServerRuntimes', () => {
+  const APIHOST = 'https://some-server.net'
+
+  test('success', async () => {
+    const result = {
+      runtimes: {
+        nodejs: [
+          { kind: 'nodejs:14' },
+          { kind: 'nodejs:16' }
+        ]
+      }
+    }
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => result
+    })
+
+    await expect(utils.getSupportedServerRuntimes(APIHOST))
+      .resolves.toEqual([
+        'nodejs:14',
+        'nodejs:16'
+      ])
+  })
+
+  test('http error', async () => {
+    mockFetch.mockResolvedValue({
+      status: 403,
+      ok: false
+    })
+
+    await expect(utils.getSupportedServerRuntimes(APIHOST))
+      .rejects.toThrow('HTTP 403 - An error occurred when retrieving supported runtimes.')
+  })
+
+  test('json error', async () => {
+    const result = {
+      runtimes: {}
+    }
+
+    mockFetch.mockResolvedValue({
+      status: 200,
+      ok: true,
+      json: () => result
+    })
+
+    await expect(utils.getSupportedServerRuntimes(APIHOST))
+      .rejects.toThrowError()
   })
 })

@@ -1,0 +1,110 @@
+{
+    "pkgAndDeps": [
+        {
+            "name": "hello"
+        },
+        {
+            "name": "mypackage",
+            "package": {
+                "binding": {
+                    "namespace": "adobeio",
+                    "name": "oauth"
+                }
+            }
+        }
+    ],
+    "apis": [
+        {
+            "action": "hello/helloAction",
+            "basepath": "/hello",
+            "name": "hello-world",
+            "operation": "GET",
+            "relpath": "/world",
+            "responsetype": "json"
+        }
+    ],
+    "triggers": [
+        {
+            "name": "hellotrigger",
+            "trigger": {
+                "parameters": [
+                    {
+                        "key": "cron",
+                        "value": "* * * * *"
+                    },
+                    {
+                        "key": "trigger_payload",
+                        "value": "{\"message\": \"hello world!\"}"
+                    }
+                ],
+                "feed": "/whisk.system/alarms/alarm",
+                "annotations":[{
+                    "key": "ann1",
+                    "value": "annvalue"
+                }]
+            }
+        }
+    ],
+    "rules": [
+        {
+            "name": "reportEveryMinute",
+            "trigger": "hellotrigger",
+            "action": "hello/helloAction"
+        }
+    ],
+    "actions": [
+        {
+            "name": "hello/helloAction",
+            "action": "\n/** @private */\nfunction main (params) {\n  const msg = 'Hello ' + params.name + ', ' + params.message + '.'\n  return { msg }\n}\n\nmodule.exports.main = main\n",
+            "annotations": {
+                "web-export": true
+            },
+            "exec": {
+                "kind": "nodejs:8"
+            },
+            "params": {
+                "param1": "value1"
+            }
+        },
+        {
+            "name": "hello/goodbyeAction",
+            "action": "\n/** @private */\nfunction main (params) {\n  const msg = 'Goodbye ' + params.name + ', ' + params.message + '.'\n  return { msg }\n}\n\nmodule.exports.main = main\n",
+            "annotations": {
+                "web-export": true
+            },
+            "params": {
+                "param1": "value1"
+            }
+        },
+        {
+            "action": "",
+            "annotations": {
+                "raw-http": false,
+                "web-export": false
+            },
+            "exec": {
+                "components": [
+                  "hello/helloAction",
+                  "hello/goodbyeAction"
+                ],
+                "kind": "sequence"
+            },
+            "name": "hello/my_sequence"
+        },
+        {
+            "action": "",
+            "annotations": {
+                "raw-http": false,
+                "web-export": false
+            },
+            "exec": {
+                "components": [
+                    "/adobeio/shared-validators-v1/headless-v2",
+                    "hello/helloAction"
+                ],
+                "kind": "sequence"
+            },
+            "name": "hello/headless_sequence"
+        }
+    ]
+}

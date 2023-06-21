@@ -10,52 +10,53 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 -->
 
+# Adobe I/O Runtime Lib
+
 [![Version](https://img.shields.io/npm/v/@adobe/aio-lib-runtime.svg)](https://npmjs.org/package/@adobe/aio-lib-runtime)
 [![Downloads/week](https://img.shields.io/npm/dw/@adobe/aio-lib-runtime.svg)](https://npmjs.org/package/@adobe/aio-lib-runtime)
 ![Node.js CI](https://github.com/adobe/aio-lib-runtime/workflows/Node.js%20CI/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Codecov Coverage](https://img.shields.io/codecov/c/github/adobe/aio-lib-runtime/master.svg?style=flat-square)](https://codecov.io/gh/adobe/aio-lib-runtime/)
 
-# Adobe I/O Runtime Lib
-
-### Installing
+## Installing
 
 ```bash
-$ npm install @adobe/aio-lib-runtime
+npm install @adobe/aio-lib-runtime
 ```
 
-### Usage
+## Usage
+
 1) Initialize the SDK
 
-```javascript
-const sdk = require('@adobe/aio-lib-runtime')
+    ```javascript
+    const sdk = require('@adobe/aio-lib-runtime')
 
-async function sdkTest() {
-  //initialize sdk
-  const client = await sdk.init('<tenant>', 'x-api-key', '<valid auth token>')
-}
-```
+    async function sdkTest() {
+      //initialize sdk. Takes in OpenwhiskOptions
+      const client = await sdk.init({ apihost: 'https://adobeioruntime.net', api_key: 'your_auth_key', namespace: 'your_runtime_namespace' })
+    }
+    ```
 
 2) Call methods using the initialized SDK
 
-```javascript
-const sdk = require('@adobe/aio-lib-runtime')
+    ```javascript
+    const sdk = require('@adobe/aio-lib-runtime')
 
-async function sdkTest() {
-  // initialize sdk
-  const client = await sdk.init('<tenant>', 'x-api-key', '<valid auth token>')
+    async function sdkTest() {
+      //initialize sdk. Takes in OpenwhiskOptions
+      const client = await sdk.init({ apihost: 'https://adobeioruntime.net', api_key: 'your_auth_key', namespace: 'your_runtime_namespace' })
 
-  // call methods
-  try {
-    // get... something
-    const result = await client.getSomething({})
-    console.log(result)
+      // call methods
+      try {
+        // get... something
+        const result = await client.getSomething({})
+        console.log(result)
 
-  } catch (e) {
-    console.error(e)
-  }
-}
-```
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    ```
 
 ## Classes
 
@@ -78,6 +79,14 @@ with valid options argument</p>
 ## Functions
 
 <dl>
+<dt><a href="#getWebpackConfigPath">getWebpackConfigPath(actionPath, root)</a> ⇒ <code>Promise.&lt;string&gt;</code></dt>
+<dd><p>Searches for a webpack config file, starting at the action path and working
+ towards the root of the project. Will return the first one it finds.</p>
+</dd>
+<dt><a href="#loadWebpackConfig">loadWebpackConfig(configPath, actionPath, tempBuildDir, outBuildFilename)</a> ⇒ <code>Promise.&lt;object&gt;</code></dt>
+<dd><p>Loads a Webpack config file from the config path provided. Sets fields required
+ for Runtime actions. Returns an object that can be passed to the Webpack library.</p>
+</dd>
 <dt><a href="#prepareToBuildAction">prepareToBuildAction(action, root, dist)</a> ⇒ <code><a href="#ActionBuild">Promise.&lt;ActionBuild&gt;</a></code></dt>
 <dd><p>Will return data about an action ready to be built.</p>
 </dd>
@@ -259,8 +268,11 @@ for syncing managed projects.</p>
 <dd></dd>
 <dt><a href="#replacePackagePlaceHolder">replacePackagePlaceHolder(config)</a> ⇒ <code>object</code></dt>
 <dd></dd>
-<dt><a href="#validateActionRuntime">validateActionRuntime(action)</a></dt>
+<dt><del><a href="#validateActionRuntime">validateActionRuntime(action)</a></del></dt>
 <dd><p>Checks the validity of nodejs version in action definition and throws an error if invalid.</p>
+</dd>
+<dt><a href="#isSupportedActionKind">isSupportedActionKind(action)</a> ⇒ <code>boolean</code></dt>
+<dd><p>Checks the validity of nodejs version in action definition returns true if valid.</p>
 </dd>
 <dt><a href="#getActionZipFileName">getActionZipFileName(pkgName, actionName, defaultPkg)</a> ⇒ <code>string</code></dt>
 <dd><p>Returns the action&#39;s build file name without the .zip extension</p>
@@ -276,6 +288,9 @@ for syncing managed projects.</p>
 </dd>
 <dt><a href="#dumpActionsBuiltInfo">dumpActionsBuiltInfo(lastBuiltActionsPath, actionBuildData, prevBuildData)</a> ⇒ <code>Promise.&lt;boolean&gt;</code></dt>
 <dd><p>Will dump the previously actions built data information.</p>
+</dd>
+<dt><a href="#getSupportedServerRuntimes">getSupportedServerRuntimes(apihost)</a> ⇒ <code>Array.&lt;string&gt;</code></dt>
+<dd><p>Gets a list of the supported runtime kinds from the apihost.</p>
 </dd>
 </dl>
 
@@ -543,6 +558,36 @@ Deletes a trigger and associated feeds
 | Param | Type | Description |
 | --- | --- | --- |
 | options | <code>object</code> | options with the `name` of the trigger |
+
+<a name="getWebpackConfigPath"></a>
+
+## getWebpackConfigPath(actionPath, root) ⇒ <code>Promise.&lt;string&gt;</code>
+Searches for a webpack config file, starting at the action path and working
+ towards the root of the project. Will return the first one it finds.
+
+**Kind**: global function  
+**Returns**: <code>Promise.&lt;string&gt;</code> - Webpack config file path, will be 'null' if not found  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| actionPath | <code>string</code> | Path of the action |
+| root | <code>string</code> | Root of the project |
+
+<a name="loadWebpackConfig"></a>
+
+## loadWebpackConfig(configPath, actionPath, tempBuildDir, outBuildFilename) ⇒ <code>Promise.&lt;object&gt;</code>
+Loads a Webpack config file from the config path provided. Sets fields required
+ for Runtime actions. Returns an object that can be passed to the Webpack library.
+
+**Kind**: global function  
+**Returns**: <code>Promise.&lt;object&gt;</code> - Webpack config, can be passed to the Webpack library  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| configPath | <code>string</code> | Path of the Webpack config file |
+| actionPath | <code>string</code> | Path of the action |
+| tempBuildDir | <code>string</code> | Path of the output directory for the bundle |
+| outBuildFilename | <code>string</code> | Name of the output file for the action |
 
 <a name="prepareToBuildAction"></a>
 
@@ -1357,10 +1402,24 @@ Joins url path parts
 
 <a name="validateActionRuntime"></a>
 
-## validateActionRuntime(action)
+## ~~validateActionRuntime(action)~~
+***Deprecated***
+
 Checks the validity of nodejs version in action definition and throws an error if invalid.
 
 **Kind**: global function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| action | <code>object</code> | action object |
+
+<a name="isSupportedActionKind"></a>
+
+## isSupportedActionKind(action) ⇒ <code>boolean</code>
+Checks the validity of nodejs version in action definition returns true if valid.
+
+**Kind**: global function  
+**Returns**: <code>boolean</code> - true if action kind is supported  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -1431,6 +1490,18 @@ Will dump the previously actions built data information.
 | lastBuiltActionsPath | <code>string</code> | Path to the deployments logs |
 | actionBuildData | <code>object</code> | Object which contains action name and contentHash. |
 | prevBuildData | <code>object</code> | Object which contains info about all the previously built actions |
+
+<a name="getSupportedServerRuntimes"></a>
+
+## getSupportedServerRuntimes(apihost) ⇒ <code>Array.&lt;string&gt;</code>
+Gets a list of the supported runtime kinds from the apihost.
+
+**Kind**: global function  
+**Returns**: <code>Array.&lt;string&gt;</code> - a list of runtime kinds supported by the runtime apihost  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| apihost | <code>string</code> | the URL of the runtime apihost |
 
 <a name="ActionBuild"></a>
 
@@ -1722,7 +1793,15 @@ TODO
 | manifestContent | <code>object</code> | Parsed manifest object |
 | projectName | <code>string</code> | Name of the project |
 
-### Debug Logs
+## Insecure Connection
+
+```bash
+NODE_TLS_REJECT_UNAUTHORIZED=0 <your_call_here>
+```
+
+Prepend the `NODE_TLS_REJECT_UNAUTHORIZED` [environment variable](https://nodejs.org/api/cli.html#node_tls_reject_unauthorizedvalue) and `0` value to the call that invokes your function, on the command line. This will ignore any certificate errors when connecting to the Openwhisk server. Usage of this is not recommended, but may be necessary in certain corporate environments.
+
+## Debug Logs
 
 ```bash
 LOG_LEVEL=debug <your_call_here>
@@ -1730,10 +1809,10 @@ LOG_LEVEL=debug <your_call_here>
 
 Prepend the `LOG_LEVEL` environment variable and `debug` value to the call that invokes your function, on the command line. This should output a lot of debug data for your SDK calls.
 
-### Contributing
+## Contributing
 
 Contributions are welcome! Read the [Contributing Guide](./.github/CONTRIBUTING.md) for more information.
 
-### Licensing
+## Licensing
 
 This project is licensed under the Apache V2 License. See [LICENSE](LICENSE) for more information.

@@ -21,7 +21,8 @@ const globby = require('globby')
 const path = require('path')
 const archiver = require('archiver')
 // this is a static list that comes from here: https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
-const SupportedRuntimes = ['nodejs:10', 'nodejs:12', 'nodejs:14']
+const SupportedRuntimes = ['sequence', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18']
+const DEFAULT_PACKAGE_RESERVED_NAME = 'default'
 
 /**
  *
@@ -95,8 +96,11 @@ async function getIncludesForAction (action) {
       } else {
         throw new Error('Invalid manifest `include` entry: ' + elem.toString())
       }
-      const pair = { dest: elem[1] }
-      pair.sources = await globby(elem[0])
+      const globbyPattern = elem[0].split('\\').join('/')
+      const pair = {
+        dest: elem[1],
+        sources: await globby(globbyPattern)
+      }
       return pair
     }))
     includeFiles.push(...files)
@@ -271,7 +275,7 @@ function printLogs (activation, strip, logger) {
  */
 async function printFilteredActionLogs (runtime, logger, limit, filterActions = [], strip = false, startTime = 0) {
   // Get activations
-  const listOptions = { limit: limit, skip: 0, since: startTime }
+  const listOptions = { limit, skip: 0, since: startTime }
   const logFunc = logger ? logger.logFunc || logger : console.log
   // This will narrow down the activation list to specific action
   if (filterActions.length === 1 && !filterActions[0].endsWith('/')) {
@@ -688,7 +692,7 @@ function replaceIfEnvKey (inputString) {
   let match
   let output = inputString
   // eslint-disable-next-line prefer-regex-literals
-  const envKeyMatch = RegExp(/(\${|\${ +|\$)\w+( +}|}|)/, 'g')
+  const envKeyMatch = RegExp(/(\${|\${ +|\$)[a-zA-Z0-9_-]+( +}|}|)/, 'g')
   while ((match = envKeyMatch.exec(inputString)) !== null) {
     // eslint-disable-next-line no-param-reassign
     output = output.replace(match[0], process.env[getEnvKey(match[0])] || '')
@@ -1008,7 +1012,7 @@ function createActionObject (fullName, manifestAction) {
   if (manifestAction.limits) {
     const concurrencyLimit = manifestAction.limits.concurrentActivations || manifestAction.limits.concurrency
     objAction.limits = {
-      memory: manifestAction.limits.memorySize || 256,
+      memory: manifestAction.limits.memorySize || manifestAction.limits.memory || 256,
       logs: manifestAction.limits.logSize || 10,
       timeout: manifestAction.limits.timeout || 60000
     }
@@ -1397,12 +1401,12 @@ function setPaths (flags = {}) {
   }
 
   const filecomponents = {
-    packages: packages,
-    deploymentTriggers: deploymentTriggers,
-    deploymentPackages: deploymentPackages,
-    manifestPath: manifestPath,
+    packages,
+    deploymentTriggers,
+    deploymentPackages,
+    manifestPath,
     manifestContent: manifest,
-    projectName: projectName
+    projectName
   }
   return filecomponents
 }
@@ -1468,21 +1472,37 @@ async function setupAdobeAuth (actions, owOptions, imsOrgId) {
  * @param {string} imsOrgId the IMS Org ID
  */
 async function deployPackage (entities, ow, logger, imsOrgId) {
-  const opts = await ow.actions.client.options
-  const ns = opts.namespace
+  const actionOpts = await ow.actions.client.options
+  const ns = actionOpts.namespace
+  const { apihost } = ow.initOptions
 
   /* this is a temporary workaround to setup Adobe auth dependencies */
-  await setupAdobeAuth(entities.actions, opts, imsOrgId)
+  await setupAdobeAuth(entities.actions, actionOpts, imsOrgId)
 
   for (const pkg of entities.pkgAndDeps) {
-    logger(`Info: Deploying package [${pkg.name}]...`)
-    await ow.packages.update(pkg)
-    logger(`Info: package [${pkg.name}] has been successfully deployed.\n`)
+    if (pkg.name === DEFAULT_PACKAGE_RESERVED_NAME) { // reserved package name, do not create
+      logger(`Info: Skipped creating package [${pkg.name}] because it is a reserved package.`)
+    } else {
+      logger(`Info: Deploying package [${pkg.name}]...`)
+      await ow.packages.update(pkg)
+      logger(`Info: package [${pkg.name}] has been successfully deployed.\n`)
+    }
   }
+
   for (const action of entities.actions) {
-    validateActionRuntime(action)
-    if (action.exec && action.exec.kind === 'sequence') {
-      action.exec.components = action.exec.components.map(sequence => {
+    const retAction = cloneDeep(action)
+    if (retAction?.exec?.kind && !isSupportedActionKind(retAction)) {
+      const supportedServerRuntimes = (await getSupportedServerRuntimes(apihost)).sort().reverse()
+      if (supportedServerRuntimes.includes(retAction?.exec?.kind)) {
+        aioLogger.debug(`Local node kinds mismatch with server supported kinds ${supportedServerRuntimes}`)
+      } else {
+        throw new Error(`Unsupported node version '${retAction?.exec?.kind}' in action ${retAction.name}.\n` +
+          `Supported runtimes on ${apihost}: ${supportedServerRuntimes}`)
+      }
+    }
+
+    if (retAction.exec && action.exec.kind === 'sequence') {
+      retAction.exec.components = retAction.exec.components.map(sequence => {
         /*
           Input => Output
           spackage/saction => /ns/spackage/saction
@@ -1497,9 +1517,13 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
           : `/${ns}/${normalizedSequence}`
       })
     }
-    logger(`Info: Deploying action [${action.name}]...`)
-    await ow.actions.update(action)
-    logger(`Info: action [${action.name}] has been successfully deployed.\n`)
+
+    if (retAction.name.startsWith(`${DEFAULT_PACKAGE_RESERVED_NAME}/`)) { // remove the default package prefix
+      retAction.name = retAction.name.substring(`${DEFAULT_PACKAGE_RESERVED_NAME}/`.length)
+    }
+    logger(`Info: Deploying action [${retAction.name}]...`)
+    await ow.actions.update(retAction)
+    logger(`Info: action [${retAction.name}] has been successfully deployed.\n`)
   }
 
   for (const route of entities.apis) {
@@ -1668,16 +1692,16 @@ async function addManagedProjectAnnotations (entities, manifestPath, projectName
     pkg.annotations['whisk-managed'] = {
       file: manifestPath,
       projectDeps: [],
-      projectHash: projectHash,
-      projectName: projectName
+      projectHash,
+      projectName
     }
   }
   for (const action of entities.actions) {
     action.annotations['whisk-managed'] = {
       file: manifestPath,
       projectDeps: [],
-      projectHash: projectHash,
-      projectName: projectName
+      projectHash,
+      projectName
     }
   }
 
@@ -1687,8 +1711,8 @@ async function addManagedProjectAnnotations (entities, manifestPath, projectName
       value: {
         file: manifestPath,
         projectDeps: [],
-        projectHash: projectHash,
-        projectName: projectName
+        projectHash,
+        projectName
       }
     }
     if (trigger.trigger && trigger.trigger.annotations) {
@@ -1852,8 +1876,12 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   const config = replacePackagePlaceHolder(appConfig)
   const cleanApihost = removeProtocolFromURL(config.ow.apihost)
   const cleanHostname = removeProtocolFromURL(config.app.hostname)
+
   const apihostIsCustom = cleanApihost !== removeProtocolFromURL(config.ow.defaultApihost)
   const hostnameIsCustom = cleanHostname !== removeProtocolFromURL(config.app.defaultHostname)
+
+  // second condition allows users to point to its own http local ow stack
+  const isHttp = isLocalDev || !!config.ow.apihost.match(/^http:\/\/localhost/)
 
   /** @private */
   function getActionUrl (pkgAndActionName, action) {
@@ -1893,7 +1921,7 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
       // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
       // or https://custom-ow-host.xyz/api/v1/web/<ns>/<package>/<action>
       return urlJoin(
-        isLocalDev ? 'http://' : 'https://',
+        isHttp ? 'http://' : 'https://',
         cleanApihost,
         'api',
         config.ow.apiversion,
@@ -1992,16 +2020,29 @@ function replacePackagePlaceHolder (config) {
  * Checks the validity of nodejs version in action definition and throws an error if invalid.
  *
  * @param {object} action action object
+ * @deprecated Use isSupportedActionKind instead
  */
 function validateActionRuntime (action) {
   // I suspect we have an issue here with 2 kinds of kinds ...
   // sometimes this method is called with 'sequence' which is a different kind of kind than exec.kind which
   // comes from action: runtime: in manifest -jm
+  // it would be nice if we didn't throw an excption when we could just return a boolean, otherwise the caller
+  // has to wrap this in a try/catch block -jm
   if (action.exec && action.exec.kind && action.exec.kind.toLowerCase().startsWith('nodejs:')) {
     if (!SupportedRuntimes.includes(action.exec.kind)) {
-      throw new Error(`Unsupported node version in action ${action.name}. Supported versions are ${SupportedRuntimes}`)
+      throw new Error(`Unsupported node version '${action.exec.kind}' in action ${action.name}. Supported versions are ${SupportedRuntimes}`)
     }
   }
+}
+
+/**
+ * Checks the validity of nodejs version in action definition returns true if valid.
+ *
+ * @param {object} action action object
+ * @returns {boolean} true if action kind is supported
+ */
+function isSupportedActionKind (action) {
+  return SupportedRuntimes.includes(action?.exec?.kind?.toLowerCase())
 }
 
 /**
@@ -2087,7 +2128,28 @@ async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prev
   }
 }
 
+/**
+ * Gets a list of the supported runtime kinds from the apihost.
+ *
+ * @param {string} apihost the URL of the runtime apihost
+ * @returns {Array<string>} a list of runtime kinds supported by the runtime apihost
+ */
+async function getSupportedServerRuntimes (apihost) {
+  aioLogger.debug(`Getting supported runtimes from ${apihost}`)
+
+  const fetch = createFetch()
+  const response = await fetch(apihost)
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} - An error occurred when retrieving supported runtimes.`)
+  }
+
+  const json = await response.json()
+  aioLogger.debug(`Result from ${apihost}: ${JSON.stringify(json, null, 2)}`)
+  return json.runtimes.nodejs.map(item => item.kind)
+}
+
 module.exports = {
+  getSupportedServerRuntimes,
   checkOpenWhiskCredentials,
   getActionEntryFile,
   getIncludesForAction,
@@ -2139,5 +2201,7 @@ module.exports = {
   getActionNameFromZipFile,
   dumpActionsBuiltInfo,
   actionBuiltBefore,
-  safeParse
+  safeParse,
+  isSupportedActionKind,
+  DEFAULT_PACKAGE_RESERVED_NAME
 }
