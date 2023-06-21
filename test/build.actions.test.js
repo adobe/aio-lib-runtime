@@ -22,6 +22,12 @@ jest.mock('globby')
 
 const mockLogger = require('@adobe/aio-lib-core-logging')
 
+jest.mock('fs-extra', () => ({
+  ...jest.requireActual('fs-extra'),
+  renameSync: jest.fn(),
+  readdir: jest.fn(() => ['common', 'index.123adsfasd.js'])
+}))
+
 // zip implementation is complex to test => tested in utils.test.js
 utils.zip = jest.fn()
 
