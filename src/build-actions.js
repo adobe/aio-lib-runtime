@@ -187,7 +187,8 @@ const prepareToBuildAction = async (action, root, dist) => {
     contentHash = actionFileStats.mtime.valueOf()
     buildHash = { [zipFileName]: contentHash }
   } else {
-    [tempActionName] = await fs.readdir(tempBuildDir) // eg: index.25d8f992944c60aa2e62.js
+    const tempDirContents = await fs.readdir(tempBuildDir)
+    tempActionName = tempDirContents.find(file => file.match(/index\.([A-Za-z0-9]+)\.js/g)) // eg: index.25d8f992944c60aa2e62.js
     contentHash = tempActionName && tempActionName.split('.')[1]
     buildHash = { [zipFileName]: contentHash }
   }
