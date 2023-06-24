@@ -166,7 +166,7 @@ const loadWebpackConfig = async (configPath, actionPath, tempBuildDir, outBuildF
 const prepareToBuildAction = async (action, root, dist) => {
   const { name: actionName, defaultPackage, packageName } = action
   const zipFileName = utils.getActionZipFileName(packageName, actionName, false)
-
+  let statsInfo // this is the object returned by bundler run, it has the hash
   // path.resolve supports both relative and absolute action.function
   const actionPath = path.resolve(root, action.function)
   const outPath = path.join(dist, `${zipFileName}.zip`)
@@ -205,14 +205,13 @@ const prepareToBuildAction = async (action, root, dist) => {
     // TODO: when we get to excludes, use a filter function here.
     fs.copySync(actionPath, tempBuildDir, { dereference: true })
   } else {
-    const outBuildFilename = 'index.[contenthash].js' // `${name}.tmp.js`
     // if not directory => package and minify to single file
     const webpackConfigPath = await getWebpackConfigPath(actionPath, root)
-    const webpackConfig = await loadWebpackConfig(webpackConfigPath, actionPath, tempBuildDir, outBuildFilename)
+    const webpackConfig = await loadWebpackConfig(webpackConfigPath, actionPath, tempBuildDir, 'index.js')
     const compiler = webpack(webpackConfig)
 
     // run the compiler and wait for a result
-    await new Promise((resolve, reject) => {
+    statsInfo = await new Promise((resolve, reject) => {
       compiler.run((err, stats) => {
         if (err) {
           reject(err)
@@ -229,16 +228,14 @@ const prepareToBuildAction = async (action, root, dist) => {
       })
     })
   }
+
   let buildHash
-  let tempActionName
   let contentHash
   if (isDirectory) {
     contentHash = actionFileStats.mtime.valueOf()
     buildHash = { [zipFileName]: contentHash }
   } else {
-    const tempDirContents = await fs.readdir(tempBuildDir)
-    tempActionName = tempDirContents.find(file => file.match(/index\.([A-Za-z0-9]+)\.js/g)) // eg: index.25d8f992944c60aa2e62.js
-    contentHash = tempActionName && tempActionName.split('.')[1]
+    contentHash = statsInfo.hash
     buildHash = { [zipFileName]: contentHash }
   }
 
@@ -248,7 +245,7 @@ const prepareToBuildAction = async (action, root, dist) => {
     legacy: defaultPackage,
     outPath,
     tempBuildDir,
-    tempActionName
+    tempActionName: 'index.js'
   }
 }
 
@@ -271,15 +268,13 @@ const zipActions = async (buildsList, lastBuildsPath, distFolder, skipCheck) => 
     lastBuiltData = await fs.readFile(lastBuildsPath, 'utf8')
   }
   for (const build of buildsList) {
-    const { outPath, buildHash, tempBuildDir, tempActionName, legacy, actionName } = build
+    const { outPath, buildHash, tempBuildDir, legacy, actionName } = build
     const builtBefore = utils.actionBuiltBefore(lastBuiltData, buildHash)
     if (!builtBefore || skipCheck) {
       dumpData = { ...dumpData, ...buildHash }
-      if (tempActionName) {
-        // rename index.[contentHash] to index.js
-        fs.renameSync(path.join(tempBuildDir, tempActionName), path.join(tempBuildDir, 'index.js'))
-      }
       await utils.zip(tempBuildDir, outPath)
+      // TODO: we need to kill this symlink stuff, it is preventing non-admin windows users
+      // from using the CLI.  -jm
       // create symlink for default package actions.
       // this assure legacy support for the old output path.
       if (legacy) {

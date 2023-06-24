@@ -22,12 +22,6 @@ jest.mock('globby')
 
 const mockLogger = require('@adobe/aio-lib-core-logging')
 
-jest.mock('fs-extra', () => ({
-  ...jest.requireActual('fs-extra'),
-  renameSync: jest.fn(),
-  readdir: jest.fn(() => ['common', 'index.123adsfasd.js'])
-}))
-
 // zip implementation is complex to test => tested in utils.test.js
 utils.zip = jest.fn()
 
@@ -43,7 +37,8 @@ webpack.mockReturnValue(webpackMock)
 const webpackStatsMock = {
   toJson: jest.fn(),
   hasErrors: jest.fn(),
-  hasWarnings: jest.fn()
+  hasWarnings: jest.fn(),
+  hash: '1234567890' // mock hash
 }
 
 beforeEach(() => {
@@ -248,7 +243,7 @@ describe('build by bundling js action file with webpack', () => {
         entry: [path.resolve('/actions/action.js')],
         output: expect.objectContaining({
           path: path.normalize('/dist/actions/sample-app-1.0.0/action-temp'),
-          filename: 'index.[contenthash].js'
+          filename: 'index.js'
         })
       })]))
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-1.0.0/action-temp'),
@@ -264,7 +259,7 @@ describe('build by bundling js action file with webpack', () => {
         entry: [path.resolve('/actions/action.js')],
         output: expect.objectContaining({
           path: path.normalize('/dist/actions/sample-app-1.0.0/action-temp'),
-          filename: 'index.[contenthash].js'
+          filename: 'index.js'
         })
       })]))
     expect(utils.zip).toHaveBeenNthCalledWith(1, path.normalize('/dist/actions/sample-app-1.0.0/action-temp'),
@@ -288,7 +283,7 @@ describe('build by bundling js action file with webpack', () => {
         entry: [path.resolve('/actions/action.js')],
         output: expect.objectContaining({
           path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp'),
-          filename: 'index.[contenthash].js'
+          filename: 'index.js'
         })
       })]))
     expect(utils.zip).toHaveBeenCalledTimes(1)
@@ -332,7 +327,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/file.js'), path.resolve('/actions/action.js')],
       mode: 'none',
       optimization: { minimize: false, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'commonjs2', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'commonjs2', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -383,7 +378,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'none',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -431,7 +426,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'none',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -494,7 +489,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'none',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -507,7 +502,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'development',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -556,7 +551,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'none',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -618,7 +613,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'none',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -631,7 +626,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'development',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -693,7 +688,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'none',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -706,7 +701,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'development',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -768,7 +763,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'none',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -781,7 +776,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'development',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -843,7 +838,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'none',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -856,7 +851,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'development',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -918,7 +913,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'none',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -931,7 +926,7 @@ describe('build by bundling js action file with webpack', () => {
       entry: [path.resolve('actions/actionname/file.js'), path.resolve('/actions/actionname/action.js')],
       mode: 'development',
       optimization: { minimize: true, somefakefield: true },
-      output: { fake: false, filename: 'index.[contenthash].js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'fake', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
       plugins: ['hello', {}],
       resolve: {
         anotherFake: ['yo'],
@@ -962,7 +957,7 @@ describe('build by bundling js action file with webpack', () => {
         entry: [path.resolve('/actions/action.js')],
         output: expect.objectContaining({
           path: path.normalize('/dist/actions/bobby-mcgee/action-temp'),
-          filename: 'index.[contenthash].js'
+          filename: 'index.js'
         })
       })]))
     expect(utils.zip).toHaveBeenCalledTimes(2)
@@ -977,7 +972,7 @@ describe('build by bundling js action file with webpack', () => {
         entry: [path.resolve('/actions/action.js')],
         output: expect.objectContaining({
           path: path.normalize('/dist/actions/sample-app-1.0.0/action-temp'),
-          filename: 'index.[contenthash].js'
+          filename: 'index.js'
         })
       })]))
     expect(utils.zip).toHaveBeenCalledTimes(1)
@@ -1049,7 +1044,7 @@ test('should build 1 zip action and 1 bundled action in one go', async () => {
       entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
         path: expect.stringContaining(path.normalize('/dist/actions/sample-app-1.0.0/action-temp')),
-        filename: 'index.[contenthash].js'
+        filename: 'index.js'
       })
     })]))
   expect(utils.zip).toHaveBeenCalledTimes(2)
@@ -1077,7 +1072,7 @@ test('use buildConfig.filterActions to build only action called `action`', async
       entry: [path.resolve('/actions/action.js')],
       output: expect.objectContaining({
         path: path.normalize('/dist/actions/sample-app-1.0.0/action-temp'),
-        filename: 'index.[contenthash].js'
+        filename: 'index.js'
       })
     })]))
   expect(utils.zip).toHaveBeenCalledTimes(1)
