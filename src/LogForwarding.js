@@ -104,8 +104,8 @@ class LogForwarding {
   async setNewRelic (baseURI, licenseKey) {
     return await this.set({
       new_relic: {
-        baseURI,
-        licenseKey
+        base_uri: baseURI,
+        license_key: licenseKey
       }
     })
   }

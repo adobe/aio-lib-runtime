@@ -68,7 +68,8 @@ class LogForwardingLocalDestinationsProvider {
           },
           {
             name: 'license_key',
-            message: 'license key'
+            message: 'license key',
+            type: 'password'
           }
         ]
       }
