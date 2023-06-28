@@ -18,6 +18,10 @@ const dataFixtures = [
     port: 'port1',
     index: 'index1',
     hec_token: 'token1'
+  }],
+  ['new_relic', 'setNewRelic', {
+    base_uri: 'uri1',
+    license_key: 'key1'
   }]
 ]
 

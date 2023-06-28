@@ -19,6 +19,10 @@ const dataFixtures = [
     port: 'port1',
     index: 'index1',
     hec_token: 'token1'
+  }],
+  ['new_relic', 'setNewRelic', {
+    base_uri: 'uri1',
+    licensey_key: 'key1'
   }]
 ]
 
@@ -123,7 +127,8 @@ test('get supported destinations', async () => {
       [
         { value: 'adobe_io_runtime', name: 'Adobe I/O Runtime' },
         { value: 'azure_log_analytics', name: 'Azure Log Analytics' },
-        { value: 'splunk_hec', name: 'Splunk HEC' }
+        { value: 'splunk_hec', name: 'Splunk HEC' },
+        { value: 'new_relic', name: 'New Relic' }
       ]
     )
     resolve()
