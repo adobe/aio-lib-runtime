@@ -30,13 +30,6 @@ declare class LogForwarding {
      */
     setSplunkHec(host: string, port: string, index: string, hecToken: string): Promise<any | undefined>;
     /**
-     * Set Log Forwarding to New Relic
-     * @param baseURI - base URI
-     * @param licenseKey - license key
-     * @returns response from set API
-     */
-    setNewRelic(baseURI: string, licenseKey: string): Promise<any | undefined>;
-    /**
      * Get supported destinations
      * @returns in format: { value: <value>, name: <name> }
      */

@@ -92,24 +92,7 @@ class LogForwarding {
       }
     })
   }
-
-  /**
-   * Set Log Forwarding to New Relic
-   *
-   * @deprecated use `setDestination('new_relic', {...})`
-   * @param {string} baseURI base URI
-   * @param {string} licenseKey license key
-   * @returns {Promise<*|undefined>} response from set API
-   */
-  async setNewRelic (baseURI, licenseKey) {
-    return await this.set({
-      new_relic: {
-        base_uri: baseURI,
-        license_key: licenseKey
-      }
-    })
-  }
-
+  
   /**
    * Get supported destinations
    *
