@@ -92,7 +92,7 @@ class LogForwarding {
       }
     })
   }
-  
+
   /**
    * Get supported destinations
    *
