@@ -123,7 +123,8 @@ test('get supported destinations', async () => {
       [
         { value: 'adobe_io_runtime', name: 'Adobe I/O Runtime' },
         { value: 'azure_log_analytics', name: 'Azure Log Analytics' },
-        { value: 'splunk_hec', name: 'Splunk HEC' }
+        { value: 'splunk_hec', name: 'Splunk HEC' },
+        { value: 'new_relic', name: 'New Relic' }
       ]
     )
     resolve()
