@@ -58,6 +58,20 @@ class LogForwardingLocalDestinationsProvider {
             type: 'password'
           }
         ]
+      },
+      new_relic: {
+        name: 'New Relic',
+        settings: [
+          {
+            name: 'base_uri',
+            message: 'base URI'
+          },
+          {
+            name: 'license_key',
+            message: 'license key',
+            type: 'password'
+          }
+        ]
       }
     }
   }

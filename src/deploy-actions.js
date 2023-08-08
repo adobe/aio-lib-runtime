@@ -16,8 +16,8 @@ const path = require('path')
 const deepCopy = require('lodash.clonedeep')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:deploy', { provider: 'debug' })
 const IOruntime = require('./RuntimeAPI')
-const packageItems = ['actions', 'sequences']
-const filterableItems = ['apis', 'triggers', 'rules', 'dependencies', ...packageItems]
+const PACKAGE_ITEMS = ['actions', 'sequences']
+const FILTERABLE_ITEMS = ['apis', 'triggers', 'rules', 'dependencies', ...PACKAGE_ITEMS]
 
 /**
  * runs the command
@@ -111,7 +111,7 @@ async function deployActions (config, deployConfig = {}, logFunc = console.log, 
 
   // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
   if (filterEntities) {
-    packageItems.forEach((k) => {
+    PACKAGE_ITEMS.forEach((k) => {
       if (filterEntities[k]) {
         filterEntities[k] = filterEntities[k].map((actionName) =>
           actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
@@ -191,9 +191,9 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
   // support for entity filters, e.g. user wants to deploy only a single action
   if (typeof filterEntities === 'object') {
     deleteOldEntities = false // don't delete any deployed entity
-    filterableItems.forEach(filterableItemKey => {
+    FILTERABLE_ITEMS.forEach(filterableItemKey => {
       Object.entries(packages).forEach(([pkgName, packageEntity]) => {
-        packageEntity[filterableItemKey] = _filterOutPackageEntity(pkgName, packageEntity[filterableItemKey], filterEntities[filterableItemKey], packageItems.includes(filterableItemKey)) // eslint-disable-line no-param-reassign
+        packageEntity[filterableItemKey] = _filterOutPackageEntity(pkgName, packageEntity[filterableItemKey], filterEntities[filterableItemKey], PACKAGE_ITEMS.includes(filterableItemKey)) // eslint-disable-line no-param-reassign
         // cleanup empty entities
         if (Object.keys(packageEntity[filterableItemKey]).length === 0) delete packageEntity[filterableItemKey] // eslint-disable-line no-param-reassign
       })

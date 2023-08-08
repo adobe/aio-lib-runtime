@@ -10,52 +10,53 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 -->
 
+# Adobe I/O Runtime Lib
+
 [![Version](https://img.shields.io/npm/v/@adobe/aio-lib-runtime.svg)](https://npmjs.org/package/@adobe/aio-lib-runtime)
 [![Downloads/week](https://img.shields.io/npm/dw/@adobe/aio-lib-runtime.svg)](https://npmjs.org/package/@adobe/aio-lib-runtime)
 ![Node.js CI](https://github.com/adobe/aio-lib-runtime/workflows/Node.js%20CI/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Codecov Coverage](https://img.shields.io/codecov/c/github/adobe/aio-lib-runtime/master.svg?style=flat-square)](https://codecov.io/gh/adobe/aio-lib-runtime/)
 
-# Adobe I/O Runtime Lib
-
-### Installing
+## Installing
 
 ```bash
-$ npm install @adobe/aio-lib-runtime
+npm install @adobe/aio-lib-runtime
 ```
 
-### Usage
+## Usage
+
 1) Initialize the SDK
 
-```javascript
-const sdk = require('@adobe/aio-lib-runtime')
+    ```javascript
+    const sdk = require('@adobe/aio-lib-runtime')
 
-async function sdkTest() {
-  //initialize sdk
-  const client = await sdk.init('<tenant>', 'x-api-key', '<valid auth token>')
-}
-```
+    async function sdkTest() {
+      //initialize sdk. Takes in OpenwhiskOptions
+      const client = await sdk.init({ apihost: 'https://adobeioruntime.net', api_key: 'your_auth_key', namespace: 'your_runtime_namespace' })
+    }
+    ```
 
 2) Call methods using the initialized SDK
 
-```javascript
-const sdk = require('@adobe/aio-lib-runtime')
+    ```javascript
+    const sdk = require('@adobe/aio-lib-runtime')
 
-async function sdkTest() {
-  // initialize sdk
-  const client = await sdk.init('<tenant>', 'x-api-key', '<valid auth token>')
+    async function sdkTest() {
+      //initialize sdk. Takes in OpenwhiskOptions
+      const client = await sdk.init({ apihost: 'https://adobeioruntime.net', api_key: 'your_auth_key', namespace: 'your_runtime_namespace' })
 
-  // call methods
-  try {
-    // get... something
-    const result = await client.getSomething({})
-    console.log(result)
+      // call methods
+      try {
+        // get... something
+        const result = await client.getSomething({})
+        console.log(result)
 
-  } catch (e) {
-    console.error(e)
-  }
-}
-```
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    ```
 
 ## Classes
 
@@ -267,8 +268,11 @@ for syncing managed projects.</p>
 <dd></dd>
 <dt><a href="#replacePackagePlaceHolder">replacePackagePlaceHolder(config)</a> ⇒ <code>object</code></dt>
 <dd></dd>
-<dt><a href="#validateActionRuntime">validateActionRuntime(action)</a></dt>
+<dt><del><a href="#validateActionRuntime">validateActionRuntime(action)</a></del></dt>
 <dd><p>Checks the validity of nodejs version in action definition and throws an error if invalid.</p>
+</dd>
+<dt><a href="#isSupportedActionKind">isSupportedActionKind(action)</a> ⇒ <code>boolean</code></dt>
+<dd><p>Checks the validity of nodejs version in action definition returns true if valid.</p>
 </dd>
 <dt><a href="#getActionZipFileName">getActionZipFileName(pkgName, actionName, defaultPkg)</a> ⇒ <code>string</code></dt>
 <dd><p>Returns the action&#39;s build file name without the .zip extension</p>
@@ -426,6 +430,16 @@ Set Log Forwarding to Splunk HEC
 | port | <code>string</code> | port |
 | index | <code>string</code> | index |
 | hecToken | <code>string</code> | hec token |
+
+Set Log Forwarding to New Relic
+
+**Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
+**Returns**: <code>Promise.&lt;(\*\|undefined)&gt;</code> - response from set API  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| baseURI | <code>string</code> | host |
+| licenseKey | <code>string</code> | port |
 
 <a name="LogForwarding+getSupportedDestinations"></a>
 
@@ -1398,10 +1412,24 @@ Joins url path parts
 
 <a name="validateActionRuntime"></a>
 
-## validateActionRuntime(action)
+## ~~validateActionRuntime(action)~~
+***Deprecated***
+
 Checks the validity of nodejs version in action definition and throws an error if invalid.
 
 **Kind**: global function  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| action | <code>object</code> | action object |
+
+<a name="isSupportedActionKind"></a>
+
+## isSupportedActionKind(action) ⇒ <code>boolean</code>
+Checks the validity of nodejs version in action definition returns true if valid.
+
+**Kind**: global function  
+**Returns**: <code>boolean</code> - true if action kind is supported  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -1775,7 +1803,15 @@ TODO
 | manifestContent | <code>object</code> | Parsed manifest object |
 | projectName | <code>string</code> | Name of the project |
 
-### Debug Logs
+## Insecure Connection
+
+```bash
+NODE_TLS_REJECT_UNAUTHORIZED=0 <your_call_here>
+```
+
+Prepend the `NODE_TLS_REJECT_UNAUTHORIZED` [environment variable](https://nodejs.org/api/cli.html#node_tls_reject_unauthorizedvalue) and `0` value to the call that invokes your function, on the command line. This will ignore any certificate errors when connecting to the Openwhisk server. Usage of this is not recommended, but may be necessary in certain corporate environments.
+
+## Debug Logs
 
 ```bash
 LOG_LEVEL=debug <your_call_here>
@@ -1783,10 +1819,10 @@ LOG_LEVEL=debug <your_call_here>
 
 Prepend the `LOG_LEVEL` environment variable and `debug` value to the call that invokes your function, on the command line. This should output a lot of debug data for your SDK calls.
 
-### Contributing
+## Contributing
 
 Contributions are welcome! Read the [Contributing Guide](./.github/CONTRIBUTING.md) for more information.
 
-### Licensing
+## Licensing
 
 This project is licensed under the Apache V2 License. See [LICENSE](LICENSE) for more information.

@@ -320,7 +320,7 @@ global.sampleAppIncludesConfig = {
           function: 'actions/action.js',
           web: 'yes',
           runtime: 'nodejs:12',
-          include: [['*.txt', 'text/']]
+          include: [['*.txt', 'app/']]
         }
       }
     }
@@ -463,6 +463,67 @@ global.sampleAppReducedConfig = {
         }
       },
       triggers: { trigger1: null }
+    }
+  },
+  actions: { src: '/actions', dist: '/dist/actions', devRemote: false },
+  root: '/'
+}
+
+global.sampleAppDefaultPackageConfig = {
+  app: {
+    hasFrontend: false,
+    hasBackend: true,
+    version: '1.0.0',
+    name: 'sample-app-default-package',
+    defaultHostname: 'https://adobeio-static.net',
+    hostname: 'https://adobeio-static.net',
+    htmlCacheDuration: '60',
+    jsCacheDuration: '604800',
+    cssCacheDuration: '604800',
+    imageCacheDuration: '604800'
+  },
+  ow: {
+    namespace: 'fake_ns',
+    auth: 'fake:auth',
+    apihost: 'https://adobeioruntime.net',
+    defaultApihost: 'https://adobeioruntime.net',
+    apiversion: 'v1',
+    package: 'default'
+  },
+  s3: {
+    credsCacheFile: '/.aws.tmp.creds.json',
+    creds: undefined,
+    folder: 'fake_ns',
+    tvmUrl: 'https://adobeio.adobeioruntime.net/apis/tvm/'
+  },
+  web: {
+  },
+  manifest: {
+    src: '/manifest.yml',
+    packagePlaceholder: '__APP_PACKAGE__',
+    full: {
+      packages: {
+        default: {
+          license: 'Apache-2.0',
+          actions: {
+            action: {
+              function: 'actions/action.js',
+              web: 'yes',
+              runtime: 'nodejs:16'
+            }
+          }
+        }
+      }
+    },
+    package: {
+      license: 'Apache-2.0',
+      actions: {
+        action: {
+          function: 'actions/action.js',
+          web: 'yes',
+          runtime: 'nodejs:16'
+        }
+      }
     }
   },
   actions: { src: '/actions', dist: '/dist/actions', devRemote: false },

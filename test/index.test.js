@@ -59,6 +59,64 @@ test('sdk init test - no api_key', async () => {
   )
 })
 
+test('sdk init test - process.env.NODE_TLS_REJECT_UNAUTHORIZED', async () => {
+  let sdkClient
+  const oldEnvValue = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+
+  // Defaults ///////////
+
+  // no param, no env var (ignore_certs should be false)
+  sdkClient = await createSdkClient()
+  expect(sdkClient.initOptions.ignore_certs).toEqual(false)
+
+  // ONLY param set ///////////
+
+  // param set (true), no env var (ignore_certs should be true)
+  sdkClient = await createSdkClient({ ignore_certs: true })
+  expect(sdkClient.initOptions.ignore_certs).toEqual(true)
+
+  // param set (false), no env var (ignore_certs should be false)
+  sdkClient = await createSdkClient({ ignore_certs: false })
+  expect(sdkClient.initOptions.ignore_certs).toEqual(false)
+
+  // BOTH param and env var set ///////////
+
+  // param set (true), env var set to '0' (ignore_certs should be true)
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+  sdkClient = await createSdkClient({ ignore_certs: true })
+  expect(sdkClient.initOptions.ignore_certs).toEqual(true)
+
+  // param set (true), env var set to '1' (ignore_certs should be true)
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1'
+  sdkClient = await createSdkClient({ ignore_certs: true })
+  expect(sdkClient.initOptions.ignore_certs).toEqual(true)
+
+  // param set (false), env var set to '0' (ignore_certs should be true)
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+  sdkClient = await createSdkClient({ ignore_certs: false })
+  expect(sdkClient.initOptions.ignore_certs).toEqual(true)
+
+  // param set (false), env var set to '1' (ignore_certs should be true)
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1'
+  sdkClient = await createSdkClient({ ignore_certs: false })
+  expect(sdkClient.initOptions.ignore_certs).toEqual(false)
+
+  // ONLY env var set ///////////
+
+  // param not set, env var set to '0' (ignore_certs should be true)
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+  sdkClient = await createSdkClient()
+  expect(sdkClient.initOptions.ignore_certs).toEqual(true)
+
+  // param not set, env var set to '1' (ignore_certs should be false)
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1'
+  sdkClient = await createSdkClient()
+  expect(sdkClient.initOptions.ignore_certs).toEqual(false)
+
+  // restore env var
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = oldEnvValue
+})
+
 test('javascript proxy functionality (ow object)', async () => {
   const runtimeLib = await sdk.init(createOptions())
   // Call a function that is not proxied
@@ -117,12 +175,19 @@ test('triggers.create feed - Error', async () => {
   const triggerCreateCmd = ow.mockResolved('triggers.create', '')
   const feedCreateCmd = ow.mockRejected('feeds.create', new Error('an error'))
   const triggerDeleteCmd = ow.mockResolved('triggers.delete', '')
-  await runtimeLib.triggers.create({ name: 'testTrigger', trigger: { feed: '/whisk.system/alarms/alarm' } })
-    .catch(() => {
-      expect(triggerCreateCmd).toHaveBeenCalledTimes(1)
-      expect(feedCreateCmd).toHaveBeenCalledTimes(1)
-      expect(triggerDeleteCmd).toHaveBeenCalledTimes(1)
-    })
+
+  let exceptionThrown = false
+  try {
+    await runtimeLib.triggers.create({ name: 'testTrigger', trigger: { feed: '/whisk.system/alarms/alarm' } })
+    // shouldn't reach here
+  } catch (_) {
+    exceptionThrown = true
+  }
+
+  expect(exceptionThrown).toBeTruthy()
+  expect(triggerCreateCmd).toHaveBeenCalledTimes(1)
+  expect(feedCreateCmd).toHaveBeenCalledTimes(1)
+  expect(triggerDeleteCmd).toHaveBeenCalledTimes(1)
 })
 
 test('triggers.delete', async () => {

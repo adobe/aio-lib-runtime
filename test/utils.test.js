@@ -48,6 +48,7 @@ beforeEach(() => {
     'hello.js': global.fixtureFile('/deploy/hello.js'),
     'goodbye.js': global.fixtureFile('/deploy/goodbye.js'),
     'basic_manifest.json': global.fixtureFile('/deploy/basic_manifest.json'),
+    'manifest_default_package.json': global.fixtureFile('/deploy/manifest_default_package.json'),
     'basic_manifest_unsupported_kind.json': global.fixtureFile('/deploy/basic_manifest_unsupported_kind.json'),
     'basic_manifest_res.json': global.fixtureFile('/deploy/basic_manifest_res.json'),
     'pkgparam_manifest_res.json': global.fixtureFile('/deploy/pkgparam_manifest_res.json'),
@@ -111,6 +112,8 @@ describe('utils has the right functions', () => {
 
     expect(utils.zip).toBeDefined()
     expect(typeof utils.zip).toBe('function')
+
+    expect(typeof utils.DEFAULT_PACKAGE_RESERVED_NAME).toBe('string')
   })
 })
 
@@ -130,7 +133,7 @@ describe('createKeyValueArrayFromObject', () => {
     expect(res).toMatchObject([{ key: 'key1', value: '52' }])
   })
 
-  test('not really json ... ', () => {
+  test('not really json ...', () => {
     const res = utils.createKeyValueArrayFromObject({ key1: '{52}' })
     expect(res).toMatchObject([{ key: 'key1', value: '{52}' }])
   })
@@ -219,8 +222,11 @@ describe('processInputs', () => {
     process.env.BAR = 'itWorks'
     process.env.BAR_VAR = 'barVar'
     process.env.FOO = 'fooo'
+    process.env['AIO_my-tech-id_from_org'] = 'my-tech-account-id'
+
     const input = {
       a: 'I will be replaced',
+      techId: '$AIO_my-tech-id_from_org',
       stuff: '$BAR_VAR $BAR_VAR, ${ BAR_VAR }, $FOO',
       foo: '${BAR}',
       bar: {
@@ -235,6 +241,7 @@ describe('processInputs', () => {
     }
     const expectedOutput = {
       a: 123,
+      techId: 'my-tech-account-id',
       stuff: 'barVar barVar, barVar, fooo',
       foo: process.env.BAR,
       bar: `${process.env.BAR}, ${process.env.BAR}, ${process.env.FOO}`,
@@ -469,15 +476,15 @@ describe('createSequenceObject', () => {
 describe('setPaths', () => {
   test('no args', async () => {
     expect(() => utils.setPaths())
-      .toThrowError('Manifest file not found')
+      .toThrow('Manifest file not found')
   })
   test('bad args with manifest', async () => {
     expect(() => utils.setPaths({ manifest: 'manifest.yml' }))
-      .toThrowError('no such file or directory')
+      .toThrow('no such file or directory')
   })
   test('bad args with manifest and deployment', async () => {
     expect(() => utils.setPaths({ manifest: 'manifest.yml', deployment: 'chik' }))
-      .toThrowError('no such file or directory')
+      .toThrow('no such file or directory')
   })
   test('with manifest', async () => {
     global.fakeFileSystem.addJson({ 'manifest.yml': 'packages: testpackage' })
@@ -534,7 +541,7 @@ describe('setPaths', () => {
       packages: testpackage`
     })
     expect(() => utils.setPaths({ manifest: '/manifest.yml', deployment: '/deployment.yml' }))
-      .toThrowError('The project name in the deployment file does not match the project name in the manifest file')
+      .toThrow('The project name in the deployment file does not match the project name in the manifest file')
   })
 })
 
@@ -549,11 +556,11 @@ describe('createActionObject', () => {
 
   test('action zip - no runtime prop', () => {
     expect(() => utils.createActionObject('action', { function: 'some.zip' }))
-      .toThrowError('Invalid or missing property')
+      .toThrow('Invalid or missing property')
     expect(() => utils.createActionObject('action', { function: 'some.zip' }))
-      .toThrowError('Invalid or missing property')
+      .toThrow('Invalid or missing property')
     expect(() => utils.createActionObject('action', { function: 'some.zip', runtime: 'something' }))
-      .toThrowError('no such file or directory')
+      .toThrow('no such file or directory')
   })
 
   test('action js - runtime prop w/ docker', () => {
@@ -727,6 +734,38 @@ describe('deployPackage', () => {
       })
   })
 
+  test('simple manifest (default package)', async () => {
+    const imsOrgId = 'MyIMSOrgId'
+    const mockLogger = jest.fn()
+    const cmdPkg = ow.mockResolved(owPackage, '')
+    const cmdAction = ow.mockResolved(owAction, '')
+    const cmdAPI = ow.mockResolved(owAPI, '')
+    const cmdTrigger = ow.mockResolved(owTriggers, '')
+    const cmdRule = ow.mockResolved(owRules, '')
+    ow.mockResolvedProperty(owInitOptions, {})
+    ow.mockResolvedProperty('actions.client.options', { apiKey: 'my-key', namespace: 'my-namespace' })
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn()
+    })
+    await utils.deployPackage(JSON.parse(fs.readFileSync('/manifest_default_package.json')), ow, mockLogger, imsOrgId)
+    expect(cmdPkg).not.toHaveBeenCalled()
+    expect(cmdAction).toHaveBeenCalled()
+    expect(cmdAPI).not.toHaveBeenCalled()
+    expect(cmdTrigger).not.toHaveBeenCalled()
+    expect(cmdRule).not.toHaveBeenCalled()
+
+    // this assertion is specific to the tmp implementation of the require-adobe-annotation
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://adobeio.adobeioruntime.net/api/v1/web/state/put',
+      {
+        body: '{"namespace":"my-namespace","key":"__aio","value":{"project":{"org":{"ims_org_id":"MyIMSOrgId"}}},"ttl":-1}',
+        headers: { Authorization: 'Basic bXkta2V5', 'Content-Type': 'application/json' },
+        method: 'post'
+      })
+  })
+
   test('basic manifest - unsupported kind', async () => {
     const imsOrgId = 'MyIMSOrgId'
     const mockLogger = jest.fn()
@@ -754,12 +793,41 @@ describe('deployPackage', () => {
       json: () => result
     })
 
-    const supportedClientRuntimes = ['nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16']
-    const supportedServerRuntimes = await utils.getSupportedServerRuntimes(initOptions.apihost)
+    await expect(() =>
+      utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_unsupported_kind.json')), ow, mockLogger, imsOrgId)
+    ).rejects.toThrow(/Unsupported node version 'nodejs:8/)
+  })
+
+  test('basic manifest - local `kind` list missing', async () => {
+    const imsOrgId = 'MyIMSOrgId'
+    const mockLogger = jest.fn()
+    const actionOptions = {
+      apiKey: 'my-key',
+      namespace: 'my-namespace'
+    }
+    const initOptions = {
+      apihost: 'https://adobeio.adobeioruntime.net'
+    }
+    ow.mockResolvedProperty('actions.client.options', actionOptions)
+    ow.mockResolvedProperty(owInitOptions, initOptions)
+
+    const result = {
+      runtimes: {
+        nodejs: [
+          { kind: 'nodejs:8' }, // server says it supports nodejs:8!
+          { kind: 'nodejs:16' }
+        ]
+      }
+    }
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => result
+    })
 
     await expect(() =>
       utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_unsupported_kind.json')), ow, mockLogger, imsOrgId)
-    ).rejects.toThrow(`Unsupported node version 'nodejs:8' in action hello/helloAction. Supported versions are ${supportedClientRuntimes}. Supported runtimes on ${initOptions.apihost}: ${supportedServerRuntimes}`)
+    ).not.toThrow()
   })
 
   test('basic manifest (fetch error)', async () => {
@@ -777,7 +845,7 @@ describe('deployPackage', () => {
     mockFetch.mockResolvedValue(res)
 
     await expect(utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, imsOrgId))
-      .rejects.toThrowError(`failed setting ims_org_id=${imsOrgId} into state lib, received status=${res.status}, please make sure your runtime credentials are correct`)
+      .rejects.toThrow(`failed setting ims_org_id=${imsOrgId} into state lib, received status=${res.status}, please make sure your runtime credentials are correct`)
   })
 
   test('basic manifest (no IMS Org Id)', async () => {
@@ -786,7 +854,7 @@ describe('deployPackage', () => {
     ow.mockResolvedProperty(owInitOptions, {})
 
     await expect(utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, null))
-      .rejects.toThrowError(new Error('imsOrgId must be defined when using the Adobe headless auth validator'))
+      .rejects.toThrow(new Error('imsOrgId must be defined when using the Adobe headless auth validator'))
   })
 })
 
@@ -1385,8 +1453,8 @@ describe('addManagedProjectAnnotations', () => {
   const expectedAnnotation = {
     file: manifestPath,
     projectDeps: [],
-    projectHash: projectHash,
-    projectName: projectName
+    projectHash,
+    projectName
   }
   const managedAnnotation = {
     key: 'whisk-managed',
@@ -1717,14 +1785,14 @@ describe('getKeyValueArrayFromMergedParameters', () => {
 
 describe('parsePathPattern', () => {
   // expect(Vishal)toWriteThis()
-  test('test with namespace and name in path', () => {
+  test('with namespace and name in path', () => {
     const [, namespace, name] = utils.parsePathPattern('/53444_28782/name1')
     expect(typeof namespace).toEqual('string')
     expect(namespace).toEqual('53444_28782')
     expect(typeof name).toEqual('string')
     expect(name).toEqual('name1')
   })
-  test('test with only name in path', () => {
+  test('with only name in path', () => {
     const [, namespace, name] = utils.parsePathPattern('name1')
     expect(namespace).toEqual(null)
     expect(typeof name).toEqual('string')
@@ -2234,20 +2302,33 @@ describe('validateActionRuntime', () => {
   })
 
   test('all good', async () => {
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:10' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:12' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })).not.toThrow()
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:16' } })).not.toThrow()
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:18' } })).not.toThrow()
   })
-
-  test('invalid nodejs version', async () => {
-    const func = () => utils.validateActionRuntime({ exec: { kind: 'nodejs:17' } })
-    expect(func).toThrowError('Unsupported node version')
+  test('no exec', () => {
+    expect(utils.validateActionRuntime({})).toBeUndefined()
+  })
+  test('no runtime kind', () => {
+    expect(utils.validateActionRuntime({ exec: {} })).toBeUndefined()
+  })
+  test('valid runtime kind', () => {
+    expect(utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })).toBeUndefined()
+  })
+  test('valid runtime kind - toLower', () => {
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'NODEJS:14' } })).toThrow('Unsupported node version')
+  })
+  test('invalid nodejs version', () => {
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:17' } })).toThrow('Unsupported node version')
   })
 
   test('dumpActionsBuiltInfo might catch some errors under unlikely conditions', async () => {
     const circ = {}
     circ.circ = circ
     const func = () => utils.dumpActionsBuiltInfo('./last-built-actions.mock.txt', circ)
-    await expect(func).rejects.toThrowError(TypeError)
+    await expect(func).rejects.toThrow(TypeError)
   })
 
   test('getActionNameFromZipFile expected output', async () => {
@@ -2321,6 +2402,6 @@ describe('getSupportedServerRuntimes', () => {
     })
 
     await expect(utils.getSupportedServerRuntimes(APIHOST))
-      .rejects.toThrowError()
+      .rejects.toThrow()
   })
 })
