@@ -59,7 +59,7 @@ test('get', async () => {
     }))
     return logForwarding.get()
       .then((res) => {
-        expect(mockFetch).toBeCalledTimes(1)
+        expect(mockFetch).toHaveBeenCalledTimes(1)
         expect(res).toBe('result')
         assertRequest('get')
         resolve()
@@ -94,7 +94,7 @@ test.each(dataFixtures)('set %s (deprecated)', async (destination, fnName, input
     }))
     return logForwarding[fnName](...Object.values(input))
       .then((res) => {
-        expect(mockFetch).toBeCalledTimes(1)
+        expect(mockFetch).toHaveBeenCalledTimes(1)
         expect(res).toBe(result)
         assertRequest('put', { [destination]: input })
         resolve()
@@ -177,7 +177,7 @@ test('set destination', async () => {
     }))
     return logForwarding.setDestination('destination', { k: 'v' })
       .then((res) => {
-        expect(mockFetch).toBeCalledTimes(1)
+        expect(mockFetch).toHaveBeenCalledTimes(1)
         expect(res).toBe(result)
         assertRequest('put', { destination: { k: 'v' } })
         resolve()
@@ -206,7 +206,7 @@ test('get errors', async () => {
     })
   }))
   expect(await logForwarding.getErrors()).toEqual(result)
-  expect(mockFetch).toBeCalledTimes(1)
+  expect(mockFetch).toHaveBeenCalledTimes(1)
   assertRequest('get', undefined, '/errors')
 })
 
@@ -217,7 +217,7 @@ test('could not get errors', async () => {
 })
 
 const assertRequest = (expectedMethod, expectedData, expectedSubPath = '') => {
-  expect(mockFetch).toBeCalledWith(apiUrl + expectedSubPath, {
+  expect(mockFetch).toHaveBeenCalledWith(apiUrl + expectedSubPath, {
     method: expectedMethod,
     body: JSON.stringify(expectedData),
     headers: {

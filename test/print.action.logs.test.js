@@ -454,7 +454,7 @@ describe('printActionLogs', () => {
       return { lastActivationTime: 1 }
     })
     const promiseCall = printActionLogs(fakeConfig, logger, 2, ['pkg2/two'], false, true, 1)
-    await expect(promiseCall).rejects.toThrowError('sleep is not a function')
+    await expect(promiseCall).rejects.toThrow('sleep is not a function')
     expect(mockPrintFilteredActionLogs).toHaveBeenCalledTimes(1)
   })
 })

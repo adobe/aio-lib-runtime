@@ -133,7 +133,7 @@ describe('createKeyValueArrayFromObject', () => {
     expect(res).toMatchObject([{ key: 'key1', value: '52' }])
   })
 
-  test('not really json ... ', () => {
+  test('not really json ...', () => {
     const res = utils.createKeyValueArrayFromObject({ key1: '{52}' })
     expect(res).toMatchObject([{ key: 'key1', value: '{52}' }])
   })
@@ -476,15 +476,15 @@ describe('createSequenceObject', () => {
 describe('setPaths', () => {
   test('no args', async () => {
     expect(() => utils.setPaths())
-      .toThrowError('Manifest file not found')
+      .toThrow('Manifest file not found')
   })
   test('bad args with manifest', async () => {
     expect(() => utils.setPaths({ manifest: 'manifest.yml' }))
-      .toThrowError('no such file or directory')
+      .toThrow('no such file or directory')
   })
   test('bad args with manifest and deployment', async () => {
     expect(() => utils.setPaths({ manifest: 'manifest.yml', deployment: 'chik' }))
-      .toThrowError('no such file or directory')
+      .toThrow('no such file or directory')
   })
   test('with manifest', async () => {
     global.fakeFileSystem.addJson({ 'manifest.yml': 'packages: testpackage' })
@@ -541,7 +541,7 @@ describe('setPaths', () => {
       packages: testpackage`
     })
     expect(() => utils.setPaths({ manifest: '/manifest.yml', deployment: '/deployment.yml' }))
-      .toThrowError('The project name in the deployment file does not match the project name in the manifest file')
+      .toThrow('The project name in the deployment file does not match the project name in the manifest file')
   })
 })
 
@@ -556,11 +556,11 @@ describe('createActionObject', () => {
 
   test('action zip - no runtime prop', () => {
     expect(() => utils.createActionObject('action', { function: 'some.zip' }))
-      .toThrowError('Invalid or missing property')
+      .toThrow('Invalid or missing property')
     expect(() => utils.createActionObject('action', { function: 'some.zip' }))
-      .toThrowError('Invalid or missing property')
+      .toThrow('Invalid or missing property')
     expect(() => utils.createActionObject('action', { function: 'some.zip', runtime: 'something' }))
-      .toThrowError('no such file or directory')
+      .toThrow('no such file or directory')
   })
 
   test('action js - runtime prop w/ docker', () => {
@@ -821,7 +821,7 @@ describe('deployPackage', () => {
     mockFetch.mockResolvedValue(res)
 
     await expect(utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, imsOrgId))
-      .rejects.toThrowError(`failed setting ims_org_id=${imsOrgId} into state lib, received status=${res.status}, please make sure your runtime credentials are correct`)
+      .rejects.toThrow(`failed setting ims_org_id=${imsOrgId} into state lib, received status=${res.status}, please make sure your runtime credentials are correct`)
   })
 
   test('basic manifest (no IMS Org Id)', async () => {
@@ -830,7 +830,7 @@ describe('deployPackage', () => {
     ow.mockResolvedProperty(owInitOptions, {})
 
     await expect(utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, null))
-      .rejects.toThrowError(new Error('imsOrgId must be defined when using the Adobe headless auth validator'))
+      .rejects.toThrow(new Error('imsOrgId must be defined when using the Adobe headless auth validator'))
   })
 })
 
@@ -1753,14 +1753,14 @@ describe('getKeyValueArrayFromMergedParameters', () => {
 
 describe('parsePathPattern', () => {
   // expect(Vishal)toWriteThis()
-  test('test with namespace and name in path', () => {
+  test('with namespace and name in path', () => {
     const [, namespace, name] = utils.parsePathPattern('/53444_28782/name1')
     expect(typeof namespace).toEqual('string')
     expect(namespace).toEqual('53444_28782')
     expect(typeof name).toEqual('string')
     expect(name).toEqual('name1')
   })
-  test('test with only name in path', () => {
+  test('with only name in path', () => {
     const [, namespace, name] = utils.parsePathPattern('name1')
     expect(namespace).toEqual(null)
     expect(typeof name).toEqual('string')
@@ -2286,17 +2286,17 @@ describe('validateActionRuntime', () => {
     expect(utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })).toBeUndefined()
   })
   test('valid runtime kind - toLower', () => {
-    expect(() => utils.validateActionRuntime({ exec: { kind: 'NODEJS:14' } })).toThrowError('Unsupported node version')
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'NODEJS:14' } })).toThrow('Unsupported node version')
   })
   test('invalid nodejs version', () => {
-    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:17' } })).toThrowError('Unsupported node version')
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:17' } })).toThrow('Unsupported node version')
   })
 
   test('dumpActionsBuiltInfo might catch some errors under unlikely conditions', async () => {
     const circ = {}
     circ.circ = circ
     const func = () => utils.dumpActionsBuiltInfo('./last-built-actions.mock.txt', circ)
-    await expect(func).rejects.toThrowError(TypeError)
+    await expect(func).rejects.toThrow(TypeError)
   })
 
   test('getActionNameFromZipFile expected output', async () => {
@@ -2370,6 +2370,6 @@ describe('getSupportedServerRuntimes', () => {
     })
 
     await expect(utils.getSupportedServerRuntimes(APIHOST))
-      .rejects.toThrowError()
+      .rejects.toThrow()
   })
 })
