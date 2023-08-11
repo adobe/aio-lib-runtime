@@ -265,25 +265,19 @@ const zipActions = async (buildsList, lastBuildsPath, distFolder, skipCheck) => 
   const builtList = []
   let lastBuiltData = ''
   if (fs.existsSync(lastBuildsPath)) {
-    lastBuiltData = await fs.readFile(lastBuildsPath, 'utf8')
+    lastBuiltData = await fs.readJson(lastBuildsPath)
   }
   for (const build of buildsList) {
-    const { outPath, buildHash, tempBuildDir, legacy, actionName } = build
-    const builtBefore = utils.actionBuiltBefore(lastBuiltData, buildHash)
-    if (!builtBefore || skipCheck) {
+    const { outPath, buildHash, tempBuildDir } = build
+    aioLogger.debug(`action buildHash ${JSON.stringify(buildHash)}`)
+    const previouslyBuilt = utils.actionBuiltBefore(lastBuiltData, buildHash)
+    if (!previouslyBuilt || skipCheck) {
+      aioLogger.debug(`action ${build.actionName} has changed since last build, zipping`)
       dumpData = { ...dumpData, ...buildHash }
       await utils.zip(tempBuildDir, outPath)
-      // TODO: we need to kill this symlink stuff, it is preventing non-admin windows users
-      // from using the CLI.  -jm
-      // create symlink for default package actions.
-      // this assure legacy support for the old output path.
-      if (legacy) {
-        const legacyActionBuild = path.join(distFolder, `${actionName}.zip`)
-        const legacyActionTemp = path.join(distFolder, `${actionName}-temp`)
-        fs.symlink(outPath, legacyActionBuild)
-        fs.symlink(tempBuildDir, legacyActionTemp)
-      }
       builtList.push(outPath)
+    } else {
+      aioLogger.debug(`action ${build.actionName} was not modified since last build, skipping`)
     }
   }
   const parsedLastBuiltData = utils.safeParse(lastBuiltData)
@@ -292,6 +286,7 @@ const zipActions = async (buildsList, lastBuildsPath, distFolder, skipCheck) => 
 }
 
 const buildActions = async (config, filterActions, skipCheck = false) => {
+  
   if (!config.app.hasBackend) {
     throw new Error('cannot build actions, app has no backend')
   }
@@ -310,7 +305,6 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
   const lastBuiltActionsPath = path.join(config.root, 'dist', 'last-built-actions.json')
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
     const actionsToBuild = Object.entries(pkg.actions || {})
-
     // build all sequentially (todo make bundler execution parallel)
     for (const [actionName, action] of actionsToBuild) {
       const actionFullName = pkgName + '/' + actionName
