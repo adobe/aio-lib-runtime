@@ -286,7 +286,6 @@ const zipActions = async (buildsList, lastBuildsPath, distFolder, skipCheck) => 
 }
 
 const buildActions = async (config, filterActions, skipCheck = false) => {
-  
   if (!config.app.hasBackend) {
     throw new Error('cannot build actions, app has no backend')
   }
