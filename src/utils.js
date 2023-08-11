@@ -2120,8 +2120,7 @@ function actionBuiltBefore (lastBuildsData, buildData) {
 async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prevBuildData) {
   try {
     fs.ensureFileSync(lastBuiltActionsPath)
-    const textData = JSON.stringify({ ...prevBuildData, ...actionBuildData })
-    await fs.writeFile(lastBuiltActionsPath, textData)
+    await fs.writeJSON(lastBuiltActionsPath, { ...prevBuildData, ...actionBuildData })
   } catch (e) {
     aioLogger.error(`Something went wrong, ${e}`)
     throw e
