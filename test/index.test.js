@@ -175,12 +175,19 @@ test('triggers.create feed - Error', async () => {
   const triggerCreateCmd = ow.mockResolved('triggers.create', '')
   const feedCreateCmd = ow.mockRejected('feeds.create', new Error('an error'))
   const triggerDeleteCmd = ow.mockResolved('triggers.delete', '')
-  await runtimeLib.triggers.create({ name: 'testTrigger', trigger: { feed: '/whisk.system/alarms/alarm' } })
-    .catch(() => {
-      expect(triggerCreateCmd).toHaveBeenCalledTimes(1)
-      expect(feedCreateCmd).toHaveBeenCalledTimes(1)
-      expect(triggerDeleteCmd).toHaveBeenCalledTimes(1)
-    })
+
+  let exceptionThrown = false
+  try {
+    await runtimeLib.triggers.create({ name: 'testTrigger', trigger: { feed: '/whisk.system/alarms/alarm' } })
+    // shouldn't reach here
+  } catch (_) {
+    exceptionThrown = true
+  }
+
+  expect(exceptionThrown).toBeTruthy()
+  expect(triggerCreateCmd).toHaveBeenCalledTimes(1)
+  expect(feedCreateCmd).toHaveBeenCalledTimes(1)
+  expect(triggerDeleteCmd).toHaveBeenCalledTimes(1)
 })
 
 test('triggers.delete', async () => {
