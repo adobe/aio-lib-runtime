@@ -1391,13 +1391,13 @@ function setPaths (flags = {}) {
   let deploymentTriggers = {}
   let deploymentProjectName = ''
   if (deploymentPath) {
-    const deployment = yaml.safeLoad(fs.readFileSync(deploymentPath, 'utf8'))
+    const deployment = yaml.load(fs.readFileSync(deploymentPath, 'utf8'))
     deploymentProjectName = deployment.project.name || ''
     deploymentPackages = deployment.project.packages
     deploymentTriggers = returnDeploymentTriggerInputs(deploymentPackages)
   }
 
-  const manifest = yaml.safeLoad(fs.readFileSync(manifestPath, 'utf8'))
+  const manifest = yaml.load(fs.readFileSync(manifestPath, 'utf8'))
   let packages
   let projectName = ''
   if (manifest.project) {
@@ -2138,8 +2138,7 @@ function actionBuiltBefore (lastBuildsData, buildData) {
 async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prevBuildData) {
   try {
     fs.ensureFileSync(lastBuiltActionsPath)
-    const textData = JSON.stringify({ ...prevBuildData, ...actionBuildData })
-    await fs.writeFile(lastBuiltActionsPath, textData)
+    await fs.writeJSON(lastBuiltActionsPath, { ...prevBuildData, ...actionBuildData })
   } catch (e) {
     aioLogger.error(`Something went wrong, ${e}`)
     throw e

@@ -18,7 +18,14 @@ const fetch = require('jest-fetch-mock')
 const fileSystem = require('jest-plugin-fs').default
 
 // dont touch the real fs
-jest.mock('fs', () => require('jest-plugin-fs/mock'))
+const mockFs = require('jest-plugin-fs/mock')
+
+// jest-plugin-fs/mock is too old, and has no updates
+// ... fs.rmSync is only available in node >= 14.
+jest.mock('fs', () => ({
+  ...mockFs,
+  rmSync: jest.fn()
+}))
 
 process.env.CI = true
 
