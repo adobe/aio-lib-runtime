@@ -320,7 +320,7 @@ global.sampleAppIncludesConfig = {
           function: 'actions/action.js',
           web: 'yes',
           runtime: 'nodejs:12',
-          include: [['*.txt', 'text/']]
+          include: [['*.txt', 'app/']]
         }
       }
     }

@@ -692,7 +692,7 @@ function replaceIfEnvKey (inputString) {
   let match
   let output = inputString
   // eslint-disable-next-line prefer-regex-literals
-  const envKeyMatch = RegExp(/(\${|\${ +|\$)\w+( +}|}|)/, 'g')
+  const envKeyMatch = RegExp(/(\${|\${ +|\$)[a-zA-Z0-9_-]+( +}|}|)/, 'g')
   while ((match = envKeyMatch.exec(inputString)) !== null) {
     // eslint-disable-next-line no-param-reassign
     output = output.replace(match[0], process.env[getEnvKey(match[0])] || '')
