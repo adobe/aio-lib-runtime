@@ -77,7 +77,6 @@ describe('build-actions', () => {
       expect.stringContaining('action.zip'),
       expect.stringContaining('action-zip.zip')
     ]))
-    expect(fs.readdirSync(path.resolve(config.actions.dist))).toEqual(expect.arrayContaining(['action-temp', 'action-zip-temp', 'action-zip.zip', 'action.zip']))
     expect(fs.readdirSync(path.resolve(config.actions.dist, 'sample-app-1.0.0'))).toEqual(expect.arrayContaining(['action-temp', 'action-zip-temp', 'action-zip.zip', 'action.zip']))
     fs.emptydirSync(config.actions.dist)
     fs.rmdirSync(config.actions.dist)
