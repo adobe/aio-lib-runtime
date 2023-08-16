@@ -249,11 +249,6 @@ test('should not attempt to undeploy actions that are defined in manifest but no
 })
 
 test('No backend is present', async () => {
-  // global.loadFs(vol, 'sample-app')
-  // mockAIOConfig.get.mockReturnValue(global.fakeConfig.tvm)
-  // vol.unlinkSync('./manifest.yml')
-
-  // const scripts = await AppScripts()
   global.sampleAppConfig.app.hasBackend = false
   await expect(undeployActions(global.sampleAppConfig)).rejects.toThrow('cannot undeploy actions, app has no backend')
 })
