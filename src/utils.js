@@ -1484,7 +1484,7 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
       logger(`Info: Skipped creating package [${pkg.name}] because it is a reserved package.`)
     } else {
       logger(`Info: Deploying package [${pkg.name}]...`)
-      await ow.packages.update(pkg)
+      await ow.packages.update({ connection: 'keep-alive', ...pkg })
       logger(`Info: package [${pkg.name}] has been successfully deployed.\n`)
     }
   }
@@ -1522,7 +1522,7 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
       retAction.name = retAction.name.substring(`${DEFAULT_PACKAGE_RESERVED_NAME}/`.length)
     }
     logger(`Info: Deploying action [${retAction.name}]...`)
-    await ow.actions.update(retAction)
+    await ow.actions.update({ connection: 'keep-alive', ...retAction })
     logger(`Info: action [${retAction.name}] has been successfully deployed.\n`)
   }
 
@@ -1534,13 +1534,13 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
   }
   for (const trigger of entities.triggers) {
     logger(`Info: Deploying trigger [${trigger.name}]...`)
-    await ow.triggers.update(trigger)
+    await ow.triggers.update({ connection: 'keep-alive', ...trigger })
     logger(`Info: trigger [${trigger.name}] has been successfully deployed.\n`)
   }
   for (const rule of entities.rules) {
     logger(`Info: Deploying rule [${rule.name}]...`)
     rule.action = `/${ns}/${rule.action}`
-    await ow.rules.update(rule)
+    await ow.rules.update({ connection: 'keep-alive', ...rule })
     logger(`Info: rule [${rule.name}] has been successfully deployed.\n`)
   }
   logger('Success: Deployment completed successfully.')
