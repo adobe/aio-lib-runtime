@@ -77,7 +77,6 @@ describe('build-actions', () => {
       expect.stringContaining('action.zip'),
       expect.stringContaining('action-zip.zip')
     ]))
-    expect(fs.readdirSync(path.resolve(config.actions.dist))).toEqual(expect.arrayContaining(['action-temp', 'action-zip-temp', 'action-zip.zip', 'action.zip']))
     expect(fs.readdirSync(path.resolve(config.actions.dist, 'sample-app-1.0.0'))).toEqual(expect.arrayContaining(['action-temp', 'action-zip-temp', 'action-zip.zip', 'action.zip']))
     fs.emptydirSync(config.actions.dist)
     fs.rmdirSync(config.actions.dist)
@@ -243,7 +242,6 @@ describe('print logs', () => {
     jest.setTimeout(100000)
     try {
       const retResult = await sdk.printActionLogs(config, storeLogs, 1, [], false, false)
-      // expect(logs[1]).toEqual(expect.stringContaining('stdout: hello'))
       expect(typeof retResult).toEqual('object')
     } catch (err) {
       // If the request was not successful, it has to be a 503 from Runtime.

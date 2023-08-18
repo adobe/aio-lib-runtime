@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Adobe. All rights reserved.
+Copyright 2023 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -42,8 +42,6 @@ const webpackStatsMock = {
 }
 
 beforeEach(() => {
-  // global.cleanFs(vol)
-
   webpack.mockClear()
   webpackMock.run.mockReset()
   webpackStatsMock.toJson.mockReset()
@@ -59,11 +57,6 @@ beforeEach(() => {
 describe('build by zipping js action folder', () => {
   let config
   beforeEach(async () => {
-    // mock config, prepare file, load app scripts
-    // mockAIOConfig.get.mockReturnValue(global.fakeConfig.tvm)
-    // global.loadFs(vol, 'sample-app')
-    // global.fakeFileSystem.addJson({ 'manifest.yml': 'packages: testpackage' })
-    // global.fakeFileSystem.addJsonFolder(path.resolve('./test/__fixtures__/sample-app'))
     global.fakeFileSystem.addJson({
       'actions/action-zip/index.js': global.fixtureFile('/sample-app/actions/action-zip/index.js'),
       'actions/action-zip/package.json': global.fixtureFile('/sample-app/actions/action-zip/package.json'),
@@ -72,10 +65,6 @@ describe('build by zipping js action folder', () => {
       'manifest.yml': global.fixtureFile('/sample-app/manifest.yml'),
       'package.json': global.fixtureFile('/sample-app/package.json')
     })
-    // remove js action , focus on zip use case
-    // todo use fixtures instead
-    // delete non zip action (focus only on zip case)
-    // vol.unlinkSync('/actions/action.js')
     config = deepClone(global.sampleAppConfig)
     // delete config.manifest.package.actions.action
     delete config.manifest.full.packages.__APP_PACKAGE__.actions.action
@@ -91,16 +80,7 @@ describe('build by zipping js action folder', () => {
     await expect(buildActions(config)).rejects.toEqual(expect.objectContaining({ message: expect.stringContaining('ENOENT') }))
   })
 
-  // _test('should fail if zip action folder is a symlink', async () => {
-  //   vol.unlinkSync('/actions/action-zip/index.js')
-  //   vol.unlinkSync('/actions/action-zip/package.json')
-  //   vol.rmdirSync('/actions/action-zip')
-  //   vol.symlinkSync('somefile', '/actions/action-zip')
-  //   await expect(buildActions(config)).rejects.toThrow('actions/action-zip is not a valid file or directory')
-  // })
-
   test('should build a zip action folder with a package.json and action named index.js', async () => {
-    // console.log(config)
     await buildActions(config)
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-1.0.0/action-zip-temp'),
       path.normalize('/dist/actions/sample-app-1.0.0/action-zip.zip'))
@@ -108,7 +88,6 @@ describe('build by zipping js action folder', () => {
 
   test('should still build a zip action if there is no ui', async () => {
     global.fakeFileSystem.removeKeys(['/web-src/index.html'])
-    // vol.unlinkSync('/web-src/index.html')
     await buildActions(config)
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-1.0.0/action-zip-temp'),
       path.normalize('/dist/actions/sample-app-1.0.0/action-zip.zip'))
@@ -121,8 +100,6 @@ describe('build by zipping js action folder', () => {
     global.fakeFileSystem.addJson({
       'actions/action-zip/sample.js': global.fixtureFile('/sample-app/actions/action-zip/index.js')
     })
-    /* vol.unlinkSync('/actions/action-zip/package.json')
-    vol.unlinkSync('/actions/action-zip/index.js') */
     await expect(buildActions(config)).rejects.toThrow(`missing required ${path.normalize('actions/action-zip/package.json')} or index.js for folder actions`)
   })
 
@@ -142,14 +119,12 @@ describe('build by zipping js action folder', () => {
       'actions/action-zip/action.js': global.fakeFileSystem.files()['/actions/action-zip/index.js']
     })
     global.fakeFileSystem.removeKeys(['/actions/action-zip/index.js'])
-    // vol.renameSync('/actions/action-zip/index.js', '/actions/action-zip/action.js')
     // rewrite package.json
     const packagejson = JSON.parse(global.fakeFileSystem.files()['/actions/action-zip/package.json'])
     delete packagejson.main
     global.fakeFileSystem.addJson({
       'actions/action-zip/package.json': JSON.stringify(packagejson)
     })
-    // vol.writeFileSync('/actions/action-zip/package.json', JSON.stringify(packagejson))
     await expect(buildActions(config)).rejects.toThrow('the directory actions/action-zip must contain either a package.json with a \'main\' flag or an index.js file at its root')
   })
 
@@ -203,7 +178,6 @@ describe('build by bundling js action file with webpack', () => {
     // mock webpack
     webpackMock.run.mockImplementation(cb => {
       // fake the build files
-      // vol.writeFileSync('/dist/actions/action.tmp.js', 'fake')
       global.fakeFileSystem.addJson({
         '/dist/actions/action.tmp.js': 'fake',
         'dist/actions/last-built-actions.json': 'fake'
@@ -212,8 +186,6 @@ describe('build by bundling js action file with webpack', () => {
     })
     // mock env, load files, load scripts
     global.fakeFileSystem.addJson({
-      // 'actions/action-zip/index.js': global.fixtureFile('/sample-app/actions/action-zip/index.js'),
-      // 'actions/action-zip/package.json': global.fixtureFile('/sample-app/actions/action-zip/package.json'),
       'actions/action.js': global.fixtureFile('/sample-app/actions/action.js'),
       'web-src/index.html': global.fixtureFile('/sample-app/web-src/index.html'),
       'manifest.yml': global.fixtureFile('/sample-app/manifest.yml'),
@@ -293,7 +265,6 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it with includes using webpack-config.js in actions root', async () => {
-    // global.loadFs(vol, 'sample-app-includes')
     utils.actionBuiltBefore = jest.fn(() => false)
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
@@ -343,7 +314,6 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it with includes using webpack-config.js in actions folder', async () => {
-    // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
       'actions/actionname/action.js': global.fixtureFile('/custom-webpack/actions/actionname/action.js'),
@@ -392,7 +362,6 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it with includes using webpack-config.js as a function that returns an object in actions folder', async () => {
-    // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
       'actions/actionname/action.js': global.fixtureFile('/custom-webpack/actions/actionname/action.js'),
@@ -440,7 +409,6 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it with includes using webpack-config.js as a function that returns an array of objects in actions folder', async () => {
-    // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
       'actions/actionname/action.js': global.fixtureFile('/custom-webpack/actions/actionname/action.js'),
@@ -516,7 +484,6 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it with includes using webpack-config.js as an async function that returns an object in actions folder', async () => {
-    // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
       'actions/actionname/action.js': global.fixtureFile('/custom-webpack/actions/actionname/action.js'),
@@ -565,7 +532,6 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it with includes using webpack-config.js as an async function that returns an array of objects in actions folder', async () => {
-    // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
       'actions/actionname/action.js': global.fixtureFile('/custom-webpack/actions/actionname/action.js'),
@@ -640,7 +606,6 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it with includes using webpack-config.js as a promise that returns an array of objects in actions folder', async () => {
-    // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
       'actions/actionname/action.js': global.fixtureFile('/custom-webpack/actions/actionname/action.js'),
@@ -715,7 +680,6 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it with includes using webpack-config.js as an array of objects in actions folder', async () => {
-    // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
       'actions/actionname/action.js': global.fixtureFile('/custom-webpack/actions/actionname/action.js'),
@@ -790,7 +754,6 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it with includes using webpack-config.js as an array of functions that return objects in actions folder', async () => {
-    // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
       'actions/actionname/action.js': global.fixtureFile('/custom-webpack/actions/actionname/action.js'),
@@ -865,7 +828,6 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it with includes using webpack-config.js as an array of async functions that return objects in actions folder', async () => {
-    // global.loadFs(vol, 'sample-app-includes')
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
       'actions/actionname/action.js': global.fixtureFile('/custom-webpack/actions/actionname/action.js'),
@@ -1155,7 +1117,6 @@ test('should not zip files if the action was built before (skipCheck=false)', as
 
 test('No backend is present', async () => {
   addSampleAppFiles()
-  // global.fakeFileSystem.removeKeys(['./manifest.yml'])
   const config = deepClone(global.sampleAppConfig)
   config.app.hasBackend = false
 

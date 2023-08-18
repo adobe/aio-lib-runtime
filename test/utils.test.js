@@ -170,7 +170,7 @@ describe('createComponentsFromSequence', () => {
     })
   })
 })
-/* eslint-disable no-template-curly-in-string */
+
 describe('processInputs', () => {
   test('input = {}, params = {}', () => {
     const res = utils.processInputs({}, {})
@@ -204,8 +204,10 @@ describe('processInputs', () => {
     const res = utils.processInputs({ a: 'string', one: 'number', an: 'integer' }, { })
     expect(res).toEqual({ a: '', one: 0, an: 0 })
   })
+  // eslint-disable-next-line no-template-curly-in-string
   test('input = { an: $undefEnvVar, a: $definedEnvVar, another: $definedEnvVar, the: ${definedEnvVar}, one: ${ definedEnvVar  } }, params = { a: 123 }', () => {
     process.env.definedEnvVar = 'giraffe'
+    // eslint-disable-next-line no-template-curly-in-string
     const res = utils.processInputs({ an: '$undefEnvVar', a: '$definedEnvVar', another: '$definedEnvVar', the: '${definedEnvVar}', one: '${ definedEnvVar  }' }, { a: 123 })
     expect(res).toStrictEqual({ a: 123, another: 'giraffe', an: '', the: 'giraffe', one: 'giraffe' })
     delete process.env.definedEnvVar
@@ -227,14 +229,14 @@ describe('processInputs', () => {
     const input = {
       a: 'I will be replaced',
       techId: '$AIO_my-tech-id_from_org',
-      stuff: '$BAR_VAR $BAR_VAR, ${ BAR_VAR }, $FOO',
-      foo: '${BAR}',
+      stuff: '$BAR_VAR $BAR_VAR, ${ BAR_VAR }, $FOO', // eslint-disable-line no-template-curly-in-string
+      foo: '${BAR}', // eslint-disable-line no-template-curly-in-string
       bar: {
-        default: '${BAR}, $BAR, ${FOO}'
+        default: '${BAR}, $BAR, ${FOO}' // eslint-disable-line no-template-curly-in-string
       },
       config: {
         nestedFoo: {
-          extraNested: '${BAR}, $BAR, ${FOO}'
+          extraNested: '${BAR}, $BAR, ${FOO}' // eslint-disable-line no-template-curly-in-string
         },
         a: 'I will not be replaced'
       }
@@ -1752,7 +1754,6 @@ describe('getKeyValueArrayFromMergedParameters', () => {
 })
 
 describe('parsePathPattern', () => {
-  // expect(Vishal)toWriteThis()
   test('with namespace and name in path', () => {
     const [, namespace, name] = utils.parsePathPattern('/53444_28782/name1')
     expect(typeof namespace).toEqual('string')
@@ -1780,7 +1781,6 @@ describe('getProjectHash', () => {
 describe('findProjectHashOnServer', () => {
   test('default projectHash (no packages, actions, triggers, rules found)', async () => {
     const testProjectName = 'ThisIsTheNameOfTheProject'
-    // const resultObject = [{ annotations: [{ key: 'whisk-managed', value: { projectName: testProjectName, projectHash: 'projectHash' } }] }]
     const pkgList = ow.mockResolved('packages.list', '')
     const actList = ow.mockResolved('actions.list', '')
     const trgList = ow.mockResolved('triggers.list', '')
@@ -1795,7 +1795,6 @@ describe('findProjectHashOnServer', () => {
 
   test('default projectHash (empty annotations in existing packages, actions, triggers, rules)', async () => {
     const testProjectName = 'ThisIsTheNameOfTheProject'
-    // const resultObject = [{ annotations: [{ key: 'whisk-managed', value: { projectName: testProjectName, projectHash: 'projectHash' } }] }]
     const pkgList = ow.mockResolved('packages.list', [{ annotations: [] }])
     const actList = ow.mockResolved('actions.list', [{ annotations: [] }])
     const trgList = ow.mockResolved('triggers.list', [{ annotations: [] }])
@@ -1810,7 +1809,6 @@ describe('findProjectHashOnServer', () => {
 
   test('default projectHash (no whisk-managed annotation in existing packages, actions, triggers, rules)', async () => {
     const testProjectName = 'ThisIsTheNameOfTheProject'
-    // const resultObject = [{ annotations: [{ key: 'whisk-managed', value: { projectName: testProjectName, projectHash: 'projectHash' } }] }]
     const pkgList = ow.mockResolved('packages.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
     const actList = ow.mockResolved('actions.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
     const trgList = ow.mockResolved('triggers.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])

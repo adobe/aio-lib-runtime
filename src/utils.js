@@ -442,7 +442,7 @@ function zip (filePath, out, pathInZip = false) {
 
     let stats
     try {
-      stats = fs.lstatSync(filePath) // throws if enoent
+      stats = fs.lstatSync(filePath) // throws if ENOENT
     } catch (e) {
       archive.destroy()
       reject(e)
@@ -450,7 +450,7 @@ function zip (filePath, out, pathInZip = false) {
 
     if (stats.isDirectory()) {
       archive.directory(filePath, pathInZip)
-    } else { //  if (stats.isFile()) {
+    } else {
       archive.file(filePath, { name: pathInZip || path.basename(filePath) })
     }
     archive.finalize()
@@ -1373,13 +1373,13 @@ function setPaths (flags = {}) {
   let deploymentTriggers = {}
   let deploymentProjectName = ''
   if (deploymentPath) {
-    const deployment = yaml.safeLoad(fs.readFileSync(deploymentPath, 'utf8'))
+    const deployment = yaml.load(fs.readFileSync(deploymentPath, 'utf8'))
     deploymentProjectName = deployment.project.name || ''
     deploymentPackages = deployment.project.packages
     deploymentTriggers = returnDeploymentTriggerInputs(deploymentPackages)
   }
 
-  const manifest = yaml.safeLoad(fs.readFileSync(manifestPath, 'utf8'))
+  const manifest = yaml.load(fs.readFileSync(manifestPath, 'utf8'))
   let packages
   let projectName = ''
   if (manifest.project) {
@@ -2098,7 +2098,6 @@ function activationLogBanner (logFunc, activation, activationLogs) {
  */
 function actionBuiltBefore (lastBuildsData, buildData) {
   if (buildData && Object.keys(buildData).length > 0) {
-    // buildData = { [actionName]: contentHash }
     const [actionName, contentHash] = Object.entries(buildData)[0]
     const storedData = safeParse(lastBuildsData)
     if (contentHash) {
@@ -2120,8 +2119,7 @@ function actionBuiltBefore (lastBuildsData, buildData) {
 async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prevBuildData) {
   try {
     fs.ensureFileSync(lastBuiltActionsPath)
-    const textData = JSON.stringify({ ...prevBuildData, ...actionBuildData })
-    await fs.writeFile(lastBuiltActionsPath, textData)
+    await fs.writeJSON(lastBuiltActionsPath, { ...prevBuildData, ...actionBuildData })
   } catch (e) {
     aioLogger.error(`Something went wrong, ${e}`)
     throw e
