@@ -44,9 +44,9 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   let filterEntities = deployConfig.filterEntities
 
   // checks
-  /// a. missing credentials
+  // a. missing credentials
   utils.checkOpenWhiskCredentials(config)
-  /// b. missing build files
+  // b. missing build files
   const dist = config.actions.dist
   if (
     (!deployConfig.filterEntities || deployConfig.filterEntities.actions) &&

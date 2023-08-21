@@ -78,7 +78,6 @@ describe('build-actions', () => {
       expect.stringContaining('action.zip'),
       expect.stringContaining('action-zip.zip')
     ]))
-    expect(fs.readdirSync(path.resolve(config.actions.dist))).toEqual(expect.arrayContaining(['action-temp', 'action-zip-temp', 'action-zip.zip', 'action.zip']))
     expect(fs.readdirSync(path.resolve(config.actions.dist, 'sample-app-1.0.0'))).toEqual(expect.arrayContaining(['action-temp', 'action-zip-temp', 'action-zip.zip', 'action.zip']))
     fs.emptydirSync(config.actions.dist)
     fs.rmdirSync(config.actions.dist)
@@ -140,6 +139,7 @@ describe('build, deploy, invoke and undeploy of actions', () => {
     await sdk.undeployActions(config)
     actions = await sdkClient.actions.list({ limit: 1 })
     if (actions.length > 0) {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(actions[0].name).not.toEqual('action-sequence')
     }
   })
@@ -176,6 +176,7 @@ describe('build, deploy, invoke and undeploy of actions', () => {
     await sdk.undeployActions(config)
     actions = await sdkClient.actions.list({ limit: 1 })
     if (actions.length > 0) {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(actions[0].name).not.toEqual('action')
     }
   })
@@ -216,6 +217,7 @@ describe('build, deploy, invoke and undeploy of actions', () => {
     await sdk.undeployActions(config)
     actions = await sdkClient.actions.list({ limit: 1 })
     if (actions.length > 0) {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(actions[0].name).not.toEqual('action')
     }
   })
@@ -248,6 +250,7 @@ describe('build, deploy, invoke and undeploy of actions', () => {
     await sdk.undeployActions(config)
     actions = await sdkClient.actions.list({ limit: 1 })
     if (actions.length > 0) {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(actions[0].name).not.toEqual('action')
     }
   })
@@ -261,13 +264,12 @@ describe('print logs', () => {
     jest.setTimeout(100000)
     try {
       const retResult = await sdk.printActionLogs(config, storeLogs, 1, [], false, false)
-      // expect(logs[1]).toEqual(expect.stringContaining('stdout: hello'))
       expect(typeof retResult).toEqual('object')
     } catch (err) {
       // If the request was not successful, it has to be a 503 from Runtime.
-      expect(typeof err).toEqual('object')
-      expect(err.message).toEqual(expect.stringContaining('503'))
-      expect(err.message).toEqual(expect.stringContaining('Service Unavailable'))
+      expect(typeof err).toEqual('object') // eslint-disable-line jest/no-conditional-expect
+      expect(err.message).toEqual(expect.stringContaining('503')) // eslint-disable-line jest/no-conditional-expect
+      expect(err.message).toEqual(expect.stringContaining('Service Unavailable')) // eslint-disable-line jest/no-conditional-expect
     }
     jest.setTimeout(40000)
   })
@@ -348,6 +350,7 @@ describe('filter manifest based on built actions', () => {
     await sdk.undeployActions(config)
     const actions = await sdkClient.actions.list({ limit: 1 })
     if (actions.length > 0) {
+      // eslint-disable-next-line jest/no-conditional-expect
       expect(actions[0].name).not.toEqual('action-sequence')
     }
   })

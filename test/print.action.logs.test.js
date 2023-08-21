@@ -1,9 +1,7 @@
-
 const runtimeLibUtils = require('../src/utils')
 const printFilteredActionLogsOriginal = runtimeLibUtils.printFilteredActionLogs
 runtimeLibUtils.checkOpenWhiskCredentials = jest.fn()
 const mockPrintFilteredActionLogs = jest.fn(async (runtime, logger, limit, filterActions, strip, startTime) => {
-  // console.log('in mocked filterprint')
   return printFilteredActionLogsOriginal(runtime, logger, limit, filterActions, strip, startTime)
 })
 runtimeLibUtils.printFilteredActionLogs = mockPrintFilteredActionLogs
@@ -182,7 +180,6 @@ describe('printActionLogs', () => {
       throw new Error()
     })
 
-    // owLogsActivationMock.mockResolvedValue({ logs: [] })
     await printActionLogs(fakeConfig, logger, 3)
     expect(owListActivationMock).toHaveBeenCalledWith({ limit: 3, skip: 0, since: 0 })
     expect(owGetActivationMock).toHaveBeenCalledTimes(1)
@@ -266,7 +263,6 @@ describe('printActionLogs', () => {
     expect(logger).toHaveBeenNthCalledWith(2, 'three A')
     expect(logger).toHaveBeenNthCalledWith(3, 'three B')
     expect(logger).toHaveBeenNthCalledWith(4, 'three C')
-    // expect(logger).toHaveBeenNthCalledWith(5) // new line
     expect(logger).toHaveBeenNthCalledWith(5, expect.stringContaining('two A \n two B'))
   })
 
@@ -455,7 +451,7 @@ describe('printActionLogs', () => {
       return { lastActivationTime: 1 }
     })
     const promiseCall = printActionLogs(fakeConfig, logger, 2, ['pkg2/two'], false, true, 1)
-    await expect(promiseCall).rejects.toThrowError('sleep is not a function')
+    await expect(promiseCall).rejects.toThrow('sleep is not a function')
     expect(mockPrintFilteredActionLogs).toHaveBeenCalledTimes(1)
   })
 })

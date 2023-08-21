@@ -21,7 +21,7 @@ const globby = require('globby')
 const path = require('path')
 const archiver = require('archiver')
 // this is a static list that comes from here: https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
-const SupportedRuntimes = ['nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16']
+const SupportedRuntimes = ['sequence', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18']
 const DEFAULT_PACKAGE_RESERVED_NAME = 'default'
 
 /**
@@ -275,7 +275,7 @@ function printLogs (activation, strip, logger) {
  */
 async function printFilteredActionLogs (runtime, logger, limit, filterActions = [], strip = false, startTime = 0) {
   // Get activations
-  const listOptions = { limit: limit, skip: 0, since: startTime }
+  const listOptions = { limit, skip: 0, since: startTime }
   const logFunc = logger ? logger.logFunc || logger : console.log
   // This will narrow down the activation list to specific action
   if (filterActions.length === 1 && !filterActions[0].endsWith('/')) {
@@ -442,7 +442,7 @@ function zip (filePath, out, pathInZip = false) {
 
     let stats
     try {
-      stats = fs.lstatSync(filePath) // throws if enoent
+      stats = fs.lstatSync(filePath) // throws if ENOENT
     } catch (e) {
       archive.destroy()
       reject(e)
@@ -450,7 +450,7 @@ function zip (filePath, out, pathInZip = false) {
 
     if (stats.isDirectory()) {
       archive.directory(filePath, pathInZip)
-    } else { //  if (stats.isFile()) {
+    } else {
       archive.file(filePath, { name: pathInZip || path.basename(filePath) })
     }
     archive.finalize()
@@ -692,7 +692,7 @@ function replaceIfEnvKey (inputString) {
   let match
   let output = inputString
   // eslint-disable-next-line prefer-regex-literals
-  const envKeyMatch = RegExp(/(\${|\${ +|\$)\w+( +}|}|)/, 'g')
+  const envKeyMatch = RegExp(/(\${|\${ +|\$)[a-zA-Z0-9_-]+( +}|}|)/, 'g')
   while ((match = envKeyMatch.exec(inputString)) !== null) {
     // eslint-disable-next-line no-param-reassign
     output = output.replace(match[0], process.env[getEnvKey(match[0])] || '')
@@ -1373,13 +1373,13 @@ function setPaths (flags = {}) {
   let deploymentTriggers = {}
   let deploymentProjectName = ''
   if (deploymentPath) {
-    const deployment = yaml.safeLoad(fs.readFileSync(deploymentPath, 'utf8'))
+    const deployment = yaml.load(fs.readFileSync(deploymentPath, 'utf8'))
     deploymentProjectName = deployment.project.name || ''
     deploymentPackages = deployment.project.packages
     deploymentTriggers = returnDeploymentTriggerInputs(deploymentPackages)
   }
 
-  const manifest = yaml.safeLoad(fs.readFileSync(manifestPath, 'utf8'))
+  const manifest = yaml.load(fs.readFileSync(manifestPath, 'utf8'))
   let packages
   let projectName = ''
   if (manifest.project) {
@@ -1401,12 +1401,12 @@ function setPaths (flags = {}) {
   }
 
   const filecomponents = {
-    packages: packages,
-    deploymentTriggers: deploymentTriggers,
-    deploymentPackages: deploymentPackages,
-    manifestPath: manifestPath,
+    packages,
+    deploymentTriggers,
+    deploymentPackages,
+    manifestPath,
     manifestContent: manifest,
-    projectName: projectName
+    projectName
   }
   return filecomponents
 }
@@ -1484,18 +1484,21 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
       logger(`Info: Skipped creating package [${pkg.name}] because it is a reserved package.`)
     } else {
       logger(`Info: Deploying package [${pkg.name}]...`)
-      await ow.packages.update(pkg)
+      await ow.packages.update({ connection: 'keep-alive', ...pkg })
       logger(`Info: package [${pkg.name}] has been successfully deployed.\n`)
     }
   }
 
   for (const action of entities.actions) {
     const retAction = cloneDeep(action)
-    try {
-      validateActionRuntime(retAction)
-    } catch (e) {
-      const supportedServerRuntimes = await getSupportedServerRuntimes(apihost)
-      throw new Error(`${e.message}. Supported runtimes on ${apihost}: ${supportedServerRuntimes}`)
+    if (retAction?.exec?.kind && !isSupportedActionKind(retAction)) {
+      const supportedServerRuntimes = (await getSupportedServerRuntimes(apihost)).sort().reverse()
+      if (supportedServerRuntimes.includes(retAction?.exec?.kind)) {
+        aioLogger.debug(`Local node kinds mismatch with server supported kinds ${supportedServerRuntimes}`)
+      } else {
+        throw new Error(`Unsupported node version '${retAction?.exec?.kind}' in action ${retAction.name}.\n` +
+          `Supported runtimes on ${apihost}: ${supportedServerRuntimes}`)
+      }
     }
 
     if (retAction.exec && action.exec.kind === 'sequence') {
@@ -1519,7 +1522,7 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
       retAction.name = retAction.name.substring(`${DEFAULT_PACKAGE_RESERVED_NAME}/`.length)
     }
     logger(`Info: Deploying action [${retAction.name}]...`)
-    await ow.actions.update(retAction)
+    await ow.actions.update({ connection: 'keep-alive', ...retAction })
     logger(`Info: action [${retAction.name}] has been successfully deployed.\n`)
   }
 
@@ -1531,13 +1534,13 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
   }
   for (const trigger of entities.triggers) {
     logger(`Info: Deploying trigger [${trigger.name}]...`)
-    await ow.triggers.update(trigger)
+    await ow.triggers.update({ connection: 'keep-alive', ...trigger })
     logger(`Info: trigger [${trigger.name}] has been successfully deployed.\n`)
   }
   for (const rule of entities.rules) {
     logger(`Info: Deploying rule [${rule.name}]...`)
     rule.action = `/${ns}/${rule.action}`
-    await ow.rules.update(rule)
+    await ow.rules.update({ connection: 'keep-alive', ...rule })
     logger(`Info: rule [${rule.name}] has been successfully deployed.\n`)
   }
   logger('Success: Deployment completed successfully.')
@@ -1689,16 +1692,16 @@ async function addManagedProjectAnnotations (entities, manifestPath, projectName
     pkg.annotations['whisk-managed'] = {
       file: manifestPath,
       projectDeps: [],
-      projectHash: projectHash,
-      projectName: projectName
+      projectHash,
+      projectName
     }
   }
   for (const action of entities.actions) {
     action.annotations['whisk-managed'] = {
       file: manifestPath,
       projectDeps: [],
-      projectHash: projectHash,
-      projectName: projectName
+      projectHash,
+      projectName
     }
   }
 
@@ -1708,8 +1711,8 @@ async function addManagedProjectAnnotations (entities, manifestPath, projectName
       value: {
         file: manifestPath,
         projectDeps: [],
-        projectHash: projectHash,
-        projectName: projectName
+        projectHash,
+        projectName
       }
     }
     if (trigger.trigger && trigger.trigger.annotations) {
@@ -2017,16 +2020,29 @@ function replacePackagePlaceHolder (config) {
  * Checks the validity of nodejs version in action definition and throws an error if invalid.
  *
  * @param {object} action action object
+ * @deprecated Use isSupportedActionKind instead
  */
 function validateActionRuntime (action) {
   // I suspect we have an issue here with 2 kinds of kinds ...
   // sometimes this method is called with 'sequence' which is a different kind of kind than exec.kind which
   // comes from action: runtime: in manifest -jm
+  // it would be nice if we didn't throw an excption when we could just return a boolean, otherwise the caller
+  // has to wrap this in a try/catch block -jm
   if (action.exec && action.exec.kind && action.exec.kind.toLowerCase().startsWith('nodejs:')) {
     if (!SupportedRuntimes.includes(action.exec.kind)) {
       throw new Error(`Unsupported node version '${action.exec.kind}' in action ${action.name}. Supported versions are ${SupportedRuntimes}`)
     }
   }
+}
+
+/**
+ * Checks the validity of nodejs version in action definition returns true if valid.
+ *
+ * @param {object} action action object
+ * @returns {boolean} true if action kind is supported
+ */
+function isSupportedActionKind (action) {
+  return SupportedRuntimes.includes(action?.exec?.kind?.toLowerCase())
 }
 
 /**
@@ -2082,7 +2098,6 @@ function activationLogBanner (logFunc, activation, activationLogs) {
  */
 function actionBuiltBefore (lastBuildsData, buildData) {
   if (buildData && Object.keys(buildData).length > 0) {
-    // buildData = { [actionName]: contentHash }
     const [actionName, contentHash] = Object.entries(buildData)[0]
     const storedData = safeParse(lastBuildsData)
     if (contentHash) {
@@ -2104,8 +2119,7 @@ function actionBuiltBefore (lastBuildsData, buildData) {
 async function dumpActionsBuiltInfo (lastBuiltActionsPath, actionBuildData, prevBuildData) {
   try {
     fs.ensureFileSync(lastBuiltActionsPath)
-    const textData = JSON.stringify({ ...prevBuildData, ...actionBuildData })
-    await fs.writeFile(lastBuiltActionsPath, textData)
+    await fs.writeJSON(lastBuiltActionsPath, { ...prevBuildData, ...actionBuildData })
   } catch (e) {
     aioLogger.error(`Something went wrong, ${e}`)
     throw e
@@ -2186,5 +2200,6 @@ module.exports = {
   dumpActionsBuiltInfo,
   actionBuiltBefore,
   safeParse,
+  isSupportedActionKind,
   DEFAULT_PACKAGE_RESERVED_NAME
 }

@@ -166,7 +166,7 @@ const loadWebpackConfig = async (configPath, actionPath, tempBuildDir, outBuildF
 const prepareToBuildAction = async (action, root, dist) => {
   const { name: actionName, defaultPackage, packageName } = action
   const zipFileName = utils.getActionZipFileName(packageName, actionName, false)
-
+  let statsInfo // this is the object returned by bundler run, it has the hash
   // path.resolve supports both relative and absolute action.function
   const actionPath = path.resolve(root, action.function)
   const outPath = path.join(dist, `${zipFileName}.zip`)
@@ -205,14 +205,13 @@ const prepareToBuildAction = async (action, root, dist) => {
     // TODO: when we get to excludes, use a filter function here.
     fs.copySync(actionPath, tempBuildDir, { dereference: true })
   } else {
-    const outBuildFilename = 'index.[contenthash].js' // `${name}.tmp.js`
     // if not directory => package and minify to single file
     const webpackConfigPath = await getWebpackConfigPath(actionPath, root)
-    const webpackConfig = await loadWebpackConfig(webpackConfigPath, actionPath, tempBuildDir, outBuildFilename)
+    const webpackConfig = await loadWebpackConfig(webpackConfigPath, actionPath, tempBuildDir, 'index.js')
     const compiler = webpack(webpackConfig)
 
     // run the compiler and wait for a result
-    await new Promise((resolve, reject) => {
+    statsInfo = await new Promise((resolve, reject) => {
       compiler.run((err, stats) => {
         if (err) {
           reject(err)
@@ -229,15 +228,14 @@ const prepareToBuildAction = async (action, root, dist) => {
       })
     })
   }
+
   let buildHash
-  let tempActionName
   let contentHash
   if (isDirectory) {
     contentHash = actionFileStats.mtime.valueOf()
     buildHash = { [zipFileName]: contentHash }
   } else {
-    [tempActionName] = await fs.readdir(tempBuildDir) // eg: index.25d8f992944c60aa2e62.js
-    contentHash = tempActionName && tempActionName.split('.')[1]
+    contentHash = statsInfo.hash
     buildHash = { [zipFileName]: contentHash }
   }
 
@@ -247,7 +245,7 @@ const prepareToBuildAction = async (action, root, dist) => {
     legacy: defaultPackage,
     outPath,
     tempBuildDir,
-    tempActionName
+    tempActionName: 'index.js'
   }
 }
 
@@ -267,27 +265,19 @@ const zipActions = async (buildsList, lastBuildsPath, distFolder, skipCheck) => 
   const builtList = []
   let lastBuiltData = ''
   if (fs.existsSync(lastBuildsPath)) {
-    lastBuiltData = await fs.readFile(lastBuildsPath, 'utf8')
+    lastBuiltData = await fs.readJson(lastBuildsPath)
   }
   for (const build of buildsList) {
-    const { outPath, buildHash, tempBuildDir, tempActionName, legacy, actionName } = build
-    const builtBefore = utils.actionBuiltBefore(lastBuiltData, buildHash)
-    if (!builtBefore || skipCheck) {
+    const { outPath, buildHash, tempBuildDir } = build
+    aioLogger.debug(`action buildHash ${JSON.stringify(buildHash)}`)
+    const previouslyBuilt = utils.actionBuiltBefore(lastBuiltData, buildHash)
+    if (!previouslyBuilt || skipCheck) {
+      aioLogger.debug(`action ${build.actionName} has changed since last build, zipping`)
       dumpData = { ...dumpData, ...buildHash }
-      if (tempActionName) {
-        // rename index.[contentHash] to index.js
-        fs.renameSync(path.join(tempBuildDir, tempActionName), path.join(tempBuildDir, 'index.js'))
-      }
       await utils.zip(tempBuildDir, outPath)
-      // create symlink for default package actions.
-      // this assure legacy support for the old output path.
-      if (legacy) {
-        const legacyActionBuild = path.join(distFolder, `${actionName}.zip`)
-        const legacyActionTemp = path.join(distFolder, `${actionName}-temp`)
-        fs.symlink(outPath, legacyActionBuild)
-        fs.symlink(tempBuildDir, legacyActionTemp)
-      }
       builtList.push(outPath)
+    } else {
+      aioLogger.debug(`action ${build.actionName} was not modified since last build, skipping`)
     }
   }
   const parsedLastBuiltData = utils.safeParse(lastBuiltData)
@@ -314,7 +304,6 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
   const lastBuiltActionsPath = path.join(config.root, 'dist', 'last-built-actions.json')
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
     const actionsToBuild = Object.entries(pkg.actions || {})
-
     // build all sequentially (todo make bundler execution parallel)
     for (const [actionName, action] of actionsToBuild) {
       const actionFullName = pkgName + '/' + actionName

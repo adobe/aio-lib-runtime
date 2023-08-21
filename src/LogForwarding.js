@@ -85,9 +85,9 @@ class LogForwarding {
   async setSplunkHec (host, port, index, hecToken) {
     return await this.set({
       splunk_hec: {
-        host: host,
-        port: port,
-        index: index,
+        host,
+        port,
+        index,
         hec_token: hecToken
       }
     })
@@ -163,7 +163,7 @@ class LogForwarding {
     const res = await fetch(
       this.apiHost + '/runtime/namespaces/' + this.namespace + '/logForwarding' + subPath,
       {
-        method: method,
+        method,
         body: JSON.stringify(data),
         headers: {
           'Content-Type': 'application/json',
