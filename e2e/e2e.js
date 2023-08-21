@@ -261,7 +261,6 @@ describe('print logs', () => {
     const logs = []
     const storeLogs = (str) => { logs.push(str) }
     // Runtime waits for about 60 secs to return a 503 when it cannot serve the request.
-    jest.setTimeout(100000)
     try {
       const retResult = await sdk.printActionLogs(config, storeLogs, 1, [], false, false)
       expect(typeof retResult).toEqual('object')
@@ -271,8 +270,7 @@ describe('print logs', () => {
       expect(err.message).toEqual(expect.stringContaining('503')) // eslint-disable-line jest/no-conditional-expect
       expect(err.message).toEqual(expect.stringContaining('Service Unavailable')) // eslint-disable-line jest/no-conditional-expect
     }
-    jest.setTimeout(40000)
-  })
+  }, 100000)
 })
 
 test('delete non-existing trigger', async () => {
