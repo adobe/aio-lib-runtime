@@ -15,7 +15,6 @@ const deepClone = require('lodash.clonedeep')
 const { utils } = require('../src')
 const fs = jest.requireActual('fs-extra')
 const { createHttpsProxy } = require('@adobe/aio-lib-test-proxy')
-const { createFetch } = require('@adobe/aio-lib-core-networking')
 
 jest.unmock('openwhisk')
 jest.unmock('archiver')
@@ -114,26 +113,38 @@ describe('build, deploy, invoke and undeploy of actions', () => {
       expect.objectContaining({ name: 'action', namespace: expect.stringContaining('/sample-app-1.0.0') })]))
     await sdkClient.actions.invoke('sample-app-1.0.0/action')
 
-    // Verify apis created in openwhisk
-    const { apis } = await sdkClient.routes.list({ basepath: 'base', relpath: 'path' })
-    const api = apis[0]
-    const paths = api.value.apidoc.paths
+    // Verify apis are created in openwhisk
+    const basepath = 'base'
+    const relpath = 'path'
+    const { apis } = await sdkClient.routes.list({ basepath, relpath })
 
-    for (const key of Object.keys(paths)) {
-      if (!key.startsWith('/')) {
-        return
-      }
+    expect(apis.length).toEqual(1)
+    expect(apis[0].value.apidoc.basePath).toEqual(`/${basepath}`)
+    expect(apis[0].value.apidoc.info.title).toEqual('api1')
+    expect(apis[0].value.apidoc.paths[`/${relpath}`].get).toEqual(expect.any(Object))
 
-      const path = paths[key]
-      for (const verb of Object.keys(path)) {
-        const fetch = createFetch()
-        const url = `${api.value.gwApiUrl}${key}`
-        console.log('testing API Url:', url)
-        const response = await fetch(url, { method: verb })
-        console.log('API Url response status:', response.status)
-        expect(response.status).not.toEqual(404)
-      }
-    }
+    // we can't test the reachability of the API paths below because it may take up
+    // to 5 mins for an API to be available:
+    // https://adobedocs.github.io/adobeio-runtime/guides/creating_rest_apis.html#how-long-does-it-take-to-createupdate-an-api
+
+    // const api = apis[0]
+    // const paths = api.value.apidoc.paths
+    // for (const key of Object.keys(paths)) {
+    //   if (!key.startsWith('/')) {
+    //     return
+    //   }
+
+    //   const { createFetch } = require('@adobe/aio-lib-core-networking')
+    //   const path = paths[key]
+    //   for (const verb of Object.keys(path)) {
+    //     const fetch = createFetch()
+    //     const url = `${api.value.gwApiUrl}${key}`
+    //     console.log('testing API Url:', url)
+    //     const response = await fetch(url, { method: verb })
+    //     console.log('API Url response status:', response.status)
+    //     expect(response.status).not.toEqual(404)
+    //   }
+    // }
 
     // Undeploy
     await sdk.undeployActions(config)
