@@ -12,6 +12,7 @@ governing permissions and limitations under the License.
 const utils = require('../src/utils')
 const buildActions = require('../src/build-actions')
 const path = require('path')
+const fs = require('fs-extra')
 
 const execa = require('execa')
 jest.mock('execa')
@@ -56,18 +57,30 @@ beforeEach(() => {
 
 describe('build by zipping js action folder', () => {
   let config
-  beforeEach(async () => {
-    global.fakeFileSystem.addJson({
+
+  /** @private */
+  function setupFs ({ addActionFile = false }) {
+    const json = {
       'actions/action-zip/index.js': global.fixtureFile('/sample-app/actions/action-zip/index.js'),
       'actions/action-zip/package.json': global.fixtureFile('/sample-app/actions/action-zip/package.json'),
-      // 'actions/action.js': global.fixtureFile('/sample-app/actions/action.js'),
+      'actions/action.js': global.fixtureFile('/sample-app/actions/action.js'),
       'web-src/index.html': global.fixtureFile('/sample-app/web-src/index.html'),
       'manifest.yml': global.fixtureFile('/sample-app/manifest.yml'),
       'package.json': global.fixtureFile('/sample-app/package.json')
-    })
+    }
+    if (addActionFile) {
+      json['actions/action.js'] = global.fixtureFile('/sample-app/actions/action.js')
+    }
+    global.fakeFileSystem.addJson(json)
+
     config = deepClone(global.sampleAppConfig)
-    // delete config.manifest.package.actions.action
-    delete config.manifest.full.packages.__APP_PACKAGE__.actions.action
+    if (!addActionFile) {
+      delete config.manifest.full.packages.__APP_PACKAGE__.actions.action
+    }
+  }
+
+  beforeEach(async () => {
+    setupFs({ addActionFile: false })
   })
 
   afterEach(() => {
@@ -169,6 +182,35 @@ describe('build by zipping js action folder', () => {
     expect(webpackMock.run).toHaveBeenCalledTimes(0) // no webpack bundling
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-1.0.0/action-zip-temp'),
       path.normalize('/dist/actions/sample-app-1.0.0/action-zip.zip'))
+  })
+
+  test('full config', async () => {
+    setupFs({ addActionFile: true })
+
+    const lastBuiltActionsFile = path.join(config.root, 'dist', 'last-built-actions.json')
+    webpackMock.run.mockImplementation(cb => {
+      global.fakeFileSystem.addJson({
+        [lastBuiltActionsFile]: '{}'
+      })
+      cb(null, webpackStatsMock)
+    })
+
+    utils.zip.mockImplementation((_, outPath) => {
+      global.fakeFileSystem.addJson({ [outPath]: 'fake-zip-data' })
+    })
+
+    const res = await buildActions(config)
+    expect(res).toEqual(expect.arrayContaining([
+      expect.stringContaining('action.zip'),
+      expect.stringContaining('action-zip.zip')
+    ]))
+
+    expect(fs.readdirSync(path.resolve(config.actions.dist, 'sample-app-1.0.0'))).toEqual(expect.arrayContaining([
+      'action-temp',
+      'action-zip-temp',
+      'action-zip.zip',
+      'action.zip'
+    ]))
   })
 })
 
