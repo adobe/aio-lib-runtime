@@ -14,7 +14,7 @@
     "@adobe/aio-lib-core-logging": "^2.0.0",
     "@adobe/aio-lib-core-networking": "^4.1.0",
     "@adobe/aio-lib-env": "^2.0.0",
-    "archiver": "^5.0.0",
+    "archiver": "^6.0.0",
     "execa": "^4.0.3",
     "fs-extra": "^11.1.1",
     "globby": "^11.0.1",
