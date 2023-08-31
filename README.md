@@ -431,16 +431,6 @@ Set Log Forwarding to Splunk HEC
 | index | <code>string</code> | index |
 | hecToken | <code>string</code> | hec token |
 
-Set Log Forwarding to New Relic
-
-**Kind**: instance method of [<code>LogForwarding</code>](#LogForwarding)  
-**Returns**: <code>Promise.&lt;(\*\|undefined)&gt;</code> - response from set API  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| baseURI | <code>string</code> | host |
-| licenseKey | <code>string</code> | port |
-
 <a name="LogForwarding+getSupportedDestinations"></a>
 
 ### logForwarding.getSupportedDestinations() ⇒ <code>Array.&lt;object&gt;</code>
