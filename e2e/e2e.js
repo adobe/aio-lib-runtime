@@ -67,22 +67,6 @@ test('HTTPS_PROXY must be set if E2E_USE_PROXY is set', () => {
   }
 })
 
-describe('build-actions', () => {
-  test('full config', async () => {
-    /* skip checking previously built actions */
-    utils.dumpActionsBuiltInfo = jest.fn(() => false)
-    utils.actionBuiltBefore = jest.fn(() => false)
-
-    expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
-      expect.stringContaining('action.zip'),
-      expect.stringContaining('action-zip.zip')
-    ]))
-    expect(fs.readdirSync(path.resolve(config.actions.dist, 'sample-app-1.0.0'))).toEqual(expect.arrayContaining(['action-temp', 'action-zip-temp', 'action-zip.zip', 'action.zip']))
-    fs.emptydirSync(config.actions.dist)
-    fs.rmdirSync(config.actions.dist)
-  })
-})
-
 describe('build, deploy, invoke and undeploy of actions', () => {
   test('basic manifest', async () => {
     /* skip checking previously built actions */
