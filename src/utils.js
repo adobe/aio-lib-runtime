@@ -21,7 +21,7 @@ const globby = require('globby')
 const path = require('path')
 const archiver = require('archiver')
 // this is a static list that comes from here: https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
-const SupportedRuntimes = ['sequence', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18']
+const SupportedRuntimes = ['sequence', 'nodejs:14', 'nodejs:16', 'nodejs:18', 'nodejs:20']
 const DEFAULT_PACKAGE_RESERVED_NAME = 'default'
 
 /**
