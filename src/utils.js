@@ -16,7 +16,6 @@ const cloneDeep = require('lodash.clonedeep')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:utils', { provider: 'debug', level: process.env.LOG_LEVEL })
 const yaml = require('js-yaml')
 const { createFetch } = require('@adobe/aio-lib-core-networking')
-const fetch = createFetch()
 const globby = require('globby')
 const path = require('path')
 const archiver = require('archiver')
@@ -1412,58 +1411,6 @@ function setPaths (flags = {}) {
 }
 
 /**
- * Handle Adobe auth action dependency
- *
- * This is a temporary solution and needs to be removed when headless apps will be able to
- * validate against app-registry
- *
- * This function stores the IMS organization id in the Adobe I/O cloud state library which
- * is required by the headless validator.
- *
- * The IMS org id must be stored beforehand in `@adobe/aio-lib-core-config` under the
- * `'project.org.ims_org_id'` key. TODO: pass in imsOrgId
- *
- * @param {Array<OpenWhiskEntitiesAction>} actions the array of action deployment entities
- * @param {object} owOptions OpenWhisk options
- * @param {string} imsOrgId the IMS Org Id
- */
-async function setupAdobeAuth (actions, owOptions, imsOrgId) {
-  // NOTE: this is usefull only with the legacy headless ims-org validator that needs the ims org stored in state lib
-  // the code is kept in case of need to rollback
-
-  // do not modify those
-  const ADOBE_HEADLESS_AUTH_ACTION = '/adobeio/shared-validators-v1/headless-v2'
-  const AIO_STATE_KEY = '__aio'
-  const AIO_STATE_PUT_ENDPOINT = 'https://adobeio.adobeioruntime.net/api/v1/web/state/put'
-
-  const hasAnAdobeHeadlessAuthSequence = actions.some(a => a.exec && a.exec.kind === 'sequence' && a.exec.components.includes(ADOBE_HEADLESS_AUTH_ACTION))
-  if (hasAnAdobeHeadlessAuthSequence) {
-    // if we use the headless (default auth action) we need to store the ims org id in the
-    // cloud state lib. This is needed by the auth action to perform an org check.
-    if (!imsOrgId) {
-      throw new Error('imsOrgId must be defined when using the Adobe headless auth validator')
-    }
-    const res = await fetch(AIO_STATE_PUT_ENDPOINT, {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Basic ${Buffer.from(owOptions.apiKey).toString('base64')}`
-      },
-      body: JSON.stringify({
-        namespace: owOptions.namespace,
-        key: AIO_STATE_KEY,
-        value: { project: { org: { ims_org_id: imsOrgId } } },
-        ttl: -1 // unlimited
-      })
-    })
-    if (!res.ok) {
-      throw new Error(`failed setting ims_org_id=${imsOrgId} into state lib, received status=${res.status}, please make sure your runtime credentials are correct`)
-    }
-    aioLogger.debug(`set IMS org id into cloud state, response: ${JSON.stringify(await res.json())}`)
-  }
-}
-
-/**
  * Deploy all processed entities: can deploy packages, actions, triggers, rules and apis.
  *
  * @param {OpenWhiskEntitiesAction} entities the processed entities
@@ -1475,9 +1422,6 @@ async function deployPackage (entities, ow, logger, imsOrgId) {
   const actionOpts = await ow.actions.client.options
   const ns = actionOpts.namespace
   const { apihost } = ow.initOptions
-
-  /* this is a temporary workaround to setup Adobe auth dependencies */
-  await setupAdobeAuth(entities.actions, actionOpts, imsOrgId)
 
   for (const pkg of entities.pkgAndDeps) {
     if (pkg.name === DEFAULT_PACKAGE_RESERVED_NAME) { // reserved package name, do not create
