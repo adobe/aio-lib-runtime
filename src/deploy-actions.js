@@ -195,8 +195,12 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
   // note we must filter before processPackage, as it expect all built actions to be there
   const entities = utils.processPackage(packages, {}, {}, {}, false, owOptions)
 
-  /* BEGIN temporary workaround for handling require-adobe-auth */
-  // Note this is a tmp workaround and should be removed once the app-registry validator can be used for headless applications
+  // Note1: utils.processPackage sets the headless-v2 validator for all
+  //   require-adobe-auth annotated actions. Here, we have the context on whether
+  //   an app has a frontend or not.
+  // Note2: validator app-registry = headless-v2,
+  //   both actually validate against app-registry. However, keeping them separate
+  //   gives us the flexibility of updating one and not the other if required in the future.
   if (scriptConfig.app.hasFrontend && Array.isArray(entities.actions)) {
     const { getCliEnv, DEFAULT_ENV, PROD_ENV, STAGE_ENV } = require('@adobe/aio-lib-env')
     const env = getCliEnv() || DEFAULT_ENV
@@ -221,7 +225,7 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
       }
     })
   }
-  /* END temporary workaround */
+
   // do the deployment, manifestPath and manifestContent needed for creating a project hash
   await utils.syncProject(packageName, manifestPath, manifestContent, entities, ow, logFunc, scriptConfig.imsOrgId, deleteOldEntities)
   return entities
