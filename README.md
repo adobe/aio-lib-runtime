@@ -204,15 +204,6 @@ See <a href="https://github.com/apache/openwhisk-wskdeploy/blob/master/parsers/m
 <dt><a href="#setPaths">setPaths(flags)</a> ⇒ <code><a href="#DeploymentFileComponents">DeploymentFileComponents</a></code></dt>
 <dd><p>Get the deployment file components.</p>
 </dd>
-<dt><a href="#setupAdobeAuth">setupAdobeAuth(actions, owOptions, imsOrgId)</a></dt>
-<dd><p>Handle Adobe auth action dependency</p>
-<p>This is a temporary solution and needs to be removed when headless apps will be able to
-validate against app-registry</p>
-<p>This function stores the IMS organization id in the Adobe I/O cloud state library which
-is required by the headless validator.</p>
-<p>The IMS org id must be stored beforehand in <code>@adobe/aio-lib-core-config</code> under the
-<code>&#39;project.org.ims_org_id&#39;</code> key. TODO: pass in imsOrgId</p>
-</dd>
 <dt><a href="#deployPackage">deployPackage(entities, ow, logger, imsOrgId)</a></dt>
 <dd><p>Deploy all processed entities: can deploy packages, actions, triggers, rules and apis.</p>
 </dd>
@@ -1166,28 +1157,6 @@ Get the deployment file components.
 | Param | Type | Description |
 | --- | --- | --- |
 | flags | <code>object</code> | (manifest + deployment) |
-
-<a name="setupAdobeAuth"></a>
-
-## setupAdobeAuth(actions, owOptions, imsOrgId)
-Handle Adobe auth action dependency
-
-This is a temporary solution and needs to be removed when headless apps will be able to
-validate against app-registry
-
-This function stores the IMS organization id in the Adobe I/O cloud state library which
-is required by the headless validator.
-
-The IMS org id must be stored beforehand in `@adobe/aio-lib-core-config` under the
-`'project.org.ims_org_id'` key. TODO: pass in imsOrgId
-
-**Kind**: global function  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| actions | [<code>Array.&lt;OpenWhiskEntitiesAction&gt;</code>](#OpenWhiskEntitiesAction) | the array of action deployment entities |
-| owOptions | <code>object</code> | OpenWhisk options |
-| imsOrgId | <code>string</code> | the IMS Org Id |
 
 <a name="deployPackage"></a>
 
