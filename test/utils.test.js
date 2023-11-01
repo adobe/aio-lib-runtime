@@ -2223,6 +2223,8 @@ describe('validateActionRuntime', () => {
   })
 
   test('all good', async () => {
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:10' } })).not.toThrow()
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:12' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:16' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:18' } })).not.toThrow()
