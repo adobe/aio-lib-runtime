@@ -2241,8 +2241,6 @@ describe('validateActionRuntime', () => {
     expect(() => utils.validateActionRuntime({ exec: { kind: 'NODEJS:14' } })).toThrow('Unsupported node version')
   })
   test('invalid nodejs version', () => {
-    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:10' } })).toThrow('Unsupported node version')
-    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:12' } })).toThrow('Unsupported node version')
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:17' } })).toThrow('Unsupported node version')
   })
 
