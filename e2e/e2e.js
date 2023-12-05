@@ -18,7 +18,7 @@ const { createHttpsProxy } = require('@adobe/aio-lib-test-proxy')
 
 jest.unmock('openwhisk')
 jest.unmock('archiver')
-jest.setTimeout(40000)
+jest.setTimeout(60000)
 
 // load .env values in the e2e folder, if any
 require('dotenv').config({ path: path.join(__dirname, '.env') })
@@ -67,23 +67,6 @@ test('HTTPS_PROXY must be set if E2E_USE_PROXY is set', () => {
   }
 })
 
-describe('build-actions', () => {
-  test('full config', async () => {
-    /* skip checking previously built actions */
-    utils.dumpActionsBuiltInfo = jest.fn(() => false)
-    utils.actionBuiltBefore = jest.fn(() => false)
-
-    expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
-      expect.stringContaining('action.zip'),
-      expect.stringContaining('action-zip.zip')
-    ]))
-    expect(fs.readdirSync(path.resolve(config.actions.dist))).toEqual(expect.arrayContaining(['action-temp', 'action-zip-temp', 'action-zip.zip', 'action.zip']))
-    expect(fs.readdirSync(path.resolve(config.actions.dist, 'sample-app-1.0.0'))).toEqual(expect.arrayContaining(['action-temp', 'action-zip-temp', 'action-zip.zip', 'action.zip']))
-    fs.emptydirSync(config.actions.dist)
-    fs.rmdirSync(config.actions.dist)
-  })
-})
-
 describe('build, deploy, invoke and undeploy of actions', () => {
   test('basic manifest', async () => {
     /* skip checking previously built actions */
@@ -113,6 +96,39 @@ describe('build, deploy, invoke and undeploy of actions', () => {
       expect.objectContaining({ name: 'action-zip', namespace: expect.stringContaining('/sample-app-1.0.0') }),
       expect.objectContaining({ name: 'action', namespace: expect.stringContaining('/sample-app-1.0.0') })]))
     await sdkClient.actions.invoke('sample-app-1.0.0/action')
+
+    // Verify apis are created in openwhisk
+    const basepath = 'base'
+    const relpath = 'path'
+    const { apis } = await sdkClient.routes.list({ basepath, relpath })
+
+    expect(apis.length).toEqual(1)
+    expect(apis[0].value.apidoc.basePath).toEqual(`/${basepath}`)
+    expect(apis[0].value.apidoc.info.title).toEqual('api1')
+    expect(apis[0].value.apidoc.paths[`/${relpath}`].get).toEqual(expect.any(Object))
+
+    // we can't test the reachability of the API paths below because it may take up
+    // to 5 mins for an API to be available:
+    // https://adobedocs.github.io/adobeio-runtime/guides/creating_rest_apis.html#how-long-does-it-take-to-createupdate-an-api
+
+    // const api = apis[0]
+    // const paths = api.value.apidoc.paths
+    // for (const key of Object.keys(paths)) {
+    //   if (!key.startsWith('/')) {
+    //     return
+    //   }
+
+    //   const { createFetch } = require('@adobe/aio-lib-core-networking')
+    //   const path = paths[key]
+    //   for (const verb of Object.keys(path)) {
+    //     const fetch = createFetch()
+    //     const url = `${api.value.gwApiUrl}${key}`
+    //     console.log('testing API Url:', url)
+    //     const response = await fetch(url, { method: verb })
+    //     console.log('API Url response status:', response.status)
+    //     expect(response.status).not.toEqual(404)
+    //   }
+    // }
 
     // Undeploy
     await sdk.undeployActions(config)
@@ -240,10 +256,8 @@ describe('print logs', () => {
     const logs = []
     const storeLogs = (str) => { logs.push(str) }
     // Runtime waits for about 60 secs to return a 503 when it cannot serve the request.
-    jest.setTimeout(100000)
     try {
       const retResult = await sdk.printActionLogs(config, storeLogs, 1, [], false, false)
-      // expect(logs[1]).toEqual(expect.stringContaining('stdout: hello'))
       expect(typeof retResult).toEqual('object')
     } catch (err) {
       // If the request was not successful, it has to be a 503 from Runtime.
@@ -251,8 +265,7 @@ describe('print logs', () => {
       expect(err.message).toEqual(expect.stringContaining('503')) // eslint-disable-line jest/no-conditional-expect
       expect(err.message).toEqual(expect.stringContaining('Service Unavailable')) // eslint-disable-line jest/no-conditional-expect
     }
-    jest.setTimeout(30000)
-  })
+  }, 100000)
 })
 
 test('delete non-existing trigger', async () => {

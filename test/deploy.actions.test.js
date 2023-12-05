@@ -13,7 +13,6 @@ governing permissions and limitations under the License.
 const path = require('path')
 const deployActions = require('../src/deploy-actions')
 const runtimeLibUtils = require('../src/utils')
-// jest.mock('@adobe/aio-lib-runtime')
 runtimeLibUtils.processPackage = jest.fn()
 runtimeLibUtils.syncProject = jest.fn()
 
@@ -98,12 +97,6 @@ const expectedDistManifest = {
 const expectedOWOptions = { api_key: 'fake:auth', apihost: 'https://adobeioruntime.net', apiversion: 'v1', namespace: 'fake_ns' }
 
 const mockEntities = { fake: true }
-//   pkgAndDeps: [{ name: 'sample-app-1.0.0' }, { name: 'dep' }],
-//   actions: [{ name: 'sample-app-1.0.0/action' }],
-//   triggers: [{ name: 'trigger' }],
-//   apis: [{ name: 'api' }],
-//   rules: [{ name: 'rule' }]
-// }
 
 const expectedOptions = { actionCode: true }
 

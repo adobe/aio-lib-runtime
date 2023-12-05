@@ -57,32 +57,18 @@ global.fakeFileSystem = {
   addJson: (json) => {
     // add to existing
     fileSystem.mock(json)
-    // console.log(json)
   },
   addJsonFolder: (folderPath) => {
-    /* fileSystem.mock({'actions': {
-      '/action-zip': {
-        'file1': 'hi there'
-      }
-    }})
-    return */
-    // console.log(folderPath)
-    // console.log(getFilesRecursively(folderPath))
     fileSystem.mock(getFilesRecursively(folderPath))
-    /* fs.readdirSync(folderPath).forEach(file => {
-      console.log(file)
-    }) */
   },
   removeKeys: (arr) => {
     // remove from existing
     const files = fileSystem.files()
-    // console.log(Object.keys(files))
     for (const prop in files) {
       if (arr.includes(prop)) {
         delete files[prop]
       }
     }
-    // console.log(Object.keys(files))
     fileSystem.restore()
     fileSystem.mock(files)
   },
@@ -92,7 +78,6 @@ global.fakeFileSystem = {
   },
   reset: () => {
     // reset file system
-    // TODO: add any defaults
     fileSystem.restore()
   },
   files: () => {
@@ -546,15 +531,10 @@ function getFilesRecursively (folderPath, relativePath = '') {
   const files = []
   const filesJson = {}
   fs.readdirSync(folderPath).forEach(file => {
-    // console.log(file)
     if (fs.lstatSync(folderPath + '/' + file).isFile()) {
-      // console.log('its a file')
       files.push(file)
-      /* if(relativePath !== '')
-        relativePath = relativePath + '/' */
       filesJson[relativePath + file] = fs.readFileSync(folderPath + '/' + file).toString()
     } else {
-      // files = [...files, ...getFilesRecursively(folderPath+'/'+file)]
       Object.assign(filesJson, getFilesRecursively(folderPath + '/' + file, file + '/'))
     }
   })

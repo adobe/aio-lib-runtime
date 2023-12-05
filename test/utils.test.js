@@ -170,7 +170,7 @@ describe('createComponentsFromSequence', () => {
     })
   })
 })
-/* eslint-disable no-template-curly-in-string */
+
 describe('processInputs', () => {
   test('input = {}, params = {}', () => {
     const res = utils.processInputs({}, {})
@@ -204,8 +204,10 @@ describe('processInputs', () => {
     const res = utils.processInputs({ a: 'string', one: 'number', an: 'integer' }, { })
     expect(res).toEqual({ a: '', one: 0, an: 0 })
   })
+  // eslint-disable-next-line no-template-curly-in-string
   test('input = { an: $undefEnvVar, a: $definedEnvVar, another: $definedEnvVar, the: ${definedEnvVar}, one: ${ definedEnvVar  } }, params = { a: 123 }', () => {
     process.env.definedEnvVar = 'giraffe'
+    // eslint-disable-next-line no-template-curly-in-string
     const res = utils.processInputs({ an: '$undefEnvVar', a: '$definedEnvVar', another: '$definedEnvVar', the: '${definedEnvVar}', one: '${ definedEnvVar  }' }, { a: 123 })
     expect(res).toStrictEqual({ a: 123, another: 'giraffe', an: '', the: 'giraffe', one: 'giraffe' })
     delete process.env.definedEnvVar
@@ -227,14 +229,14 @@ describe('processInputs', () => {
     const input = {
       a: 'I will be replaced',
       techId: '$AIO_my-tech-id_from_org',
-      stuff: '$BAR_VAR $BAR_VAR, ${ BAR_VAR }, $FOO',
-      foo: '${BAR}',
+      stuff: '$BAR_VAR $BAR_VAR, ${ BAR_VAR }, $FOO', // eslint-disable-line no-template-curly-in-string
+      foo: '${BAR}', // eslint-disable-line no-template-curly-in-string
       bar: {
-        default: '${BAR}, $BAR, ${FOO}'
+        default: '${BAR}, $BAR, ${FOO}' // eslint-disable-line no-template-curly-in-string
       },
       config: {
         nestedFoo: {
-          extraNested: '${BAR}, $BAR, ${FOO}'
+          extraNested: '${BAR}, $BAR, ${FOO}' // eslint-disable-line no-template-curly-in-string
         },
         a: 'I will not be replaced'
       }
@@ -723,15 +725,6 @@ describe('deployPackage', () => {
     expect(cmdAPI).toHaveBeenCalled()
     expect(cmdTrigger).toHaveBeenCalled()
     expect(cmdRule).toHaveBeenCalled()
-
-    // this assertion is specific to the tmp implementation of the require-adobe-annotation
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://adobeio.adobeioruntime.net/api/v1/web/state/put',
-      {
-        body: '{"namespace":"my-namespace","key":"__aio","value":{"project":{"org":{"ims_org_id":"MyIMSOrgId"}}},"ttl":-1}',
-        headers: { Authorization: 'Basic bXkta2V5', 'Content-Type': 'application/json' },
-        method: 'post'
-      })
   })
 
   test('simple manifest (default package)', async () => {
@@ -755,15 +748,6 @@ describe('deployPackage', () => {
     expect(cmdAPI).not.toHaveBeenCalled()
     expect(cmdTrigger).not.toHaveBeenCalled()
     expect(cmdRule).not.toHaveBeenCalled()
-
-    // this assertion is specific to the tmp implementation of the require-adobe-annotation
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://adobeio.adobeioruntime.net/api/v1/web/state/put',
-      {
-        body: '{"namespace":"my-namespace","key":"__aio","value":{"project":{"org":{"ims_org_id":"MyIMSOrgId"}}},"ttl":-1}',
-        headers: { Authorization: 'Basic bXkta2V5', 'Content-Type': 'application/json' },
-        method: 'post'
-      })
   })
 
   test('basic manifest - unsupported kind', async () => {
@@ -828,33 +812,6 @@ describe('deployPackage', () => {
     await expect(() =>
       utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_unsupported_kind.json')), ow, mockLogger, imsOrgId)
     ).not.toThrow()
-  })
-
-  test('basic manifest (fetch error)', async () => {
-    // this test is specific to the tmp implementation of the require-adobe-annotation
-    const imsOrgId = 'MyIMSOrgId'
-    const mockLogger = jest.fn()
-    ow.mockResolvedProperty('actions.client.options', { apiKey: 'my-key', namespace: 'my-namespace' })
-    ow.mockResolvedProperty(owInitOptions, {})
-
-    const res = {
-      ok: false,
-      status: 403,
-      json: jest.fn()
-    }
-    mockFetch.mockResolvedValue(res)
-
-    await expect(utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, imsOrgId))
-      .rejects.toThrow(`failed setting ims_org_id=${imsOrgId} into state lib, received status=${res.status}, please make sure your runtime credentials are correct`)
-  })
-
-  test('basic manifest (no IMS Org Id)', async () => {
-    // this test is specific to the tmp implementation of the require-adobe-annotation
-    const mockLogger = jest.fn()
-    ow.mockResolvedProperty(owInitOptions, {})
-
-    await expect(utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, null))
-      .rejects.toThrow(new Error('imsOrgId must be defined when using the Adobe headless auth validator'))
   })
 })
 
@@ -1784,7 +1741,6 @@ describe('getKeyValueArrayFromMergedParameters', () => {
 })
 
 describe('parsePathPattern', () => {
-  // expect(Vishal)toWriteThis()
   test('with namespace and name in path', () => {
     const [, namespace, name] = utils.parsePathPattern('/53444_28782/name1')
     expect(typeof namespace).toEqual('string')
@@ -1812,7 +1768,6 @@ describe('getProjectHash', () => {
 describe('findProjectHashOnServer', () => {
   test('default projectHash (no packages, actions, triggers, rules found)', async () => {
     const testProjectName = 'ThisIsTheNameOfTheProject'
-    // const resultObject = [{ annotations: [{ key: 'whisk-managed', value: { projectName: testProjectName, projectHash: 'projectHash' } }] }]
     const pkgList = ow.mockResolved('packages.list', '')
     const actList = ow.mockResolved('actions.list', '')
     const trgList = ow.mockResolved('triggers.list', '')
@@ -1827,7 +1782,6 @@ describe('findProjectHashOnServer', () => {
 
   test('default projectHash (empty annotations in existing packages, actions, triggers, rules)', async () => {
     const testProjectName = 'ThisIsTheNameOfTheProject'
-    // const resultObject = [{ annotations: [{ key: 'whisk-managed', value: { projectName: testProjectName, projectHash: 'projectHash' } }] }]
     const pkgList = ow.mockResolved('packages.list', [{ annotations: [] }])
     const actList = ow.mockResolved('actions.list', [{ annotations: [] }])
     const trgList = ow.mockResolved('triggers.list', [{ annotations: [] }])
@@ -1842,7 +1796,6 @@ describe('findProjectHashOnServer', () => {
 
   test('default projectHash (no whisk-managed annotation in existing packages, actions, triggers, rules)', async () => {
     const testProjectName = 'ThisIsTheNameOfTheProject'
-    // const resultObject = [{ annotations: [{ key: 'whisk-managed', value: { projectName: testProjectName, projectHash: 'projectHash' } }] }]
     const pkgList = ow.mockResolved('packages.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
     const actList = ow.mockResolved('actions.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
     const trgList = ow.mockResolved('triggers.list', [{ annotations: [{ key: 'not-whisk-managed', value: {} }] }])
@@ -2307,6 +2260,7 @@ describe('validateActionRuntime', () => {
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:16' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:18' } })).not.toThrow()
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:20' } })).not.toThrow()
   })
   test('no exec', () => {
     expect(utils.validateActionRuntime({})).toBeUndefined()

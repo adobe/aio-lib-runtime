@@ -105,12 +105,12 @@ global.sampleAppConfig = {
             action: {
               function: 'actions/action.js',
               web: 'yes',
-              runtime: 'nodejs:12'
+              runtime: 'nodejs:16'
             },
             'action-zip': {
               function: 'actions/action-zip',
               web: 'yes',
-              runtime: 'nodejs:12'
+              runtime: 'nodejs:16'
             }
           },
           sequences: {
@@ -122,7 +122,13 @@ global.sampleAppConfig = {
           },
           apis: {
             api1: {
-              base: { path: { action: { method: 'get' } } }
+              base: {
+                path: {
+                  action: {
+                    method: 'get'
+                  }
+                }
+              }
             }
           },
           dependencies: { dependency1: { location: '/adobeio/oauth' } }
