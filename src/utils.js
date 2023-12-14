@@ -1089,7 +1089,7 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
         const isRaw = checkWebFlags(thisAction.web)['raw-http'] || checkWebFlags(thisAction['web-export'])['raw-http']
 
         // check if the annotation is defined
-        if (thisAction.annotations && thisAction.annotations[ADOBE_AUTH_ANNOTATION]) {
+        if (thisAction.annotations?.[ADOBE_AUTH_ANNOTATION]) {
           aioLogger.debug(`found annotation '${ADOBE_AUTH_ANNOTATION}' in action '${key}/${actionName}', cli env = ${env}`)
 
           // check if the action is a web action
