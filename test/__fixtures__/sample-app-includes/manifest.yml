@@ -4,7 +4,7 @@ packages:
       action:
         function: actions/action.js
         web: yes
-        runtime: 'nodejs:12'
+        runtime: 'nodejs:18'
         include:
             - ["*.txt", "text/"]
 

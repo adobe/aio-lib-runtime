@@ -54,7 +54,7 @@ const DEFAULT_PACKAGE_RESERVED_NAME = 'default'
  * @property {string} [version] the manifest action version
  * @property {string} function the path to the action code
  * @property {string} runtime the runtime environment or kind in which the action
- *                    executes, e.g. 'nodejs:12'
+ *                    executes, e.g. 'nodejs:18'
  * @property {string} [main] the entry point to the function
  * @property {object} [inputs] the list of action default parameters
  * @property {Array<object>} [limits] limits for the action

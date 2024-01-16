@@ -4,4 +4,4 @@ packages:
       action:
         function: actions/actionname/action.js
         web: yes
-        runtime: 'nodejs:12'
+        runtime: 'nodejs:18'
