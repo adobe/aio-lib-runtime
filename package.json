@@ -20,7 +20,7 @@
     "globby": "^11.0.1",
     "js-yaml": "^4.1.0",
     "lodash.clonedeep": "^4.5.0",
-    "openwhisk": "^3.21.6",
+    "openwhisk": "^3.21.8",
     "openwhisk-fqn": "0.0.2",
     "proxy-from-env": "^1.1.0",
     "sha1": "^1.1.1",
