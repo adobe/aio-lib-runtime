@@ -199,12 +199,12 @@ global.sampleAppConfig = {
             action: {
               function: 'actions/action.js',
               web: 'yes',
-              runtime: 'nodejs:12'
+              runtime: 'nodejs:18'
             },
             'action-zip': {
               function: 'actions/action-zip',
               web: 'yes',
-              runtime: 'nodejs:12'
+              runtime: 'nodejs:18'
             }
           },
           sequences: {
@@ -229,12 +229,12 @@ global.sampleAppConfig = {
         action: {
           function: 'actions/action.js',
           web: 'yes',
-          runtime: 'nodejs:12'
+          runtime: 'nodejs:18'
         },
         'action-zip': {
           function: 'actions/action-zip',
           web: 'yes',
-          runtime: 'nodejs:12'
+          runtime: 'nodejs:18'
         }
       },
       sequences: {
@@ -297,7 +297,7 @@ global.sampleAppIncludesConfig = {
             action: {
               function: 'actions/action.js',
               web: 'yes',
-              runtime: 'nodejs:12',
+              runtime: 'nodejs:18',
               include: [['*.txt', 'text/']]
             }
           }
@@ -309,7 +309,7 @@ global.sampleAppIncludesConfig = {
         action: {
           function: 'actions/action.js',
           web: 'yes',
-          runtime: 'nodejs:12',
+          runtime: 'nodejs:18',
           include: [['*.txt', 'app/']]
         }
       }
@@ -363,12 +363,12 @@ global.namedPackageConfig = {
             action: {
               function: 'actions/action.js',
               web: 'yes',
-              runtime: 'nodejs:12'
+              runtime: 'nodejs:18'
             },
             'action-zip': {
               function: 'actions/action-zip',
               web: 'yes',
-              runtime: 'nodejs:12'
+              runtime: 'nodejs:18'
             }
           },
           sequences: {
@@ -436,7 +436,7 @@ global.sampleAppReducedConfig = {
             action: {
               function: 'actions/action.js',
               web: 'yes',
-              runtime: 'nodejs:12'
+              runtime: 'nodejs:18'
             }
           },
           triggers: { trigger1: null }
@@ -449,7 +449,7 @@ global.sampleAppReducedConfig = {
         action: {
           function: 'actions/action.js',
           web: 'yes',
-          runtime: 'nodejs:12'
+          runtime: 'nodejs:18'
         }
       },
       triggers: { trigger1: null }
