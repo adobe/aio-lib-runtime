@@ -987,6 +987,8 @@ describe('processPackage', () => {
     let packagesCopy = cloneDeep(basicPackage)
     delete packagesCopy.pkg1.actions.theaction.web
     res = utils.processPackage(packagesCopy, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    const loggerSpy = jest.spyOn(aioLogger, 'warn')
+    expect(loggerSpy).toHaveBeenLastCalledWith('The action \'pkg1/theaction\' is not a web action, the annotation \'require-adobe-auth\' will be ignored.')
     expect(res).toEqual({
       actions: [{
         name: 'pkg1/theaction',

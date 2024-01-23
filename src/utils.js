@@ -1088,9 +1088,15 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
         const isWeb = checkWebFlags(thisAction.web)['web-export']
         const isRaw = checkWebFlags(thisAction.web)['raw-http'] || checkWebFlags(thisAction['web-export'])['raw-http']
 
-        // check if the annotation is defined AND the action is a web action
-        if ((isWeb || isWebExport) && thisAction.annotations && thisAction.annotations[ADOBE_AUTH_ANNOTATION]) {
+        // check if the annotation is defined
+        if (thisAction.annotations?.[ADOBE_AUTH_ANNOTATION]) {
           aioLogger.debug(`found annotation '${ADOBE_AUTH_ANNOTATION}' in action '${key}/${actionName}', cli env = ${env}`)
+
+          // check if the action is a web action
+          if (!(isWeb || isWebExport)) {
+            aioLogger.warn(`The action '${key}/${actionName}' is not a web action, the annotation '${ADOBE_AUTH_ANNOTATION}' will be ignored.`)
+            return
+          }
 
           // 1. rename the action
           const renamedAction = REWRITE_ACTION_PREFIX + actionName
