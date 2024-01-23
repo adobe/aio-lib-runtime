@@ -49,12 +49,12 @@ const expectedDistManifest = {
       actions: {
         action: {
           function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
-          runtime: 'nodejs:12',
+          runtime: 'nodejs:18',
           web: 'yes'
         },
         'action-zip': {
           function: path.normalize('dist/actions/sample-app-1.0.0/action-zip.zip'),
-          runtime: 'nodejs:12',
+          runtime: 'nodejs:18',
           web: 'yes'
         }
       },
@@ -246,7 +246,7 @@ test('use deployConfig.filterEntities to deploy only one action', async () => {
       actions: {
         action: {
           function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
-          runtime: 'nodejs:12',
+          runtime: 'nodejs:18',
           web: 'yes'
         }
       }
@@ -285,7 +285,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action'
       actions: {
         action: {
           function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
-          runtime: 'nodejs:12',
+          runtime: 'nodejs:18',
           web: 'yes'
         }
       },
@@ -327,7 +327,7 @@ test('use deployConfig.filterEntities to deploy only one trigger and one action 
       actions: {
         action: {
           function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
-          runtime: 'nodejs:12',
+          runtime: 'nodejs:18',
           web: 'yes'
         }
       },
@@ -375,7 +375,7 @@ test('use deployConfig.filterEntities to deploy only one action and one api', as
       actions: {
         action: {
           function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
-          runtime: 'nodejs:12',
+          runtime: 'nodejs:18',
           web: 'yes'
         }
       },
@@ -425,12 +425,12 @@ test('use deployConfig.filterEntities to deploy only two actions and one sequenc
       actions: {
         action: {
           function: path.normalize('dist/actions/sample-app-1.0.0/action.zip'),
-          runtime: 'nodejs:12',
+          runtime: 'nodejs:18',
           web: 'yes'
         },
         'action-zip': {
           function: path.normalize('dist/actions/sample-app-1.0.0/action-zip.zip'),
-          runtime: 'nodejs:12',
+          runtime: 'nodejs:18',
           web: 'yes'
         }
       },
@@ -509,7 +509,7 @@ test('use deployConfig.filterEntities on non existing pkgEntity should work', as
         actions: {
           action: {
             function: path.normalize('dist/actions/sample-app-reduced-1.0.0/action.zip'),
-            runtime: 'nodejs:12',
+            runtime: 'nodejs:18',
             web: 'yes'
           }
         },
@@ -644,10 +644,10 @@ test('custom package and action filter', async () => {
     'bobby-mcgee': expect.objectContaining({
       actions: {
         action: {
-          function: path.normalize('dist/actions/bobby-mcgee/action.zip'), runtime: 'nodejs:12', web: 'yes'
+          function: path.normalize('dist/actions/bobby-mcgee/action.zip'), runtime: 'nodejs:18', web: 'yes'
         },
         'action-zip': {
-          function: path.normalize('dist/actions/bobby-mcgee/action-zip.zip'), runtime: 'nodejs:12', web: 'yes'
+          function: path.normalize('dist/actions/bobby-mcgee/action-zip.zip'), runtime: 'nodejs:18', web: 'yes'
         }
       }
     })
@@ -967,7 +967,7 @@ it('should filter the manifest, ignore the legacy action build', async () => {
       actions: {
         'action-zip': {
           function: path.normalize('dist/actions/sample-app-1.0.0/action-zip.zip'),
-          runtime: 'nodejs:12',
+          runtime: 'nodejs:18',
           web: 'yes'
         }
       },

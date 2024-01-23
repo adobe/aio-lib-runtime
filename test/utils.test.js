@@ -1915,7 +1915,7 @@ describe('getActionUrls', () => {
         thisAction: {
           function: 'thisAction/thisAction.js',
           web: 'yes',
-          runtime: 'nodejs:12'
+          runtime: 'nodejs:18'
         }
       },
       sequences: {

@@ -20,7 +20,7 @@ const globby = require('globby')
 const path = require('path')
 const archiver = require('archiver')
 // this is a static list that comes from here: https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
-const SupportedRuntimes = ['sequence', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18', 'nodejs:20']
+const SupportedRuntimes = ['sequence', 'blackbox', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18', 'nodejs:20']
 const DEFAULT_PACKAGE_RESERVED_NAME = 'default'
 
 /**
@@ -54,7 +54,7 @@ const DEFAULT_PACKAGE_RESERVED_NAME = 'default'
  * @property {string} [version] the manifest action version
  * @property {string} function the path to the action code
  * @property {string} runtime the runtime environment or kind in which the action
- *                    executes, e.g. 'nodejs:12'
+ *                    executes, e.g. 'nodejs:18'
  * @property {string} [main] the entry point to the function
  * @property {object} [inputs] the list of action default parameters
  * @property {Array<object>} [limits] limits for the action
