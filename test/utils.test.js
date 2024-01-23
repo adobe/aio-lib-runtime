@@ -701,15 +701,6 @@ describe('deployPackage', () => {
     expect(cmdAPI).toHaveBeenCalled()
     expect(cmdTrigger).toHaveBeenCalled()
     expect(cmdRule).toHaveBeenCalled()
-
-    // this assertion is specific to the tmp implementation of the require-adobe-annotation
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://adobeio.adobeioruntime.net/api/v1/web/state/put',
-      {
-        body: '{"namespace":"my-namespace","key":"__aio","value":{"project":{"org":{"ims_org_id":"MyIMSOrgId"}}},"ttl":-1}',
-        headers: { Authorization: 'Basic bXkta2V5', 'Content-Type': 'application/json' },
-        method: 'post'
-      })
   })
 
   test('simple manifest (default package)', async () => {
@@ -733,15 +724,6 @@ describe('deployPackage', () => {
     expect(cmdAPI).not.toHaveBeenCalled()
     expect(cmdTrigger).not.toHaveBeenCalled()
     expect(cmdRule).not.toHaveBeenCalled()
-
-    // this assertion is specific to the tmp implementation of the require-adobe-annotation
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://adobeio.adobeioruntime.net/api/v1/web/state/put',
-      {
-        body: '{"namespace":"my-namespace","key":"__aio","value":{"project":{"org":{"ims_org_id":"MyIMSOrgId"}}},"ttl":-1}',
-        headers: { Authorization: 'Basic bXkta2V5', 'Content-Type': 'application/json' },
-        method: 'post'
-      })
   })
 
   test('basic manifest - unsupported kind', async () => {
@@ -806,33 +788,6 @@ describe('deployPackage', () => {
     await expect(() =>
       utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_unsupported_kind.json')), ow, mockLogger, imsOrgId)
     ).not.toThrow()
-  })
-
-  test('basic manifest (fetch error)', async () => {
-    // this test is specific to the tmp implementation of the require-adobe-annotation
-    const imsOrgId = 'MyIMSOrgId'
-    const mockLogger = jest.fn()
-    ow.mockResolvedProperty('actions.client.options', { apiKey: 'my-key', namespace: 'my-namespace' })
-    ow.mockResolvedProperty(owInitOptions, {})
-
-    const res = {
-      ok: false,
-      status: 403,
-      json: jest.fn()
-    }
-    mockFetch.mockResolvedValue(res)
-
-    await expect(utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, imsOrgId))
-      .rejects.toThrow(`failed setting ims_org_id=${imsOrgId} into state lib, received status=${res.status}, please make sure your runtime credentials are correct`)
-  })
-
-  test('basic manifest (no IMS Org Id)', async () => {
-    // this test is specific to the tmp implementation of the require-adobe-annotation
-    const mockLogger = jest.fn()
-    ow.mockResolvedProperty(owInitOptions, {})
-
-    await expect(utils.deployPackage(JSON.parse(fs.readFileSync('/basic_manifest_res.json')), ow, mockLogger, null))
-      .rejects.toThrow(new Error('imsOrgId must be defined when using the Adobe headless auth validator'))
   })
 })
 
@@ -1960,7 +1915,7 @@ describe('getActionUrls', () => {
         thisAction: {
           function: 'thisAction/thisAction.js',
           web: 'yes',
-          runtime: 'nodejs:12'
+          runtime: 'nodejs:18'
         }
       },
       sequences: {
@@ -2273,6 +2228,7 @@ describe('validateActionRuntime', () => {
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:14' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:16' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:18' } })).not.toThrow()
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:20' } })).not.toThrow()
   })
   test('no exec', () => {
     expect(utils.validateActionRuntime({})).toBeUndefined()

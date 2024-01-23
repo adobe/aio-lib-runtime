@@ -10,22 +10,15 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { stdout } = require('stdout-stderr')
+const { stdout, stderr } = require('stdout-stderr')
 const fs = jest.requireActual('fs')
 const eol = require('eol')
+const { vol } = require('memfs')
 
 const fetch = require('jest-fetch-mock')
-const fileSystem = require('jest-plugin-fs').default
 
-// dont touch the real fs
-const mockFs = require('jest-plugin-fs/mock')
-
-// jest-plugin-fs/mock is too old, and has no updates
-// ... fs.rmSync is only available in node >= 14.
-jest.mock('fs', () => ({
-  ...mockFs,
-  rmSync: jest.fn()
-}))
+jest.mock('fs')
+jest.mock('fs/promises')
 
 process.env.CI = true
 
@@ -34,8 +27,13 @@ jest.setTimeout(30000)
 jest.setMock('node-fetch', fetch)
 
 // trap console log
-beforeEach(() => { stdout.start() })
-afterEach(() => { stdout.stop() })
+beforeEach(() => {
+  stdout.start()
+  stderr.start()
+  // change this if you need to see logs from stdout
+  stdout.print = false
+})
+afterEach(() => { stdout.stop(); stderr.stop() })
 
 // helper for fixtures
 global.fixtureFile = (output) => {
@@ -56,36 +54,36 @@ global.fixtureZip = (output) => {
 global.fakeFileSystem = {
   addJson: (json) => {
     // add to existing
-    fileSystem.mock(json)
+    vol.fromJSON(json, '/')
   },
   addJsonFolder: (folderPath) => {
-    fileSystem.mock(getFilesRecursively(folderPath))
+    vol.fromJSON(getFilesRecursively(folderPath), '/')
   },
   removeKeys: (arr) => {
     // remove from existing
-    const files = fileSystem.files()
+    const files = vol.toJSON()
     for (const prop in files) {
       if (arr.includes(prop)) {
         delete files[prop]
       }
     }
-    fileSystem.restore()
-    fileSystem.mock(files)
+    vol.reset()
+    vol.fromJSON(files)
   },
   clear: () => {
     // reset to empty
-    fileSystem.restore()
+    vol.reset()
   },
   reset: () => {
     // reset file system
-    fileSystem.restore()
+    vol.reset()
   },
   files: () => {
-    return fileSystem.files()
+    return vol.toJSON()
   }
 }
 // seed the fake filesystem
-fakeFileSystem.reset()
+vol.reset()
 
 // fixture matcher
 expect.extend({
@@ -201,12 +199,12 @@ global.sampleAppConfig = {
             action: {
               function: 'actions/action.js',
               web: 'yes',
-              runtime: 'nodejs:12'
+              runtime: 'nodejs:18'
             },
             'action-zip': {
               function: 'actions/action-zip',
               web: 'yes',
-              runtime: 'nodejs:12'
+              runtime: 'nodejs:18'
             }
           },
           sequences: {
@@ -231,12 +229,12 @@ global.sampleAppConfig = {
         action: {
           function: 'actions/action.js',
           web: 'yes',
-          runtime: 'nodejs:12'
+          runtime: 'nodejs:18'
         },
         'action-zip': {
           function: 'actions/action-zip',
           web: 'yes',
-          runtime: 'nodejs:12'
+          runtime: 'nodejs:18'
         }
       },
       sequences: {
@@ -299,7 +297,7 @@ global.sampleAppIncludesConfig = {
             action: {
               function: 'actions/action.js',
               web: 'yes',
-              runtime: 'nodejs:12',
+              runtime: 'nodejs:18',
               include: [['*.txt', 'text/']]
             }
           }
@@ -311,7 +309,7 @@ global.sampleAppIncludesConfig = {
         action: {
           function: 'actions/action.js',
           web: 'yes',
-          runtime: 'nodejs:12',
+          runtime: 'nodejs:18',
           include: [['*.txt', 'app/']]
         }
       }
@@ -365,12 +363,12 @@ global.namedPackageConfig = {
             action: {
               function: 'actions/action.js',
               web: 'yes',
-              runtime: 'nodejs:12'
+              runtime: 'nodejs:18'
             },
             'action-zip': {
               function: 'actions/action-zip',
               web: 'yes',
-              runtime: 'nodejs:12'
+              runtime: 'nodejs:18'
             }
           },
           sequences: {
@@ -438,7 +436,7 @@ global.sampleAppReducedConfig = {
             action: {
               function: 'actions/action.js',
               web: 'yes',
-              runtime: 'nodejs:12'
+              runtime: 'nodejs:18'
             }
           },
           triggers: { trigger1: null }
@@ -451,7 +449,7 @@ global.sampleAppReducedConfig = {
         action: {
           function: 'actions/action.js',
           web: 'yes',
-          runtime: 'nodejs:12'
+          runtime: 'nodejs:18'
         }
       },
       triggers: { trigger1: null }
