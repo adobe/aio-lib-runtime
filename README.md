@@ -1570,7 +1570,7 @@ The manifest action definition
 | --- | --- | --- |
 | [version] | <code>string</code> | the manifest action version |
 | function | <code>string</code> | the path to the action code |
-| runtime | <code>string</code> | the runtime environment or kind in which the action                    executes, e.g. 'nodejs:12' |
+| runtime | <code>string</code> | the runtime environment or kind in which the action                    executes, e.g. 'nodejs:18' |
 | [main] | <code>string</code> | the entry point to the function |
 | [inputs] | <code>object</code> | the list of action default parameters |
 | [limits] | <code>Array.&lt;object&gt;</code> | limits for the action |
