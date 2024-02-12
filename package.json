@@ -29,7 +29,7 @@
   "deprecated": false,
   "description": "Adobe I/O Runtime Lib",
   "devDependencies": {
-    "@adobe/aio-lib-test-proxy": "^1.0.0",
+    "@adobe/aio-lib-test-proxy": "^2.0.1",
     "@adobe/eslint-config-aio-lib-config": "^2.0.1",
     "@types/jest": "^29.5.0",
     "@types/node-fetch": "^2.5.4",
