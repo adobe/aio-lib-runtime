@@ -186,7 +186,7 @@ describe('build by zipping js action folder', () => {
   test('full config', async () => {
     setupFs({ addActionFile: true })
 
-    const lastBuiltActionsFile = path.join(config.root, 'dist', 'last-built-actions.json')
+    const lastBuiltActionsFile = path.join(config.root, config.actions.dist, 'last-built-actions.json')
     webpackMock.run.mockImplementation(cb => {
       global.fakeFileSystem.addJson({
         [lastBuiltActionsFile]: '{}'
@@ -221,7 +221,7 @@ describe('build by bundling js action file with webpack', () => {
       // fake the build files
       global.fakeFileSystem.addJson({
         '/dist/actions/action.tmp.js': 'fake',
-        'dist/actions/last-built-actions.json': 'fake'
+        'dist/actions/last-built-actions.json': '{}'
       })
       cb(null, webpackStatsMock)
     })

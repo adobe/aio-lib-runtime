@@ -301,7 +301,7 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
   // clear out dist dir
   fs.emptyDirSync(distFolder)
   const toBuildList = []
-  const lastBuiltActionsPath = path.join(config.root, 'dist', 'last-built-actions.json')
+  const lastBuiltActionsPath = path.join(config.root, distFolder, 'last-built-actions.json')
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
     const actionsToBuild = Object.entries(pkg.actions || {})
     // build all sequentially (todo make bundler execution parallel)
