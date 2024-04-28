@@ -1944,6 +1944,21 @@ describe('getActionUrls', () => {
     expect(result).toEqual(expected)
   })
 
+  test('web-export and web raw test', () => {
+    const expected = {
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeioruntime.net/api/v1/web/pkg2/thatsequence'
+    }
+    config.manifest.full.packages.__APP_PACKAGE__.actions.action.web = 'raw'
+    delete config.manifest.full.packages.__APP_PACKAGE__.actions['action-zip'].web
+    config.manifest.full.packages.__APP_PACKAGE__.actions['action-zip'].annotations = { 'web-export': 'raw' }
+    const result = utils.getActionUrls(config, true, false)
+    expect(result).toEqual(expected)
+  })
+
   test('some non web actions, with ui, no dev, custom apihost, custom hostname => use custom hostname everywhere', () => {
     const expected = {
       'sample-app-1.0.0/action': 'https://fake_ns.custom.net/api/v1/web/sample-app-1.0.0/action',
@@ -2089,6 +2104,7 @@ describe('getActionUrls', () => {
     const result = utils.getActionUrls(config, false, false)
     expect(result).toEqual(expect.objectContaining(expected))
   })
+
   test('urls with action keys when legacy on', () => {
     const expected = {
       'pkg2/thataction': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thataction',
