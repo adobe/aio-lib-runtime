@@ -1835,7 +1835,7 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
 
   /** @private */
   function getActionUrl (pkgAndActionName, action) {
-    const webArg = action['web-export'] || action.web
+    const webArg = action?.annotations?.['web-export'] || action?.web
     const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
 
     const actionIsBehindCdn =
