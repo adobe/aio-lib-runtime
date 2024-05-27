@@ -1,0 +1,14 @@
+packages:
+  __APP_PACKAGE__:
+    license: Apache-2.0
+    sequences:
+      someAction: 'anotherAction'
+    actions:
+      someAction:
+        function: actions/action.js
+        web: yes
+        runtime: 'nodejs:18'
+      anotherAction:
+        function: actions/action.js
+        web: yes
+        runtime: 'nodejs:18'

@@ -392,6 +392,7 @@ global.namedPackageConfig = {
   actions: { src: '/actions', dist: '/dist/actions', devRemote: false },
   root: '/'
 }
+
 global.sampleAppReducedConfig = {
   app: {
     hasFrontend: false,
@@ -453,6 +454,93 @@ global.sampleAppReducedConfig = {
         }
       },
       triggers: { trigger1: null }
+    }
+  },
+  actions: { src: '/actions', dist: '/dist/actions', devRemote: false },
+  root: '/'
+}
+
+global.sampleAppDuplicateConfig = {
+  app: {
+    hasFrontend: false,
+    hasBackend: true,
+    version: '1.0.0',
+    name: 'sample-app-reduced',
+    defaultHostname: 'https://adobeio-static.net',
+    hostname: 'https://adobeio-static.net',
+    htmlCacheDuration: '60',
+    jsCacheDuration: '604800',
+    cssCacheDuration: '604800',
+    imageCacheDuration: '604800'
+  },
+  ow: {
+    namespace: 'fake_ns',
+    auth: 'fake:auth',
+    apihost: 'https://adobeioruntime.net',
+    defaultApihost: 'https://adobeioruntime.net',
+    apiversion: 'v1',
+    package: 'sample-app-duplicate-1.0.0'
+  },
+  s3: {
+    credsCacheFile: '/.aws.tmp.creds.json',
+    creds: undefined,
+    folder: 'fake_ns',
+    tvmUrl: 'https://adobeio.adobeioruntime.net/apis/tvm/'
+  },
+  web: {
+    src: '/web-src',
+    distDev: '/dist/web-src-dev',
+    distProd: '/dist/web-src-prod',
+    injectedConfig: '/web-src/src/config.json'
+  },
+  manifest: {
+    src: '/manifest.yml',
+    packagePlaceholder: '__APP_PACKAGE__',
+    full: {
+      packages: {
+        __APP_PACKAGE__: {
+          license: 'Apache-2.0',
+          sequences: {
+            someAction: {
+              actions: 'anotherAction',
+              web: 'yes'
+            }
+          },
+          actions: {
+            someAction: {
+              function: 'actions/action.js',
+              web: 'yes',
+              runtime: 'nodejs:18'
+            },
+            anotherAction: {
+              function: 'actions/action.js',
+              web: 'yes',
+              runtime: 'nodejs:18'
+            }
+          }
+        }
+      }
+    },
+    package: {
+      license: 'Apache-2.0',
+      sequences: {
+        someAction: {
+          actions: 'anotherAction',
+          web: 'yes'
+        }
+      },
+      actions: {
+        someAction: {
+          function: 'actions/action.js',
+          web: 'yes',
+          runtime: 'nodejs:18'
+        },
+        anotherAction: {
+          function: 'actions/action.js',
+          web: 'yes',
+          runtime: 'nodejs:18'
+        }
+      }
     }
   },
   actions: { src: '/actions', dist: '/dist/actions', devRemote: false },
@@ -566,5 +654,13 @@ global.addSampleAppReducedFiles = () => {
     'actions/action.js': global.fixtureFile('/sample-app-reduced/actions/action.js'),
     'manifest.yml': global.fixtureFile('/sample-app-reduced/manifest.yml'),
     'package.json': global.fixtureFile('/sample-app-reduced/package.json')
+  })
+}
+
+global.addSampleAppDuplicateFiles = () => {
+  global.fakeFileSystem.addJson({
+    'actions/action.js': global.fixtureFile('/sample-app-duplicate/actions/action.js'),
+    'manifest.yml': global.fixtureFile('/sample-app-duplicate/manifest.yml'),
+    'package.json': global.fixtureFile('/sample-app-duplicate/package.json')
   })
 }

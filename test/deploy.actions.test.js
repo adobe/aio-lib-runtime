@@ -596,6 +596,18 @@ test('if actions are deployed and part of the manifest it should return their ur
   })
 })
 
+test('if sequence name is the same as an action name, throw an error', async () => {
+  addSampleAppDuplicateFiles()
+
+  const buildDir = global.sampleAppDuplicateConfig.actions.dist
+  // fake a previous build
+  addFakeFiles(buildDir)
+
+  await expect(deployActions(global.sampleAppDuplicateConfig))
+    .rejects
+    .toThrow('Sequence \'someAction\' is already defined as an action under the same package. Actions and sequences can not have the same name in a single package.')
+})
+
 test('if actions are deployed with custom package and part of the manifest it should return their url', async () => {
   addNamedPackageFiles()
 
@@ -990,45 +1002,6 @@ test('No backend is present', async () => {
 
   await expect(deployActions(global.sampleAppConfig)).rejects.toThrow('cannot deploy actions, app has no backend')
 })
-
-/**
- *
- */
-function addSampleAppFiles () {
-  global.fakeFileSystem.addJson({
-    'actions/action-zip/index.js': global.fixtureFile('/sample-app/actions/action-zip/index.js'),
-    'actions/action-zip/package.json': global.fixtureFile('/sample-app/actions/action-zip/package.json'),
-    'actions/action.js': global.fixtureFile('/sample-app/actions/action.js'),
-    'web-src/index.html': global.fixtureFile('/sample-app/web-src/index.html'),
-    'manifest.yml': global.fixtureFile('/sample-app/manifest.yml'),
-    'package.json': global.fixtureFile('/sample-app/package.json')
-  })
-}
-
-/**
- *
- */
-function addNamedPackageFiles () {
-  global.fakeFileSystem.addJson({
-    'actions/action-zip/index.js': global.fixtureFile('/named-package/actions/action-zip/index.js'),
-    'actions/action-zip/package.json': global.fixtureFile('/named-package/actions/action-zip/package.json'),
-    'actions/action.js': global.fixtureFile('/named-package/actions/action.js'),
-    'web-src/index.html': global.fixtureFile('/named-package/web-src/index.html'),
-    'manifest.yml': global.fixtureFile('/named-package/manifest.yml'),
-    'package.json': global.fixtureFile('/named-package/package.json')
-  })
-}
-
-/**
- *
- */
-function addSampleAppReducedFiles () {
-  global.fakeFileSystem.addJson({
-    'actions/action.js': global.fixtureFile('/sample-app-reduced/actions/action.js'),
-    'manifest.yml': global.fixtureFile('/sample-app-reduced/manifest.yml'),
-    'package.json': global.fixtureFile('/sample-app-reduced/package.json')
-  })
-}
 
 /**
  * @param {string} buildDir build dir path

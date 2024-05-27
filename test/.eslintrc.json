@@ -3,7 +3,11 @@
     "fixtureFile": true,
     "fixtureJson": true,
     "fakeFileSystem": true,
-    "fetch": true
+    "fetch": true,
+    "addSampleAppFiles": true,
+    "addSampleAppReducedFiles": true,
+    "addSampleAppDuplicateFiles": true,
+    "addNamedPackageFiles": true
   },
   "rules": {
     "node/no-unpublished-require": 0,
