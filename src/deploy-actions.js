@@ -96,7 +96,16 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   }
   for (const [pkgName, pkg] of Object.entries(manifest.packages)) {
     pkg.version = config.app.version
-    for (const [name, action] of Object.entries(pkg.actions || {})) {
+    const sequences = pkg.sequences || {}
+    const actions = pkg.actions || {}
+
+    Object.keys(sequences).forEach((sequenceName) => {
+      if (actions[sequenceName]) {
+        throw new Error(`Sequence '${sequenceName}' is already defined as an action under the same package. Actions and sequences can not have the same name in a single package.`)
+      }
+    })
+
+    for (const [name, action] of Object.entries(actions)) {
       // change path to built action
       const zipFileName = utils.getActionZipFileName(pkgName, name, false) + '.zip'
       action.function = path.join(relDist, zipFileName)
