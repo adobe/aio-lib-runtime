@@ -53,6 +53,7 @@ beforeEach(() => {
 
   execa.mockReset()
   utils.zip.mockReset()
+  fs.emptyDirSync = jest.fn()
 })
 
 describe('build by zipping js action folder', () => {
@@ -1154,6 +1155,20 @@ test('should not zip files if the action was built before (skipCheck=false)', as
   utils.actionBuiltBefore = jest.fn(() => true)
   await buildActions(config, ['action'], false)
   expect(utils.zip).not.toHaveBeenCalled()
+})
+
+test('should not delete dist folder when emptyDist=false', async () => {
+  addSampleAppFiles()
+  const config = deepClone(global.sampleAppConfig)
+  await buildActions(config, ['action'], false /* skipCheck */, false /* emptyDist */)
+  expect(fs.emptyDirSync).not.toHaveBeenCalled()
+})
+
+test('should delete dist folder when emptyDist=true', async () => {
+  addSampleAppFiles()
+  const config = deepClone(global.sampleAppConfig)
+  await buildActions(config, ['action'], false /* skipCheck */, true /* emptyDist */)
+  expect(fs.emptyDirSync).toHaveBeenCalled()
 })
 
 test('No backend is present', async () => {
