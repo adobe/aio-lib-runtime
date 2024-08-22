@@ -11,13 +11,14 @@ governing permissions and limitations under the License.
 */
 
 const fs = require('fs-extra')
-const path = require('path')
+const path = require('node:path')
 const webpack = require('webpack')
 const globby = require('globby')
 const utils = require('./utils')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:action-builder', { provider: 'debug' })
 const cloneDeep = require('lodash.clonedeep')
 const { getCliEnv } = require('@adobe/aio-lib-env')
+const { hashElement } = require('folder-hash')
 
 const uniqueArr = (items) => {
   return [...new Set(items)]
@@ -187,17 +188,23 @@ const prepareToBuildAction = async (action, root, dist) => {
     }
   })
 
+  // quick helper
+  const filePathExists = (dir, file) => {
+    return fs.existsSync(path.join(dir, file))
+  }
+
+  const actionDir = path.dirname(actionPath)
+  const srcHash = await hashElement(actionDir, { folders: { exclude: ['node_modules'] } })
   if (isDirectory) {
-    // make sure package.json exists OR index.js
-    const packageJsonPath = path.join(actionPath, 'package.json')
-    if (!fs.existsSync(packageJsonPath)) {
-      if (!fs.existsSync(path.join(actionPath, 'index.js'))) {
-        throw new Error(`missing required ${utils._relApp(root, packageJsonPath)} or index.js for folder actions`)
+    // make sure package.json exists OR index.js exists
+    if (!filePathExists(actionPath, 'package.json')) {
+      if (!filePathExists(actionPath, 'index.js')) {
+        throw new Error('missing required package.json or index.js for folder actions')
       }
       aioLogger.debug('action directory has an index.js, allowing zip')
     } else {
       // make sure package.json exposes main or there is an index.js
-      const expectedActionName = utils.getActionEntryFile(packageJsonPath)
+      const expectedActionName = utils.getActionEntryFile(path.join(actionPath, 'package.json'))
       if (!fs.existsSync(path.join(actionPath, expectedActionName))) {
         throw new Error(`the directory ${action.function} must contain either a package.json with a 'main' flag or an index.js file at its root`)
       }
@@ -230,13 +237,10 @@ const prepareToBuildAction = async (action, root, dist) => {
   }
 
   let buildHash
-  let contentHash
   if (isDirectory) {
-    contentHash = actionFileStats.mtime.valueOf()
-    buildHash = { [zipFileName]: contentHash }
+    buildHash = { [zipFileName]: actionFileStats.mtime.valueOf() }
   } else {
-    contentHash = statsInfo.hash
-    buildHash = { [zipFileName]: contentHash }
+    buildHash = { [zipFileName]: statsInfo.hash }
   }
 
   return {
@@ -244,6 +248,7 @@ const prepareToBuildAction = async (action, root, dist) => {
     buildHash,
     legacy: defaultPackage,
     outPath,
+    srcHash,
     tempBuildDir,
     tempActionName: 'index.js'
   }
@@ -257,10 +262,9 @@ const prepareToBuildAction = async (action, root, dist) => {
  * @param {Array<ActionBuild>} buildsList Array of data about actions available to be zipped.
  * @param {string} lastBuildsPath Path to the last built actions data.
  * @param {string} distFolder Path to the output root.
- * @param {boolean} skipCheck If true, zip all the actions from the buildsList
  * @returns {string[]} Array of zipped actions.
  */
-const zipActions = async (buildsList, lastBuildsPath, distFolder, skipCheck) => {
+const zipActions = async (buildsList, lastBuildsPath, distFolder) => {
   let dumpData = {}
   const builtList = []
   let lastBuiltData = ''
@@ -270,15 +274,10 @@ const zipActions = async (buildsList, lastBuildsPath, distFolder, skipCheck) => 
   for (const build of buildsList) {
     const { outPath, buildHash, tempBuildDir } = build
     aioLogger.debug(`action buildHash ${JSON.stringify(buildHash)}`)
-    const previouslyBuilt = utils.actionBuiltBefore(lastBuiltData, buildHash)
-    if (!previouslyBuilt || skipCheck) {
-      aioLogger.debug(`action ${build.actionName} has changed since last build, zipping`)
-      dumpData = { ...dumpData, ...buildHash }
-      await utils.zip(tempBuildDir, outPath)
-      builtList.push(outPath)
-    } else {
-      aioLogger.debug(`action ${build.actionName} was not modified since last build, skipping`)
-    }
+    aioLogger.debug(`action ${build.actionName} has changed since last build, zipping`)
+    dumpData = { ...dumpData, ...buildHash }
+    await utils.zip(tempBuildDir, outPath)
+    builtList.push(outPath)
   }
   const parsedLastBuiltData = utils.safeParse(lastBuiltData)
   await utils.dumpActionsBuiltInfo(lastBuildsPath, dumpData, parsedLastBuiltData)
@@ -297,27 +296,52 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
     sanitizedFilterActions = sanitizedFilterActions.map(actionName => actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
   }
   const distFolder = config.actions.dist
-
-  // clear out dist dir
-  fs.emptyDirSync(distFolder)
+  // do not clear out dist dir
   const toBuildList = []
   const lastBuiltActionsPath = path.join(config.root, 'dist', 'last-built-actions.json')
+  let lastBuiltData = {}
+  if (fs.existsSync(lastBuiltActionsPath)) {
+    lastBuiltData = await fs.readJson(lastBuiltActionsPath)
+  }
+
   for (const [pkgName, pkg] of Object.entries(modifiedConfig.manifest.full.packages)) {
     const actionsToBuild = Object.entries(pkg.actions || {})
     // build all sequentially (todo make bundler execution parallel)
     for (const [actionName, action] of actionsToBuild) {
       const actionFullName = pkgName + '/' + actionName
+      // here we check if this action should be skipped
       if (Array.isArray(sanitizedFilterActions) && !sanitizedFilterActions.includes(actionFullName)) {
         continue
       }
       action.name = actionName
       action.packageName = pkgName
       action.defaultPackage = modifiedConfig.ow.package === pkgName
-      toBuildList.push(await prepareToBuildAction(action, config.root, distFolder))
+
+      // here we should check if there are changes since the last build
+      const actionPath = path.resolve(config.root, action.function)
+      const actionDir = path.dirname(actionPath)
+
+      // get a hash of the current action folder
+      const srcHash = await hashElement(actionDir, { folders: { exclude: ['node_modules'] } })
+      // lastBuiltData[actionName] === contentHash
+      // if the flag to skip is set, then we ALWAYS build
+      // if the hash is different, we build
+      // if the user has specified a filter, we build even if hash is the same, they are explicitly asking for it
+      // but we don't need to add a case, before we are called, skipCheck is set to true if there is a filter
+      if (skipCheck || lastBuiltData[actionFullName] !== srcHash.hash) {
+        // inform the user that the action has changed and we are rebuilding
+        console.log('action has changed since last build, zipping', actionFullName)
+        const buildResult = await prepareToBuildAction(action, config.root, distFolder)
+        buildResult.buildHash = { [actionFullName]: srcHash.hash }
+        toBuildList.push(buildResult)
+      } else {
+        // inform the user that the action has not changed ???
+        // console.log(`action ${actionFullName} has not changed`)
+      }
     }
   }
 
-  return zipActions(toBuildList, lastBuiltActionsPath, distFolder, skipCheck)
+  return zipActions(toBuildList, lastBuiltActionsPath, distFolder)
 }
 
 module.exports = buildActions

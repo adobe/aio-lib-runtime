@@ -18,7 +18,7 @@ const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime
 const IOruntime = require('./RuntimeAPI')
 const PACKAGE_ITEMS = ['actions', 'sequences']
 const FILTERABLE_ITEMS = ['apis', 'triggers', 'rules', 'dependencies', ...PACKAGE_ITEMS]
-
+const { createHash } = require('node:crypto')
 /**
  * runs the command
  *
@@ -37,7 +37,9 @@ const FILTERABLE_ITEMS = ['apis', 'triggers', 'rules', 'dependencies', ...PACKAG
  * @returns {Promise<object>} deployedEntities
  */
 async function deployActions (config, deployConfig = {}, logFunc) {
-  if (!config.app.hasBackend) throw new Error('cannot deploy actions, app has no backend')
+  if (!config.app.hasBackend) {
+    throw new Error('cannot deploy actions, app has no backend')
+  }
 
   const isLocalDev = deployConfig.isLocalDev
   const log = logFunc || console.log
@@ -64,6 +66,8 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     aioLogger.debug('Trimming out the manifest\'s actions...')
     filterEntities = undefined
     const builtActions = []
+    // this is a little weird, we are getting the list of built actions from the dist folder
+    // instead of it being passed, or simply reading manifest/config
     const distFiles = fs.readdirSync(path.resolve(__dirname, dist))
     distFiles.forEach(distFile => {
       const packageFolder = path.resolve(__dirname, dist, distFile)
@@ -121,6 +125,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
       }
     })
   }
+
   // 2. deploy manifest
   const deployedEntities = await deployWsk(
     modifiedConfig,
@@ -158,6 +163,15 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
     apiversion: scriptConfig.ow.apiversion,
     api_key: scriptConfig.ow.auth,
     namespace: scriptConfig.ow.namespace
+  }
+
+  const lastDeployedActionsPath = path.join(scriptConfig.root, 'dist', 'last-deployed-actions.json')
+  let lastDeployData = {}
+  if (fs.existsSync(lastDeployedActionsPath)) {
+    lastDeployData = await fs.readJson(lastDeployedActionsPath)
+  } else {
+    // we will create it later
+    // console.log('lastDeployedActionsPath does not exist')
   }
 
   const ow = await new IOruntime().init(owOptions)
@@ -204,6 +218,25 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
   // note we must filter before processPackage, as it expect all built actions to be there
   const entities = utils.processPackage(packages, {}, {}, {}, false, owOptions)
 
+  // entities.actions is an array of actions
+  entities.actions = entities.actions?.filter(action => {
+    // action name here includes the package name, ie manyactions/__secured_generic1
+    const hash = createHash('sha256')
+    hash.update(JSON.stringify(action))
+    const actionHash = hash.digest('hex')
+    if (lastDeployData[action.name] !== actionHash) {
+      lastDeployData[action.name] = actionHash
+      return true
+    }
+    lastDeployData[action.name] = actionHash
+    return false
+  })
+
+  fs.ensureFileSync(lastDeployedActionsPath)
+  fs.writeJSONSync(lastDeployedActionsPath,
+    lastDeployData,
+    { spaces: 2 })
+
   // Note1: utils.processPackage sets the headless-v2 validator for all
   //   require-adobe-auth annotated actions. Here, we have the context on whether
   //   an app has a frontend or not.
@@ -224,7 +257,6 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
     }
     const DEFAULT_VALIDATOR = DEFAULT_VALIDATORS[env]
     const APP_REGISTRY_VALIDATOR = APP_REGISTRY_VALIDATORS[env]
-
     const replaceValidator = { [DEFAULT_VALIDATOR]: APP_REGISTRY_VALIDATOR }
     entities.actions.forEach(a => {
       const needsReplacement = a.exec && a.exec.kind === 'sequence' && a.exec.components && a.exec.components.includes(DEFAULT_VALIDATOR)
@@ -236,6 +268,7 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
   }
 
   // do the deployment, manifestPath and manifestContent needed for creating a project hash
+  //
   await utils.syncProject(packageName, manifestPath, manifestContent, entities, ow, logFunc, scriptConfig.imsOrgId, deleteOldEntities)
   return entities
 }
