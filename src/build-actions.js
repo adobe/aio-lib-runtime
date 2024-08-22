@@ -284,7 +284,7 @@ const zipActions = async (buildsList, lastBuildsPath, distFolder) => {
   return builtList
 }
 
-const buildActions = async (config, filterActions, skipCheck = false) => {
+const buildActions = async (config, filterActions, skipCheck = false, emptyDist = false) => {
   if (!config.app.hasBackend) {
     throw new Error('cannot build actions, app has no backend')
   }
@@ -296,7 +296,10 @@ const buildActions = async (config, filterActions, skipCheck = false) => {
     sanitizedFilterActions = sanitizedFilterActions.map(actionName => actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
   }
   const distFolder = config.actions.dist
-  // do not clear out dist dir
+  // clear out dist dir
+  if (emptyDist) {
+    fs.emptyDirSync(distFolder)
+  }
   const toBuildList = []
   const lastBuiltActionsPath = path.join(config.root, 'dist', 'last-built-actions.json')
   let lastBuiltData = {}
