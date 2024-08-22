@@ -2040,25 +2040,6 @@ function activationLogBanner (logFunc, activation, activationLogs) {
 }
 
 /**
- * Will tell if the action was built before based on it's contentHash.
- *
- * @param {string} lastBuildsData Data with the last builds
- * @param {object} buildData Object where key is the name of the action and value is its contentHash
- * @returns {boolean} true if the action was built before
- */
-function actionBuiltBefore (lastBuildsData, buildData) {
-  if (buildData && Object.keys(buildData).length > 0) {
-    const [actionName, contentHash] = Object.entries(buildData)[0]
-    const storedData = safeParse(lastBuildsData)
-    if (contentHash) {
-      return storedData[actionName] === contentHash
-    }
-  }
-  aioLogger.debug('actionBuiltBefore > Invalid actionBuiltData')
-  return false
-}
-
-/**
  * Will dump the previously actions built data information.
  *
  * @param {string} lastBuiltActionsPath Path to the deployments logs
@@ -2148,7 +2129,6 @@ module.exports = {
   getActionZipFileName,
   getActionNameFromZipFile,
   dumpActionsBuiltInfo,
-  actionBuiltBefore,
   safeParse,
   isSupportedActionKind,
   DEFAULT_PACKAGE_RESERVED_NAME
