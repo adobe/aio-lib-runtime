@@ -236,16 +236,8 @@ const prepareToBuildAction = async (action, root, dist) => {
     })
   }
 
-  let buildHash
-  if (isDirectory) {
-    buildHash = { [zipFileName]: actionFileStats.mtime.valueOf() }
-  } else {
-    buildHash = { [zipFileName]: statsInfo.hash }
-  }
-
   return {
     actionName,
-    buildHash,
     legacy: defaultPackage,
     outPath,
     srcHash,
@@ -339,11 +331,10 @@ const buildActions = async (config, filterActions, skipCheck = false, emptyDist 
         toBuildList.push(buildResult)
       } else {
         // inform the user that the action has not changed ???
-        // console.log(`action ${actionFullName} has not changed`)
+        aioLogger.debug(`action ${actionFullName} has not changed`)
       }
     }
   }
-
   return zipActions(toBuildList, lastBuiltActionsPath, distFolder)
 }
 
