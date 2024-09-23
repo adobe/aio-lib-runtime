@@ -167,7 +167,6 @@ const loadWebpackConfig = async (configPath, actionPath, tempBuildDir, outBuildF
 const prepareToBuildAction = async (action, root, dist) => {
   const { name: actionName, defaultPackage, packageName } = action
   const zipFileName = utils.getActionZipFileName(packageName, actionName, false)
-  let statsInfo // this is the object returned by bundler run, it has the hash
   // path.resolve supports both relative and absolute action.function
   const actionPath = path.resolve(root, action.function)
   const outPath = path.join(dist, `${zipFileName}.zip`)
@@ -217,8 +216,8 @@ const prepareToBuildAction = async (action, root, dist) => {
     const webpackConfig = await loadWebpackConfig(webpackConfigPath, actionPath, tempBuildDir, 'index.js')
     const compiler = webpack(webpackConfig)
 
-    // run the compiler and wait for a result
-    statsInfo = await new Promise((resolve, reject) => {
+    // run the compiler and wait
+    await new Promise((resolve, reject) => {
       compiler.run((err, stats) => {
         if (err) {
           reject(err)
@@ -226,6 +225,8 @@ const prepareToBuildAction = async (action, root, dist) => {
         // stats must be defined at this point
         const info = stats.toJson()
         if (stats.hasWarnings()) {
+          // this might need to be evaluated, in most cases the user would not see this but
+          // probably should by default
           aioLogger.warn(`webpack compilation warnings:\n${info.warnings}`)
         }
         if (stats.hasErrors()) {
