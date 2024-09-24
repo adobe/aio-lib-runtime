@@ -165,6 +165,7 @@ const loadWebpackConfig = async (configPath, actionPath, tempBuildDir, outBuildF
  * @returns {Promise<ActionBuild>} Relevant data for the zip process..
  */
 const prepareToBuildAction = async (action, root, dist) => {
+  // dist is something like ext-id/actions/ typically
   const { name: actionName, defaultPackage, packageName } = action
   const zipFileName = utils.getActionZipFileName(packageName, actionName, false)
   // path.resolve supports both relative and absolute action.function
@@ -288,6 +289,7 @@ const buildActions = async (config, filterActions, skipCheck = false, emptyDist 
     // If using old format of <actionname>, convert it to <package>/<actionname> using default/first package in the manifest
     sanitizedFilterActions = sanitizedFilterActions.map(actionName => actionName.indexOf('/') === -1 ? modifiedConfig.ow.package + '/' + actionName : actionName)
   }
+  // action specific, ext-id/actions/
   const distFolder = config.actions.dist
   // clear out dist dir
   if (emptyDist) {
@@ -325,8 +327,8 @@ const buildActions = async (config, filterActions, skipCheck = false, emptyDist 
       // if the user has specified a filter, we build even if hash is the same, they are explicitly asking for it
       // but we don't need to add a case, before we are called, skipCheck is set to true if there is a filter
       if (skipCheck || lastBuiltData[actionFullName] !== srcHash.hash) {
-        // inform the user that the action has changed and we are rebuilding
-        console.log('action has changed since last build, zipping', actionFullName)
+        // todo: inform the user that the action has changed and we are rebuilding
+        // console.log('action has changed since last build, zipping', actionFullName)
         const buildResult = await prepareToBuildAction(action, config.root, distFolder)
         buildResult.buildHash = { [actionFullName]: srcHash.hash }
         toBuildList.push(buildResult)
