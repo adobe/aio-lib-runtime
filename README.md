@@ -90,7 +90,7 @@ with valid options argument</p>
 <dt><a href="#prepareToBuildAction">prepareToBuildAction(action, root, dist)</a> ⇒ <code><a href="#ActionBuild">Promise.&lt;ActionBuild&gt;</a></code></dt>
 <dd><p>Will return data about an action ready to be built.</p>
 </dd>
-<dt><a href="#zipActions">zipActions(buildsList, lastBuildsPath, distFolder, skipCheck)</a> ⇒ <code>Array.&lt;string&gt;</code></dt>
+<dt><a href="#zipActions">zipActions(buildsList, lastBuildsPath, distFolder)</a> ⇒ <code>Array.&lt;string&gt;</code></dt>
 <dd><p>Will zip actions.
  By default only actions which were not built before will be zipped.
  Last built actions data will be used to validate which action needs zipping.</p>
@@ -98,7 +98,7 @@ with valid options argument</p>
 <dt><a href="#deployActions">deployActions(config, [deployConfig], [logFunc])</a> ⇒ <code>Promise.&lt;object&gt;</code></dt>
 <dd><p>runs the command</p>
 </dd>
-<dt><a href="#deployWsk">deployWsk(scriptConfig, manifestContent, logFunc, filterEntities)</a> ⇒ <code>Promise.&lt;object&gt;</code></dt>
+<dt><a href="#deployWsk">deployWsk(scriptConfig, manifestContent, logFunc, filterEntities, useForce)</a> ⇒ <code>Promise.&lt;object&gt;</code></dt>
 <dd></dd>
 <dt><a href="#init">init(options)</a> ⇒ <code><a href="#OpenwhiskClient">Promise.&lt;OpenwhiskClient&gt;</a></code></dt>
 <dd><p>Returns a Promise that resolves with a new RuntimeAPI object.</p>
@@ -273,9 +273,6 @@ for syncing managed projects.</p>
 </dd>
 <dt><a href="#activationLogBanner">activationLogBanner(logFunc, activation, activationLogs)</a></dt>
 <dd><p>Creates an info banner for an activation.</p>
-</dd>
-<dt><a href="#actionBuiltBefore">actionBuiltBefore(lastBuildsData, buildData)</a> ⇒ <code>boolean</code></dt>
-<dd><p>Will tell if the action was built before based on it&#39;s contentHash.</p>
 </dd>
 <dt><a href="#dumpActionsBuiltInfo">dumpActionsBuiltInfo(lastBuiltActionsPath, actionBuildData, prevBuildData)</a> ⇒ <code>Promise.&lt;boolean&gt;</code></dt>
 <dd><p>Will dump the previously actions built data information.</p>
@@ -596,7 +593,7 @@ Will return data about an action ready to be built.
 
 <a name="zipActions"></a>
 
-## zipActions(buildsList, lastBuildsPath, distFolder, skipCheck) ⇒ <code>Array.&lt;string&gt;</code>
+## zipActions(buildsList, lastBuildsPath, distFolder) ⇒ <code>Array.&lt;string&gt;</code>
 Will zip actions.
  By default only actions which were not built before will be zipped.
  Last built actions data will be used to validate which action needs zipping.
@@ -609,7 +606,6 @@ Will zip actions.
 | buildsList | [<code>Array.&lt;ActionBuild&gt;</code>](#ActionBuild) | Array of data about actions available to be zipped. |
 | lastBuildsPath | <code>string</code> | Path to the last built actions data. |
 | distFolder | <code>string</code> | Path to the output root. |
-| skipCheck | <code>boolean</code> | If true, zip all the actions from the buildsList |
 
 <a name="deployActions"></a>
 
@@ -623,7 +619,7 @@ runs the command
 | --- | --- | --- | --- |
 | config | <code>object</code> |  | app config |
 | [deployConfig] | <code>object</code> | <code>{}</code> | deployment config |
-| [deployConfig.isLocalDev] | <code>boolean</code> |  | local dev flag |
+| [deployConfig.isLocalDev] | <code>boolean</code> |  | local dev flag // todo: remove |
 | [deployConfig.filterEntities] | <code>object</code> |  | add filters to deploy only specified OpenWhisk entities |
 | [deployConfig.filterEntities.actions] | <code>Array</code> |  | filter list of actions to deploy by provided array, e.g. ['name1', ..] |
 | [deployConfig.filterEntities.byBuiltActions] | <code>boolean</code> |  | if true, trim actions from the manifest based on the already built actions |
@@ -632,11 +628,12 @@ runs the command
 | [deployConfig.filterEntities.rules] | <code>Array</code> |  | filter list of rules to deploy, e.g. ['name1', ..] |
 | [deployConfig.filterEntities.apis] | <code>Array</code> |  | filter list of apis to deploy, e.g. ['name1', ..] |
 | [deployConfig.filterEntities.dependencies] | <code>Array</code> |  | filter list of package dependencies to deploy, e.g. ['name1', ..] |
+| [deployConfig.useForce] | <code>boolean</code> |  | force deploy of actions |
 | [logFunc] | <code>object</code> |  | custom logger function |
 
 <a name="deployWsk"></a>
 
-## deployWsk(scriptConfig, manifestContent, logFunc, filterEntities) ⇒ <code>Promise.&lt;object&gt;</code>
+## deployWsk(scriptConfig, manifestContent, logFunc, filterEntities, useForce) ⇒ <code>Promise.&lt;object&gt;</code>
 **Kind**: global function  
 **Returns**: <code>Promise.&lt;object&gt;</code> - deployedEntities  
 
@@ -646,6 +643,7 @@ runs the command
 | manifestContent | <code>object</code> | manifest |
 | logFunc | <code>object</code> | custom logger function |
 | filterEntities | <code>object</code> | entities (actions, sequences, triggers, rules etc) to be filtered |
+| useForce | <code>boolean</code> | force deploy of actions |
 
 <a name="deployWsk.._filterOutPackageEntity"></a>
 
@@ -1432,19 +1430,6 @@ Creates an info banner for an activation.
 | logFunc | <code>object</code> | custom logger function |
 | activation | <code>object</code> | activation metadata |
 | activationLogs | <code>Array.&lt;string&gt;</code> | the logs of the activation (may selectively suppress banner if there are no log lines) |
-
-<a name="actionBuiltBefore"></a>
-
-## actionBuiltBefore(lastBuildsData, buildData) ⇒ <code>boolean</code>
-Will tell if the action was built before based on it's contentHash.
-
-**Kind**: global function  
-**Returns**: <code>boolean</code> - true if the action was built before  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| lastBuildsData | <code>string</code> | Data with the last builds |
-| buildData | <code>object</code> | Object where key is the name of the action and value is its contentHash |
 
 <a name="dumpActionsBuiltInfo"></a>
 
