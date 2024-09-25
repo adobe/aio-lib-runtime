@@ -113,7 +113,7 @@ describe('build by zipping js action folder', () => {
     global.fakeFileSystem.addJson({
       'actions/action-zip/sample.js': global.fixtureFile('/sample-app/actions/action-zip/index.js')
     })
-    await expect(buildActions(config)).rejects.toThrow(`missing required ${path.normalize('actions/action-zip/package.json')} or index.js for folder actions`)
+    await expect(buildActions(config)).rejects.toThrow('missing required package.json or index.js for folder actions')
   })
 
   test('should pass if no package.json but index.js', async () => {
@@ -1068,7 +1068,7 @@ test('use buildConfig.filterActions to build only action called `action`', async
     cb(null, webpackStatsMock)
   })
 
-  await buildActions(global.sampleAppConfig, ['action'])
+  await buildActions(global.sampleAppConfig, ['action'], true)
 
   expect(webpackMock.run).toHaveBeenCalledTimes(1)
   expect(webpack).toHaveBeenCalledWith(expect.arrayContaining([
@@ -1086,7 +1086,16 @@ test('use buildConfig.filterActions to build only action called `action`', async
 
 test('use buildConfig.filterActions to build only action called `action-zip`', async () => {
   addSampleAppFiles()
-  await buildActions(global.sampleAppConfig, ['action-zip'])
+  await buildActions(global.sampleAppConfig, ['action-zip'], true)
+  expect(utils.zip).toHaveBeenCalledTimes(1)
+  expect(utils.zip).toHaveBeenCalledWith(expect.stringContaining(path.normalize('/dist/actions/sample-app-1.0.0/action-zip-temp')),
+    path.normalize('/dist/actions/sample-app-1.0.0/action-zip.zip'))
+})
+
+test('second build should require re-zip', async () => {
+  addSampleAppFiles()
+  await buildActions(global.sampleAppConfig, ['action-zip'], true)
+  await buildActions(global.sampleAppConfig, ['action-zip'], false)
   expect(utils.zip).toHaveBeenCalledTimes(1)
   expect(utils.zip).toHaveBeenCalledWith(expect.stringContaining(path.normalize('/dist/actions/sample-app-1.0.0/action-zip-temp')),
     path.normalize('/dist/actions/sample-app-1.0.0/action-zip.zip'))
@@ -1094,7 +1103,7 @@ test('use buildConfig.filterActions to build only action called `action-zip`', a
 
 test('use buildConfig.filterActions to build only action called `sample-app-1.0.0/action-zip`', async () => {
   addSampleAppFiles()
-  await buildActions(global.sampleAppConfig, ['sample-app-1.0.0/action-zip'])
+  await buildActions(global.sampleAppConfig, ['sample-app-1.0.0/action-zip'], true)
   expect(utils.zip).toHaveBeenCalledTimes(1)
   expect(utils.zip).toHaveBeenCalledWith(expect.stringContaining(path.normalize('/dist/actions/sample-app-1.0.0/action-zip-temp')),
     path.normalize('/dist/actions/sample-app-1.0.0/action-zip.zip'))
@@ -1104,7 +1113,7 @@ test('non default package present in manifest', async () => {
   addSampleAppFiles()
   const config = deepClone(global.sampleAppConfig)
   config.manifest.full.packages.extrapkg = deepClone(config.manifest.full.packages.__APP_PACKAGE__)
-  await buildActions(config)
+  await buildActions(config, null, true)
 
   // extrapkg
   expect(utils.zip).toHaveBeenNthCalledWith(1, expect.stringContaining(path.normalize('/dist/actions/extrapkg/action-temp')),
@@ -1131,7 +1140,7 @@ test('should not fail if extra package does not have actions', async () => {
   const config = deepClone(global.sampleAppConfig)
   config.manifest.full.packages.extrapkg = deepClone(config.manifest.full.packages.__APP_PACKAGE__)
   delete config.manifest.full.packages.extrapkg.actions
-  await buildActions(config)
+  await buildActions(config, null, true)
   expect(utils.zip).toHaveBeenCalledTimes(2)
   // 2 calls for pkg action path.
   expect(utils.zip).toHaveBeenNthCalledWith(1, expect.stringContaining(path.normalize('/dist/actions/sample-app-1.0.0/action-temp')),

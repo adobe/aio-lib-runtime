@@ -104,7 +104,7 @@ describe('utils has the right functions', () => {
     expect(typeof utils.getActionZipFileName).toEqual('function')
     expect(typeof utils.getActionNameFromZipFile).toEqual('function')
     expect(typeof utils.dumpActionsBuiltInfo).toEqual('function')
-    expect(typeof utils.actionBuiltBefore).toEqual('function')
+    // expect(typeof utils.actionBuiltBefore).toEqual('function')
     expect(typeof utils.getSupportedServerRuntimes).toEqual('function')
 
     expect(utils.urlJoin).toBeDefined()
@@ -2283,14 +2283,7 @@ describe('validateActionRuntime', () => {
     const expectedOutput = ''
     await expect(utils.getActionNameFromZipFile(actionZipName)).toEqual(expectedOutput)
   })
-  test('actionBuiltBefore would call logger on invalid data, (coverage)', () => {
-    const loggerSpy = jest.spyOn(aioLogger, 'debug')
-    const builtBefore = utils.actionBuiltBefore(null, null)
-    expect(loggerSpy).toHaveBeenLastCalledWith('actionBuiltBefore > Invalid actionBuiltData')
-    expect(builtBefore).toBe(false)
-    const builtBefore1 = utils.actionBuiltBefore('', { someAction: undefined })
-    expect(builtBefore1).toBe(false)
-  })
+
   test('getActionZipFileName, defaultPkg:true  (coverage)', () => {
     expect(utils.getActionZipFileName('pk1', 'action', true)).toEqual('action')
   })

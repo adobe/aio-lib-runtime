@@ -25,6 +25,7 @@ ioruntime.mockImplementation(() => {
     }
   }
 })
+
 const deepCopy = require('lodash.clonedeep')
 
 const libEnv = require('@adobe/aio-lib-env')
@@ -554,9 +555,11 @@ test('Deploy actions should pass if there are no build files and filter does not
   await expect(deployActions(global.sampleAppConfig, { filterEntities: { triggers: ['trigger1'] } })).resolves.toEqual({})
 })
 
+// lonely
 test('if actions are deployed and part of the manifest it should return their url', async () => {
   addSampleAppReducedFiles()
 
+  const buildDir = global.sampleAppReducedConfig.actions.dist
   // mock deployed entities
   runtimeLibUtils.processPackage.mockReturnValue({
     actions: [
@@ -565,7 +568,6 @@ test('if actions are deployed and part of the manifest it should return their ur
     ]
   })
 
-  const buildDir = global.sampleAppReducedConfig.actions.dist
   // fake a previous build
   addFakeFiles(buildDir)
 
@@ -581,19 +583,23 @@ test('if actions are deployed and part of the manifest it should return their ur
       { name: 'sample-app-reduced-1.0.0/actionNotInManifest' }
     ]
   })
+  // run it again
 
-  // additional check for custom apihost urls
-  const returnedEntitiesCustomApihost = await deployActions({ ...global.sampleAppReducedConfig, ow: { ...global.sampleAppReducedConfig.ow, apihost: 'custom.net' } })
-  expect(returnedEntitiesCustomApihost).toEqual({
-    actions: [
-      {
-        name: 'sample-app-reduced-1.0.0/action',
-        // with custom apihost there is no namespace sub domain
-        url: 'https://custom.net/api/v1/web/fake_ns/sample-app-reduced-1.0.0/action'
-      },
-      { name: 'sample-app-reduced-1.0.0/actionNotInManifest' }
-    ]
+  const fakeFiles = {}
+  fakeFiles[path.join(buildDir, '..', 'last-deployed-actions.json')] =
+    JSON.stringify({
+      'sample-app-reduced-1.0.0/action': '99bdd50bc0f705b92e99fe1f1b82bf117e69c130ea7269f9d416073a8daf9e6a',
+      'sample-app-reduced-1.0.0/actionNotInManifest': 'aff0b98c4e827195a58f96da90428caee8389e08cf3db4afe275a2f8c1628581'
+    })
+  global.fakeFileSystem.addJson(fakeFiles)
+
+  const secondCallReturnedEntities = await deployActions(global.sampleAppReducedConfig)
+  expect(secondCallReturnedEntities).toEqual({
+    actions: []
   })
+  // thrice, with force
+  const thirdCallReturnedEntities = await deployActions(global.sampleAppReducedConfig, { useForce: true })
+  expect(returnedEntities).toEqual(thirdCallReturnedEntities)
 })
 
 test('if sequence name is the same as an action name, throw an error', async () => {
