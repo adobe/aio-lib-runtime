@@ -597,6 +597,9 @@ test('if actions are deployed and part of the manifest it should return their ur
   expect(secondCallReturnedEntities).toEqual({
     actions: []
   })
+  // thrice, with force
+  const thirdCallReturnedEntities = await deployActions(global.sampleAppReducedConfig, { useForce: true })
+  expect(returnedEntities).toEqual(thirdCallReturnedEntities)
 })
 
 test('if sequence name is the same as an action name, throw an error', async () => {

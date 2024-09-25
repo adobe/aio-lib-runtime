@@ -24,7 +24,7 @@ const { createHash } = require('node:crypto')
  *
  * @param {object} config app config
  * @param {object} [deployConfig={}] deployment config
- * @param {boolean} [deployConfig.isLocalDev] local dev flag
+ * @param {boolean} [deployConfig.isLocalDev] local dev flag // todo: remove
  * @param {object} [deployConfig.filterEntities] add filters to deploy only specified OpenWhisk entities
  * @param {Array} [deployConfig.filterEntities.actions] filter list of actions to deploy by provided array, e.g. ['name1', ..]
  * @param {boolean} [deployConfig.filterEntities.byBuiltActions] if true, trim actions from the manifest based on the already built actions
@@ -33,6 +33,7 @@ const { createHash } = require('node:crypto')
  * @param {Array} [deployConfig.filterEntities.rules] filter list of rules to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.apis] filter list of apis to deploy, e.g. ['name1', ..]
  * @param {Array} [deployConfig.filterEntities.dependencies] filter list of package dependencies to deploy, e.g. ['name1', ..]
+ * @param {boolean} [deployConfig.useForce] force deploy of actions
  * @param {object} [logFunc] custom logger function
  * @returns {Promise<object>} deployedEntities
  */
@@ -41,7 +42,8 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     throw new Error('cannot deploy actions, app has no backend')
   }
 
-  const isLocalDev = deployConfig.isLocalDev
+  const isLocalDev = deployConfig.isLocalDev // todo: remove
+  const useForce = deployConfig.useForce
   const log = logFunc || console.log
   let filterEntities = deployConfig.filterEntities
 
@@ -131,7 +133,8 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     modifiedConfig,
     manifest,
     log,
-    filterEntities
+    filterEntities,
+    useForce
   )
   // enrich actions array with urls
   if (Array.isArray(deployedEntities.actions)) {
@@ -153,9 +156,11 @@ async function deployActions (config, deployConfig = {}, logFunc) {
  * @param {object} manifestContent manifest
  * @param {object} logFunc custom logger function
  * @param {object} filterEntities entities (actions, sequences, triggers, rules etc) to be filtered
+ * @param {boolean} useForce force deploy of actions
  * @returns {Promise<object>} deployedEntities
  */
-async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities) {
+async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities, useForce) {
+  // note, logFunc is always defined here because we can only ever be called by deployActions
   const packageName = scriptConfig.ow.package
   const manifestPath = scriptConfig.manifest.src
   const owOptions = {
@@ -167,11 +172,13 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
 
   const lastDeployedActionsPath = path.join(scriptConfig.root, 'dist', 'last-deployed-actions.json')
   let lastDeployData = {}
-  if (fs.existsSync(lastDeployedActionsPath)) {
+  if (useForce) {
+    logFunc('Force deploy enabled, skipping last deployed actions')
+  } else if (fs.existsSync(lastDeployedActionsPath)) {
     lastDeployData = await fs.readJson(lastDeployedActionsPath)
   } else {
     // we will create it later
-    // console.log('lastDeployedActionsPath does not exist')
+    logFunc('lastDeployedActions not found, it will be created after first deployment')
   }
 
   const ow = await new IOruntime().init(owOptions)
