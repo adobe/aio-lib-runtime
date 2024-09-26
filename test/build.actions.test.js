@@ -249,7 +249,6 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should fail for invalid file or directory', async () => {
-    utils.actionBuiltBefore = jest.fn(() => false)
     await buildActions(config)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.arrayContaining([
@@ -265,7 +264,6 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it', async () => {
-    utils.actionBuiltBefore = jest.fn(() => false)
     await buildActions(config)
     expect(webpackMock.run).toHaveBeenCalledTimes(1)
     expect(webpack).toHaveBeenCalledWith(expect.arrayContaining([
@@ -307,7 +305,6 @@ describe('build by bundling js action file with webpack', () => {
   })
 
   test('should bundle a single action file using webpack and zip it with includes using webpack-config.js in actions root', async () => {
-    utils.actionBuiltBefore = jest.fn(() => false)
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({
       'actions/action.js': global.fixtureFile('/sample-app-includes/actions/action.js'),
@@ -1152,7 +1149,8 @@ test('should not fail if extra package does not have actions', async () => {
 test('should always zip action files when skipCheck=true', async () => {
   addSampleAppFiles()
   const config = deepClone(global.sampleAppConfig)
-  utils.actionBuiltBefore = jest.fn(() => true)
+  // todo: this test is not actually testing what it claims the skipCheck=true part
+  // we need to fake a previous build to test that
   await buildActions(config, ['action'], true)
   expect(utils.zip).toHaveBeenCalledWith(expect.stringContaining(path.normalize('/dist/actions/sample-app-1.0.0/action-temp')),
     path.normalize('/dist/actions/sample-app-1.0.0/action.zip'))
@@ -1161,7 +1159,6 @@ test('should always zip action files when skipCheck=true', async () => {
 test('should not zip files if the action was built before (skipCheck=false)', async () => {
   addSampleAppFiles()
   const config = deepClone(global.sampleAppConfig)
-  utils.actionBuiltBefore = jest.fn(() => true)
   await buildActions(config, ['action'], false)
   expect(utils.zip).not.toHaveBeenCalled()
 })

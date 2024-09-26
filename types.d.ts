@@ -138,16 +138,15 @@ declare function prepareToBuildAction(action: any, root: string, dist: string): 
  * @param buildsList - Array of data about actions available to be zipped.
  * @param lastBuildsPath - Path to the last built actions data.
  * @param distFolder - Path to the output root.
- * @param skipCheck - If true, zip all the actions from the buildsList
  * @returns Array of zipped actions.
  */
-declare function zipActions(buildsList: ActionBuild[], lastBuildsPath: string, distFolder: string, skipCheck: boolean): string[];
+declare function zipActions(buildsList: ActionBuild[], lastBuildsPath: string, distFolder: string): string[];
 
 /**
  * runs the command
  * @param config - app config
  * @param [deployConfig = {}] - deployment config
- * @param [deployConfig.isLocalDev] - local dev flag
+ * @param [deployConfig.isLocalDev] - local dev flag // todo: remove
  * @param [deployConfig.filterEntities] - add filters to deploy only specified OpenWhisk entities
  * @param [deployConfig.filterEntities.actions] - filter list of actions to deploy by provided array, e.g. ['name1', ..]
  * @param [deployConfig.filterEntities.byBuiltActions] - if true, trim actions from the manifest based on the already built actions
@@ -156,6 +155,7 @@ declare function zipActions(buildsList: ActionBuild[], lastBuildsPath: string, d
  * @param [deployConfig.filterEntities.rules] - filter list of rules to deploy, e.g. ['name1', ..]
  * @param [deployConfig.filterEntities.apis] - filter list of apis to deploy, e.g. ['name1', ..]
  * @param [deployConfig.filterEntities.dependencies] - filter list of package dependencies to deploy, e.g. ['name1', ..]
+ * @param [deployConfig.useForce] - force deploy of actions
  * @param [logFunc] - custom logger function
  * @returns deployedEntities
  */
@@ -170,6 +170,7 @@ declare function deployActions(config: any, deployConfig?: {
         apis?: any[];
         dependencies?: any[];
     };
+    useForce?: boolean;
 }, logFunc?: any): Promise<object>;
 
 /**
@@ -177,9 +178,10 @@ declare function deployActions(config: any, deployConfig?: {
  * @param manifestContent - manifest
  * @param logFunc - custom logger function
  * @param filterEntities - entities (actions, sequences, triggers, rules etc) to be filtered
+ * @param useForce - force deploy of actions
  * @returns deployedEntities
  */
-declare function deployWsk(scriptConfig: any, manifestContent: any, logFunc: any, filterEntities: any): Promise<object>;
+declare function deployWsk(scriptConfig: any, manifestContent: any, logFunc: any, filterEntities: any, useForce: boolean): Promise<object>;
 
 /**
  * Returns a Promise that resolves with a new RuntimeAPI object.
@@ -323,7 +325,7 @@ declare type ManifestPackage = {
  * @property [version] - the manifest action version
  * @property function - the path to the action code
  * @property runtime - the runtime environment or kind in which the action
- *                    executes, e.g. 'nodejs:12'
+ *                    executes, e.g. 'nodejs:18'
  * @property [main] - the entry point to the function
  * @property [inputs] - the list of action default parameters
  * @property [limits] - limits for the action
@@ -755,23 +757,6 @@ declare function processPackage(packages: ManifestPackages, deploymentPackages: 
 declare function setPaths(flags: any): DeploymentFileComponents;
 
 /**
- * Handle Adobe auth action dependency
- *
- * This is a temporary solution and needs to be removed when headless apps will be able to
- * validate against app-registry
- *
- * This function stores the IMS organization id in the Adobe I/O cloud state library which
- * is required by the headless validator.
- *
- * The IMS org id must be stored beforehand in `@adobe/aio-lib-core-config` under the
- * `'project.org.ims_org_id'` key. TODO: pass in imsOrgId
- * @param actions - the array of action deployment entities
- * @param owOptions - OpenWhisk options
- * @param imsOrgId - the IMS Org Id
- */
-declare function setupAdobeAuth(actions: OpenWhiskEntitiesAction[], owOptions: any, imsOrgId: string): void;
-
-/**
  * Deploy all processed entities: can deploy packages, actions, triggers, rules and apis.
  * @param entities - the processed entities
  * @param ow - the OpenWhisk client
@@ -914,6 +899,13 @@ declare function replacePackagePlaceHolder(config: any): any;
 declare function validateActionRuntime(action: any): void;
 
 /**
+ * Checks the validity of nodejs version in action definition returns true if valid.
+ * @param action - action object
+ * @returns true if action kind is supported
+ */
+declare function isSupportedActionKind(action: any): boolean;
+
+/**
  * Returns the action's build file name without the .zip extension
  * @param pkgName - name of the package
  * @param actionName - name of the action
@@ -936,14 +928,6 @@ declare function getActionNameFromZipFile(zipFile: string): string;
  * @param activationLogs - the logs of the activation (may selectively suppress banner if there are no log lines)
  */
 declare function activationLogBanner(logFunc: any, activation: any, activationLogs: string[]): void;
-
-/**
- * Will tell if the action was built before based on it's contentHash.
- * @param lastBuildsData - Data with the last builds
- * @param buildData - Object where key is the name of the action and value is its contentHash
- * @returns true if the action was built before
- */
-declare function actionBuiltBefore(lastBuildsData: string, buildData: any): boolean;
 
 /**
  * Will dump the previously actions built data information.
