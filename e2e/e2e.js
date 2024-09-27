@@ -73,19 +73,17 @@ test('HTTPS_PROXY must be set if E2E_USE_PROXY is set', () => {
 
 describe('build, deploy, invoke and undeploy of actions', () => {
   test('basic manifest', async () => {
-    /* skip checking previously built actions */
     utils.dumpActionsBuiltInfo = jest.fn(() => false)
-    utils.actionBuiltBefore = jest.fn(() => false)
 
     // Build
-    expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
+    expect(await sdk.buildActions(config, null, true)).toEqual(expect.arrayContaining([
       expect.stringContaining('action.zip'),
       expect.stringContaining('action-zip.zip')
     ]))
 
     // Deploy
     config.root = path.resolve('./')
-    const deployedEntities = await sdk.deployActions(config)
+    const deployedEntities = await sdk.deployActions(config, { useForce: true })
     expect(deployedEntities.actions[0].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-1.0.0/action')).toEqual(true)
     expect(deployedEntities.actions[1].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip')).toEqual(true)
     expect(deployedEntities.actions[2].url.endsWith('.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence')).toEqual(true)
@@ -223,7 +221,7 @@ describe('build, deploy, invoke and undeploy of actions', () => {
 
   test('basic manifest with filter', async () => {
     // Build
-    expect(await sdk.buildActions(config, ['action'])).toEqual([expect.stringContaining('action.zip')])
+    expect(await sdk.buildActions(config, ['action'], true)).toEqual([expect.stringContaining('action.zip')])
 
     // Deploy
     config.root = path.resolve('./')
@@ -330,16 +328,21 @@ describe('filter manifest based on built actions', () => {
     const deployConfig = {
       filterEntities: {
         byBuiltActions: true
-      }
+      },
+      useForce: true
     }
     // Build
-    expect(await sdk.buildActions(config)).toEqual(expect.arrayContaining([
+    const buildResult = await sdk.buildActions(config, null, true)
+    console.log('buildResult = ', buildResult)
+    expect(buildResult).toEqual(expect.arrayContaining([
       expect.stringContaining('action.zip')
     ]))
 
     // Deploy
     config.root = path.resolve('./')
+    console.log('making the call')
     const deployedEntities = await sdk.deployActions(config, deployConfig)
+    console.log('deployedEntities = ', deployedEntities)
     expect(deployedEntities.actions).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: 'sample-app-1.0.0/action' }),
       expect.objectContaining({ name: 'sample-app-1.0.0/action-sequence' })

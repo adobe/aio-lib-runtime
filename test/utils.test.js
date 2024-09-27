@@ -104,7 +104,6 @@ describe('utils has the right functions', () => {
     expect(typeof utils.getActionZipFileName).toEqual('function')
     expect(typeof utils.getActionNameFromZipFile).toEqual('function')
     expect(typeof utils.dumpActionsBuiltInfo).toEqual('function')
-    // expect(typeof utils.actionBuiltBefore).toEqual('function')
     expect(typeof utils.getSupportedServerRuntimes).toEqual('function')
 
     expect(utils.urlJoin).toBeDefined()
