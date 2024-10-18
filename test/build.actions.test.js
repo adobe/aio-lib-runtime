@@ -13,7 +13,7 @@ const utils = require('../src/utils')
 const buildActions = require('../src/build-actions')
 const path = require('path')
 const fs = require('fs-extra')
-
+jest.mock('dependency-tree')
 const execa = require('execa')
 jest.mock('execa')
 const deepClone = require('lodash.clonedeep')
@@ -1160,6 +1160,18 @@ test('should not zip files if the action was built before (skipCheck=false)', as
   addSampleAppFiles()
   const config = deepClone(global.sampleAppConfig)
   await buildActions(config, ['action'], false)
+  expect(utils.zip).not.toHaveBeenCalled()
+})
+
+test('should not build if required file is not changed', async () => {
+  addSampleAppFiles()
+
+  const config = deepClone(global.sampleAppConfig)
+  await buildActions(config, ['action'], false)
+  expect(mockLogger.debug).toHaveBeenCalledWith(
+    expect.stringContaining('action has changed since last build, building ..'),
+    expect.any(String)
+  )
   expect(utils.zip).not.toHaveBeenCalled()
 })
 
