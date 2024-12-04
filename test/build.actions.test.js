@@ -1165,14 +1165,18 @@ test('should not zip files if the action was built before (skipCheck=false)', as
 
 test('should not build if required file is not changed', async () => {
   addSampleAppFiles()
-
   const config = deepClone(global.sampleAppConfig)
-  await buildActions(config, ['action'], false)
+  await buildActions(config, ['action'], true)
   expect(mockLogger.debug).toHaveBeenCalledWith(
     expect.stringContaining('action has changed since last build, building ..'),
     expect.any(String)
   )
-  expect(utils.zip).not.toHaveBeenCalled()
+  mockLogger.debug.mockClear()
+  await buildActions(config, ['action'], false)
+  expect(mockLogger.debug).toHaveBeenCalledWith(
+    expect.stringContaining('action has not changed')
+  )
+  expect(utils.zip).toHaveBeenCalledTimes(1)
 })
 
 test('should not delete dist folder when emptyDist=false', async () => {
