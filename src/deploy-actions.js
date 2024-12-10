@@ -23,7 +23,7 @@ const { createHash } = require('node:crypto')
  * runs the command
  *
  * @param {object} config app config
- * @param {object} [deployConfig={}] deployment config
+ * @param {object} [deployConfig] deployment config
  * @param {boolean} [deployConfig.isLocalDev] local dev flag // todo: remove
  * @param {object} [deployConfig.filterEntities] add filters to deploy only specified OpenWhisk entities
  * @param {Array} [deployConfig.filterEntities.actions] filter list of actions to deploy by provided array, e.g. ['name1', ..]

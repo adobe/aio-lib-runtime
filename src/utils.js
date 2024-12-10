@@ -21,7 +21,14 @@ const path = require('path')
 const archiver = require('archiver')
 // this is a static list that comes from here: https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
 const SupportedRuntimes = ['sequence', 'blackbox', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18', 'nodejs:20', 'nodejs:22']
+
 const DEFAULT_PACKAGE_RESERVED_NAME = 'default'
+const ANNOTATION_WEB_EXPORT = 'web-export'
+const ANNOTATION_RAW_HTTP = 'raw-http'
+const ANNOTATION_REQUIRE_ADOBE_AUTH = 'require-adobe-auth'
+const ANNOTATION_REQUIRE_WHISK_AUTH = 'require-whisk-auth'
+const VALUE_YES = 'yes'
+const VALUE_RAW = 'raw'
 
 /**
  *
@@ -60,7 +67,6 @@ const DEFAULT_PACKAGE_RESERVED_NAME = 'default'
  * @property {Array<object>} [limits] limits for the action
  * @property {string} [web] indicate if an action should be exported as web, can take the
  *                    value of: true | false | yes | no | raw
- * @property {string} [web-export] same as web
  * @property {boolean} [raw-http] indicate if an action should be exported as raw web action, this
  *                     option is only valid if `web` or `web-export` is set to true
  * @property {string} [docker] the docker container to run the action into
@@ -814,30 +820,23 @@ function returnDeploymentTriggerInputs (deploymentPackages) {
  * @returns {object} the action annotation entities
  */
 function returnAnnotations (action) {
-  const annotationParams = action && action.annotations ? cloneDeep(action.annotations) : {}
+  const annotationParams = cloneDeep(action.annotations ?? {})
   // common annotations
-  if (action.annotations && action.annotations.conductor !== undefined) {
+  if (action.annotations?.conductor !== undefined) {
     annotationParams.conductor = action.annotations.conductor
   }
 
-  // web related annotations
-  if (action.web !== undefined) {
-    Object.assign(annotationParams, checkWebFlags(action.web))
-  } else if (action['web-export'] !== undefined) {
-    Object.assign(annotationParams, checkWebFlags(action['web-export']))
-  } else {
-    annotationParams['web-export'] = false
-    annotationParams['raw-http'] = false
-  }
+  const webAnnotations = processAnnotationsForWebAction(action)
+  Object.assign(annotationParams, webAnnotations)
 
-  if (action.annotations && annotationParams['web-export'] === true) {
-    if (action.annotations['require-whisk-auth'] !== undefined) {
-      annotationParams['require-whisk-auth'] = action.annotations['require-whisk-auth']
+  if (annotationParams[ANNOTATION_WEB_EXPORT] === true) {
+    if (action.annotations?.[ANNOTATION_REQUIRE_WHISK_AUTH] !== undefined) {
+      annotationParams[ANNOTATION_REQUIRE_WHISK_AUTH] = action.annotations[ANNOTATION_REQUIRE_WHISK_AUTH]
     }
-    if (action.annotations['raw-http'] !== undefined) {
-      annotationParams['raw-http'] = action.annotations['raw-http']
+    if (action.annotations?.[ANNOTATION_RAW_HTTP] !== undefined) {
+      annotationParams[ANNOTATION_RAW_HTTP] = action.annotations[ANNOTATION_RAW_HTTP]
     }
-    if (action.annotations.final !== undefined) {
+    if (action.annotations?.final !== undefined) {
       annotationParams.final = action.annotations.final
     }
   }
@@ -905,7 +904,7 @@ function createApiRoutes (pkg, pkgName, apiName, allowedActions, allowedSequence
         }
 
         // ensure action or sequence has the web annotation
-        if (!actionDefinition.web && !actionDefinition['web-export']) {
+        if (!actionDefinition.web && !actionDefinition.annotations?.[ANNOTATION_WEB_EXPORT]) {
           throw new Error('Action or sequence provided in api is not a web action')
         }
 
@@ -954,27 +953,48 @@ function createSequenceObject (fullName, manifestSequence, packageName) {
 }
 
 /**
- * @description Check the web flags
- * @param {string|boolean} flag the flag to check
- * @returns {object} object with the appropriate web flags for an action
+ * A field value can either be true, false, 'yes', 'no', or 'raw'
+ * For example the action `web` field, or action `web-export` annotation can have all these values.
+ * Other fields might only have boolean as valid.
+ *
+ * Falsy values are false, 'no'
+ * Truthy values are true, 'yes', and 'raw'
+ *
+ * @private
+ * @param {string | boolean} webFieldValue the web value
+ * @returns {boolean} true if truthy, or else false
  */
-function checkWebFlags (flag) {
-  const tempObj = {}
-  switch (flag) {
-    case true:
-    case 'yes' :
-      tempObj['web-export'] = true
-      break
-    case 'raw' :
-      tempObj['web-export'] = true
-      tempObj['raw-http'] = true
-      break
-    case false:
-    case 'no':
-      tempObj['web-export'] = false
-      tempObj['raw-http'] = false
+function isTruthyFieldValue (webFieldValue) {
+  return (
+    webFieldValue === true ||
+    webFieldValue === VALUE_YES ||
+    webFieldValue === VALUE_RAW
+  )
+}
+
+/**
+ * Process the annotations for the web action.
+ *
+ * The action's web property will determine whether the action annotation's
+ * `web-export` and/or `raw-http` properties are to be set.
+ *
+ * @private
+ * @param {object} action the action to process
+ * @returns {object} the processed action annotations
+ */
+function processAnnotationsForWebAction (action) {
+  const isRawValue = (value) => value === 'raw'
+
+  const isWeb = isTruthyFieldValue(action.web)
+  const isWebExport = isTruthyFieldValue(action.annotations?.[ANNOTATION_WEB_EXPORT])
+  const isWebRawValue = (isRawValue(action.web) || isRawValue(action.annotations?.[ANNOTATION_WEB_EXPORT]))
+  const isRaw = isTruthyFieldValue(action.annotations?.[ANNOTATION_RAW_HTTP]) || isWebRawValue
+  const isWebOrWebExport = isWeb || isWebExport
+
+  return {
+    [ANNOTATION_WEB_EXPORT]: isWebOrWebExport,
+    [ANNOTATION_RAW_HTTP]: isRaw && isWebOrWebExport
   }
-  return tempObj
 }
 
 /**
@@ -1070,7 +1090,6 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
     [PROD_ENV]: '/adobeio/shared-validators-v1/headless-v2',
     [STAGE_ENV]: '/adobeio-stage/shared-validators-v1/headless-v2'
   }
-  const ADOBE_AUTH_ANNOTATION = 'require-adobe-auth'
   const ADOBE_AUTH_ACTION = ADOBE_AUTH_ACTIONS[env]
   const REWRITE_ACTION_PREFIX = '__secured_'
 
@@ -1083,51 +1102,48 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
     if (newPackages[key].actions) {
       Object.keys(newPackages[key].actions).forEach((actionName) => {
         const thisAction = newPackages[key].actions[actionName]
-
-        const isWebExport = checkWebFlags(thisAction['web-export'])['web-export']
-        const isWeb = checkWebFlags(thisAction.web)['web-export']
-        const isRaw = checkWebFlags(thisAction.web)['raw-http'] || checkWebFlags(thisAction['web-export'])['raw-http']
+        Object.assign(thisAction.annotations, processAnnotationsForWebAction(thisAction))
+        const isWeb = thisAction.annotations?.[ANNOTATION_WEB_EXPORT]
+        const isRaw = thisAction.annotations?.[ANNOTATION_RAW_HTTP]
 
         // check if the annotation is defined
-        if (thisAction.annotations?.[ADOBE_AUTH_ANNOTATION]) {
-          aioLogger.debug(`found annotation '${ADOBE_AUTH_ANNOTATION}' in action '${key}/${actionName}', cli env = ${env}`)
+        if (thisAction.annotations?.[ANNOTATION_REQUIRE_ADOBE_AUTH]) {
+          aioLogger.debug(`found annotation '${ANNOTATION_REQUIRE_ADOBE_AUTH}' in action '${key}/${actionName}', cli env = ${env}`)
 
           // check if the action is a web action
-          if (!(isWeb || isWebExport)) {
-            aioLogger.warn(`The action '${key}/${actionName}' is not a web action, the annotation '${ADOBE_AUTH_ANNOTATION}' will be ignored.`)
+          if (!isWeb) {
+            aioLogger.warn(`The action '${key}/${actionName}' is not a web action, the annotation '${ANNOTATION_REQUIRE_ADOBE_AUTH}' will be ignored.`)
             return
           }
 
           // 1. rename the action
-          const renamedAction = REWRITE_ACTION_PREFIX + actionName
+          const renamedActionName = REWRITE_ACTION_PREFIX + actionName
           /* istanbul ignore if */
-          if (newPackages[key].actions[renamedAction] !== undefined) {
+          if (newPackages[key].actions[renamedActionName] !== undefined) {
             // unlikely
-            throw new Error(`Failed to rename the action '${key}/${actionName}' to '${key}/${renamedAction}': an action with the same name exists already.`)
+            throw new Error(`Failed to rename the action '${key}/${actionName}' to '${key}/${renamedActionName}': an action with the same name exists already.`)
           }
 
           // set the action to the new key
-          newPackages[key].actions[renamedAction] = thisAction
+          newPackages[key].actions[renamedActionName] = thisAction
           // delete the old key
           delete newPackages[key].actions[actionName]
 
           // make sure any content in the deployment package is linked to the new action name
           if (newDeploymentPackages[key] && newDeploymentPackages[key].actions && newDeploymentPackages[key].actions[actionName]) {
-            newDeploymentPackages[key].actions[renamedAction] = newDeploymentPackages[key].actions[actionName]
+            newDeploymentPackages[key].actions[renamedActionName] = newDeploymentPackages[key].actions[actionName]
             delete newDeploymentPackages[key].actions[actionName]
           }
 
           // 2. delete the adobe-auth annotation and secure the renamed action
           // the renamed action is made secure by removing its web property
-          if (isWeb) {
-            newPackages[key].actions[renamedAction].web = false
-          }
-          if (isWebExport) {
-            newPackages[key].actions[renamedAction]['web-export'] = false
-          }
-          delete newPackages[key].actions[renamedAction].annotations[ADOBE_AUTH_ANNOTATION]
+          const renamedAction = newPackages[key].actions[renamedActionName]
 
-          aioLogger.debug(`renamed action '${key}/${actionName}' to '${key}/${renamedAction}'`)
+          delete renamedAction.web
+          delete renamedAction.annotations[ANNOTATION_WEB_EXPORT]
+          delete renamedAction.annotations[ANNOTATION_REQUIRE_ADOBE_AUTH]
+
+          aioLogger.debug(`renamed action '${key}/${actionName}' to '${key}/${renamedActionName}'`)
 
           // 3. create the sequence
           if (newPackages[key].sequences === undefined) {
@@ -1140,11 +1156,11 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
           }
           // set the sequence content
           newPackages[key].sequences[actionName] = {
-            actions: `${ADOBE_AUTH_ACTION},${key}/${renamedAction}`,
-            web: (isRaw && 'raw') || 'yes'
+            actions: `${ADOBE_AUTH_ACTION},${key}/${renamedActionName}`,
+            web: (isRaw && VALUE_RAW) || VALUE_YES
           }
 
-          aioLogger.debug(`defined new sequence '${key}/${actionName}': '${ADOBE_AUTH_ACTION},${key}/${renamedAction}'`)
+          aioLogger.debug(`defined new sequence '${key}/${actionName}': '${ADOBE_AUTH_ACTION},${key}/${renamedActionName}'`)
         }
       })
     }
@@ -1163,8 +1179,8 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
  * @param {DeploymentPackages} deploymentPackages the deployment packages
  * @param {object} deploymentTriggers the deployment triggers
  * @param {object} params the package params
- * @param {boolean} [namesOnly=false] if false, set the namespaces as well
- * @param {object} [owOptions={}] additional OpenWhisk options
+ * @param {boolean} [namesOnly] if false, set the namespaces as well
+ * @param {object} [owOptions] additional OpenWhisk options
  * @returns {OpenWhiskEntities} deployment entities
  */
 function processPackage (packages,
@@ -1835,7 +1851,7 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
 
   /** @private */
   function getActionUrl (pkgAndActionName, action) {
-    const webArg = action?.annotations?.['web-export'] || action?.web
+    const webArg = action?.annotations?.[ANNOTATION_WEB_EXPORT] || action?.web
     const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
 
     const actionIsBehindCdn =
@@ -2101,7 +2117,6 @@ module.exports = {
   returnDeploymentTriggerInputs, /* internal */
   getDeploymentPath, /* internal */
   createActionObject, /* internal */
-  checkWebFlags, /* internal */
   createSequenceObject, /* internal */
   createApiRoutes, /* internal */
   returnAnnotations, /* internal */
