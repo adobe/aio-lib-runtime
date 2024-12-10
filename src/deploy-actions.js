@@ -19,21 +19,30 @@ const IOruntime = require('./RuntimeAPI')
 const PACKAGE_ITEMS = ['actions', 'sequences']
 const FILTERABLE_ITEMS = ['apis', 'triggers', 'rules', 'dependencies', ...PACKAGE_ITEMS]
 const { createHash } = require('node:crypto')
+
 /**
- * runs the command
+ * @typedef {object} FilterEntities
+ * @property {Array} [actions] filter list of actions to deploy by provided array, e.g. ['name1', ..]
+ * @property {boolean} [byBuiltActions] if true, trim actions from the manifest based on the already built actions
+ * @property {Array} [sequences] filter list of sequences to deploy, e.g. ['name1', ..]
+ * @property {Array} [triggers] filter list of triggers to deploy, e.g. ['name1', ..]
+ * @property {Array} [rules] filter list of rules to deploy, e.g. ['name1', ..]
+ * @property {Array} [apis] filter list of apis to deploy, e.g. ['name1', ..]
+ * @property {Array} [dependencies] filter list of package dependencies to deploy, e.g. ['name1', ..]
+ */
+
+/**
+ * @typedef {object} DeployConfig
+ * @property {boolean} [isLocalDev] local dev flag // todo: remove
+ * @property {FilterEntities} [filterEntities] add filters to deploy only specified OpenWhisk entities
+ * @property {boolean} [useForce] force deploy of actions
+ */
+
+/**
+ * Runs the command
  *
  * @param {object} config app config
- * @param {object} [deployConfig] deployment config
- * @param {boolean} [deployConfig.isLocalDev] local dev flag // todo: remove
- * @param {object} [deployConfig.filterEntities] add filters to deploy only specified OpenWhisk entities
- * @param {Array} [deployConfig.filterEntities.actions] filter list of actions to deploy by provided array, e.g. ['name1', ..]
- * @param {boolean} [deployConfig.filterEntities.byBuiltActions] if true, trim actions from the manifest based on the already built actions
- * @param {Array} [deployConfig.filterEntities.sequences] filter list of sequences to deploy, e.g. ['name1', ..]
- * @param {Array} [deployConfig.filterEntities.triggers] filter list of triggers to deploy, e.g. ['name1', ..]
- * @param {Array} [deployConfig.filterEntities.rules] filter list of rules to deploy, e.g. ['name1', ..]
- * @param {Array} [deployConfig.filterEntities.apis] filter list of apis to deploy, e.g. ['name1', ..]
- * @param {Array} [deployConfig.filterEntities.dependencies] filter list of package dependencies to deploy, e.g. ['name1', ..]
- * @param {boolean} [deployConfig.useForce] force deploy of actions
+ * @param {DeployConfig} [deployConfig] deployment config
  * @param {object} [logFunc] custom logger function
  * @returns {Promise<object>} deployedEntities
  */
