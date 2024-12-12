@@ -9,22 +9,22 @@
             "helloAction": {
                 "function": "/hello.js",
                 "annotations": {
-                    "require-adobe-auth": true
+                    "require-adobe-auth": true,
+                    "web-export": true
                 },
                 "inputs": {
                     "param1": "value1"
-                },
-                "web-export": true
+                }
             },
             "goodbyeAction": {
                 "function": "/goodbye.js",
                 "annotations": {
-                    "require-adobe-auth": true
+                    "require-adobe-auth": true,
+                    "web-export": true
                 },
                 "inputs": {
                     "param1": "value1"
-                },
-                "web-export": true
+                }
             }
         },
         "triggers": {

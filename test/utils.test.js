@@ -87,7 +87,6 @@ describe('utils has the right functions', () => {
     expect(typeof utils.returnDeploymentTriggerInputs).toEqual('function')
     expect(typeof utils.getDeploymentPath).toEqual('function')
     expect(typeof utils.createActionObject).toEqual('function')
-    expect(typeof utils.checkWebFlags).toEqual('function')
     expect(typeof utils.createSequenceObject).toEqual('function')
     expect(typeof utils.createApiRoutes).toEqual('function')
     expect(typeof utils.returnAnnotations).toEqual('function')
@@ -373,23 +372,19 @@ describe('returnAnnotations', () => {
   })
   test('action = { web: true, annotations: { conductor: true } }', () => {
     const res = utils.returnAnnotations({ web: true, annotations: { conductor: true } })
-    expect(res).toEqual({ 'web-export': true, conductor: true })
+    expect(res).toEqual({ 'web-export': true, 'raw-http': false, conductor: true })
   })
   test('action = { web: raw, annotations: { conductor: true } }', () => {
     const res = utils.returnAnnotations({ web: 'raw', annotations: { conductor: true } })
     expect(res).toEqual({ 'raw-http': true, 'web-export': true, conductor: true })
   })
-  test('action = { web: yes, annotations: { raw-htttp: true } }', () => {
+  test('action = { web: yes, annotations: { raw-http: true } }', () => {
     const res = utils.returnAnnotations({ web: 'yes', annotations: { 'raw-http': true } })
     expect(res).toEqual({ 'raw-http': true, 'web-export': true })
   })
-  test('action = { web-export: true }', () => {
-    const res = utils.returnAnnotations({ 'web-export': true })
-    expect(res).toEqual({ 'web-export': true })
-  })
   test('action = { web: yes, annotations: { final: true } }', () => {
     const res = utils.returnAnnotations({ web: 'yes', annotations: { final: true } })
-    expect(res).toEqual({ final: true, 'web-export': true })
+    expect(res).toEqual({ final: true, 'web-export': true, 'raw-http': false })
   })
   test('action = { web: false, annotations: { final: true } }', () => {
     const res = utils.returnAnnotations({ web: false, annotations: { final: true } })
@@ -405,7 +400,11 @@ describe('returnAnnotations', () => {
   })
   test('action = { web: true, annotations: { require-whisk-auth: true } }', () => {
     const res = utils.returnAnnotations({ web: true, annotations: { 'require-whisk-auth': true } })
-    expect(res).toEqual({ 'web-export': true, 'require-whisk-auth': true })
+    expect(res).toEqual({ 'web-export': true, 'raw-http': false, 'require-whisk-auth': true })
+  })
+  test('action = { annotations: { web-export: true } }', () => {
+    const res = utils.returnAnnotations({ annotations: { 'web-export': true } })
+    expect(res).toEqual({ 'web-export': true, 'raw-http': false })
   })
 })
 
@@ -434,30 +433,13 @@ describe('createApiRoutes', () => {
     const res = utils.createApiRoutes({ actions: { action1: { web: true } }, sequences: {}, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'json' } } } } } }, 'pkg1', 'api1', ['action1'], [], false)
     expect(res).toEqual([{ action: 'pkg1/action1', basepath: '/base1', name: 'api1', operation: 'POST', relpath: '/resource1', responsetype: 'json' }])
   })
-  test('pkg={ actions: { action1: { web-export: true } }, sequences: {}, apis: { api1: { base1: { resource1: { action1: { method: POST, response: json } } } } }, pkgName=pkg1, apiName=api1, allowedActions=[action1], allowedSequences=[], pathOnly=false', () => {
-    const res = utils.createApiRoutes({ actions: { action1: { 'web-export': true } }, sequences: {}, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'json' } } } } } }, 'pkg1', 'api1', ['action1'], [], false)
-    expect(res).toEqual([{ action: 'pkg1/action1', basepath: '/base1', name: 'api1', operation: 'POST', relpath: '/resource1', responsetype: 'json' }])
-  })
   test('pkg={ actions: {}, sequences: { action1: { web: true } }, apis: { api1: { base1: { resource1: { action1: { method: POST, response: json } } } } }, pkgName=pkg1, apiName=api1, allowedActions=[action1], allowedSequences=[], pathOnly=false', () => {
     const res = utils.createApiRoutes({ actions: {}, sequences: { action1: { web: true } }, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'json' } } } } } }, 'pkg1', 'api1', [], ['action1'], false)
     expect(res).toEqual([{ action: 'pkg1/action1', basepath: '/base1', name: 'api1', operation: 'POST', relpath: '/resource1', responsetype: 'json' }])
   })
-  test('pkg={ actions: {}, sequences: { action1: { web-export: true } }, apis: { api1: { base1: { resource1: { action1: { method: POST, response: json } } } } }, pkgName=pkg1, apiName=api1, allowedActions=[action1], allowedSequences=[], pathOnly=false', () => {
-    const res = utils.createApiRoutes({ actions: {}, sequences: { action1: { 'web-export': true } }, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'json' } } } } } }, 'pkg1', 'api1', [], ['action1'], false)
-    expect(res).toEqual([{ action: 'pkg1/action1', basepath: '/base1', name: 'api1', operation: 'POST', relpath: '/resource1', responsetype: 'json' }])
-  })
-  test('pkg={ actions: {}, sequences: { action1: { web-export: true } }, apis: { api1: { base1: { resource1: { action1: { method: POST, response: html } } } } }, pkgName=pkg1, apiName=api1, allowedActions=[action1], allowedSequences=[], pathOnly=false', () => {
-    const res = utils.createApiRoutes({ actions: {}, sequences: { action1: { 'web-export': true } }, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'html' } } } } } }, 'pkg1', 'api1', [], ['action1'], false)
-    expect(res).toEqual([{ action: 'pkg1/action1', basepath: '/base1', name: 'api1', operation: 'POST', relpath: '/resource1', responsetype: 'html' }])
-  })
-  test('pkg={ actions: {}, sequences: { action1: { web-export: true } }, apis: { api1: { base1: { resource1: { action1: { method: POST, response: html } } } } }, pkgName=pkg1, apiName=api1, allowedActions=[action1], allowedSequences=[], pathOnly=true', () => {
-    const res = utils.createApiRoutes({ actions: {}, sequences: { action1: { 'web-export': true } }, apis: { api1: { base1: { resource1: { action1: { method: 'POST', response: 'html' } } } } } }, 'pkg1', 'api1', [], ['action1'], true)
-    expect(res).toEqual([{ basepath: '/base1', name: 'api1', relpath: '/resource1' }])
-  })
 })
 
 describe('returnUnion', () => { /* TODO */ })
-describe('checkWebFlags', () => { /* TODO */ })
 
 describe('createSequenceObject', () => {
   test('no args', async () => {
@@ -1018,7 +1000,7 @@ describe('processPackage', () => {
     res = utils.processPackage(packagesCopy, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
     expect(res).toEqual({
       actions: [
-        { name: 'pkg1/theaction', annotations: { 'web-export': true }, action: fakeCode }
+        { name: 'pkg1/theaction', annotations: { 'web-export': true, 'raw-http': false }, action: fakeCode }
       ],
       apis: [],
       pkgAndDeps: [{ name: 'pkg1' }],
@@ -1043,7 +1025,7 @@ describe('processPackage', () => {
     expect(res).toEqual({
       actions: [
         { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
-        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true, 'raw-http': false }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
       ],
       apis: [],
       pkgAndDeps: [{ name: 'pkg1' }],
@@ -1057,7 +1039,7 @@ describe('processPackage', () => {
     expect(res).toEqual({
       actions: [
         { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
-        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR_STAGE, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true, 'raw-http': false }, exec: { components: [HEADLESS_VALIDATOR_STAGE, 'pkg1/__secured_theaction'], kind: 'sequence' } }
       ],
       apis: [],
       pkgAndDeps: [{ name: 'pkg1' }],
@@ -1073,7 +1055,7 @@ describe('processPackage', () => {
     expect(res).toEqual({
       actions: [
         { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
-        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true, 'raw-http': false }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
       ],
       apis: [],
       pkgAndDeps: [{ name: 'pkg1' }],
@@ -1085,13 +1067,13 @@ describe('processPackage', () => {
 
     // action uses web-export
     packagesCopy = cloneDeep(basicPackage)
-    packagesCopy.pkg1.actions.theaction['web-export'] = true
+    packagesCopy.pkg1.actions.theaction.annotations['web-export'] = true
     delete packagesCopy.pkg1.actions.theaction.web
     res = utils.processPackage(packagesCopy, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
     expect(res).toEqual({
       actions: [
         { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
-        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true, 'raw-http': false }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
       ],
       apis: [],
       pkgAndDeps: [{ name: 'pkg1' }],
@@ -1126,7 +1108,7 @@ describe('processPackage', () => {
     expect(res).toEqual({
       actions: [
         { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode, params: { a: 34 } },
-        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true, 'raw-http': false }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
       ],
       apis: [],
       pkgAndDeps: [{ name: 'pkg1' }],
@@ -1145,7 +1127,7 @@ describe('processPackage', () => {
     expect(res).toEqual({
       actions: [
         { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
-        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true, 'raw-http': false }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
       ],
       apis: [],
       pkgAndDeps: [{ name: 'pkg1' }],
