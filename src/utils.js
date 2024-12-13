@@ -1102,7 +1102,9 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
     if (newPackages[key].actions) {
       Object.keys(newPackages[key].actions).forEach((actionName) => {
         const thisAction = newPackages[key].actions[actionName]
-        Object.assign(thisAction.annotations, processAnnotationsForWebAction(thisAction))
+        if (thisAction.annotations) {
+          Object.assign(thisAction.annotations, processAnnotationsForWebAction(thisAction))
+        }
         const isWeb = thisAction.annotations?.[ANNOTATION_WEB_EXPORT]
         const isRaw = thisAction.annotations?.[ANNOTATION_RAW_HTTP]
 
