@@ -1126,18 +1126,19 @@ describe('processPackage', () => {
 
     const basicPackageNoAnnotations = structuredClone(basicPackage)
     delete basicPackageNoAnnotations.pkg1.actions.theaction.annotations
-  
+
     const res = utils.processPackage(basicPackageNoAnnotations, deploymentPackages, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
     expect(res).toEqual({
       actions: [
-        { 
-          name: 'pkg1/theaction', 
-          action: fakeCode, 
+        {
+          name: 'pkg1/theaction',
+          action: fakeCode,
           params: { a: 34 },
-          annotations: { 
+          annotations: {
             'web-export': true,
             'raw-http': false
-          }}
+          }
+        }
       ],
       apis: [],
       pkgAndDeps: [{ name: 'pkg1' }],
