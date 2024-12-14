@@ -1118,6 +1118,35 @@ describe('processPackage', () => {
     spy.mockRestore()
   })
 
+  test('1 action with no annotations', () => {
+    const spy = jest.spyOn(fs, 'readFileSync')
+    const fakeCode = 'fake action code'
+    spy.mockImplementation(() => fakeCode)
+    const deploymentPackages = { pkg1: { actions: { theaction: { inputs: { a: 34 } } } } }
+
+    const basicPackageNoAnnotations = structuredClone(basicPackage)
+    delete basicPackageNoAnnotations.pkg1.actions.theaction.annotations
+  
+    const res = utils.processPackage(basicPackageNoAnnotations, deploymentPackages, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res).toEqual({
+      actions: [
+        { 
+          name: 'pkg1/theaction', 
+          action: fakeCode, 
+          params: { a: 34 },
+          annotations: { 
+            'web-export': true,
+            'raw-http': false
+          }}
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+    spy.mockRestore()
+  })
+
   test('action using the annotation + rewrite deployment package => action has empty imputs', () => {
     const spy = jest.spyOn(fs, 'readFileSync')
     const fakeCode = 'fake action code'
