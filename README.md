@@ -1,5 +1,5 @@
 <!--
-Copyright 2020 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -191,9 +191,6 @@ See <a href="https://github.com/apache/openwhisk-wskdeploy/blob/master/parsers/m
 </dd>
 <dt><a href="#createSequenceObject">createSequenceObject(fullName, manifestSequence, packageName)</a> ⇒ <code><a href="#OpenWhiskEntitiesAction">OpenWhiskEntitiesAction</a></code></dt>
 <dd><p>Create a sequence object that is compatible with the OpenWhisk API from a parsed manifest object</p>
-</dd>
-<dt><a href="#checkWebFlags">checkWebFlags(flag)</a> ⇒ <code>object</code></dt>
-<dd><p>Check the web flags</p>
 </dd>
 <dt><a href="#createActionObject">createActionObject(fullName, manifestAction)</a> ⇒ <code><a href="#OpenWhiskEntitiesAction">OpenWhiskEntitiesAction</a></code></dt>
 <dd><p>Create an action object compatible with the OpenWhisk API from an action object parsed from the manifest.</p>
@@ -491,9 +488,7 @@ Get destination settings
 <a name="RuntimeAPI"></a>
 
 ## RuntimeAPI
-This class provides methods to call your RuntimeAPI APIs.
-Before calling any method initialize the instance by calling the `init` method on it
-with valid options argument
+This class provides methods to call your RuntimeAPI APIs.Before calling any method initialize the instance by calling the `init` method on itwith valid options argument
 
 **Kind**: global class  
 <a name="RuntimeAPI+init"></a>
@@ -550,8 +545,7 @@ Deletes a trigger and associated feeds
 <a name="getWebpackConfigPath"></a>
 
 ## getWebpackConfigPath(actionPath, root) ⇒ <code>Promise.&lt;string&gt;</code>
-Searches for a webpack config file, starting at the action path and working
- towards the root of the project. Will return the first one it finds.
+Searches for a webpack config file, starting at the action path and working towards the root of the project. Will return the first one it finds.
 
 **Kind**: global function  
 **Returns**: <code>Promise.&lt;string&gt;</code> - Webpack config file path, will be 'null' if not found  
@@ -564,8 +558,7 @@ Searches for a webpack config file, starting at the action path and working
 <a name="loadWebpackConfig"></a>
 
 ## loadWebpackConfig(configPath, actionPath, tempBuildDir, outBuildFilename) ⇒ <code>Promise.&lt;object&gt;</code>
-Loads a Webpack config file from the config path provided. Sets fields required
- for Runtime actions. Returns an object that can be passed to the Webpack library.
+Loads a Webpack config file from the config path provided. Sets fields required for Runtime actions. Returns an object that can be passed to the Webpack library.
 
 **Kind**: global function  
 **Returns**: <code>Promise.&lt;object&gt;</code> - Webpack config, can be passed to the Webpack library  
@@ -594,9 +587,7 @@ Will return data about an action ready to be built.
 <a name="zipActions"></a>
 
 ## zipActions(buildsList, lastBuildsPath, distFolder) ⇒ <code>Array.&lt;string&gt;</code>
-Will zip actions.
- By default only actions which were not built before will be zipped.
- Last built actions data will be used to validate which action needs zipping.
+Will zip actions. By default only actions which were not built before will be zipped. Last built actions data will be used to validate which action needs zipping.
 
 **Kind**: global function  
 **Returns**: <code>Array.&lt;string&gt;</code> - Array of zipped actions.  
@@ -615,21 +606,21 @@ runs the command
 **Kind**: global function  
 **Returns**: <code>Promise.&lt;object&gt;</code> - deployedEntities  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| config | <code>object</code> |  | app config |
-| [deployConfig] | <code>object</code> | <code>{}</code> | deployment config |
-| [deployConfig.isLocalDev] | <code>boolean</code> |  | local dev flag // todo: remove |
-| [deployConfig.filterEntities] | <code>object</code> |  | add filters to deploy only specified OpenWhisk entities |
-| [deployConfig.filterEntities.actions] | <code>Array</code> |  | filter list of actions to deploy by provided array, e.g. ['name1', ..] |
-| [deployConfig.filterEntities.byBuiltActions] | <code>boolean</code> |  | if true, trim actions from the manifest based on the already built actions |
-| [deployConfig.filterEntities.sequences] | <code>Array</code> |  | filter list of sequences to deploy, e.g. ['name1', ..] |
-| [deployConfig.filterEntities.triggers] | <code>Array</code> |  | filter list of triggers to deploy, e.g. ['name1', ..] |
-| [deployConfig.filterEntities.rules] | <code>Array</code> |  | filter list of rules to deploy, e.g. ['name1', ..] |
-| [deployConfig.filterEntities.apis] | <code>Array</code> |  | filter list of apis to deploy, e.g. ['name1', ..] |
-| [deployConfig.filterEntities.dependencies] | <code>Array</code> |  | filter list of package dependencies to deploy, e.g. ['name1', ..] |
-| [deployConfig.useForce] | <code>boolean</code> |  | force deploy of actions |
-| [logFunc] | <code>object</code> |  | custom logger function |
+| Param | Type | Description |
+| --- | --- | --- |
+| config | <code>object</code> | app config |
+| [deployConfig] | <code>object</code> | deployment config |
+| [deployConfig.isLocalDev] | <code>boolean</code> | local dev flag // todo: remove |
+| [deployConfig.filterEntities] | <code>object</code> | add filters to deploy only specified OpenWhisk entities |
+| [deployConfig.filterEntities.actions] | <code>Array</code> | filter list of actions to deploy by provided array, e.g. ['name1', ..] |
+| [deployConfig.filterEntities.byBuiltActions] | <code>boolean</code> | if true, trim actions from the manifest based on the already built actions |
+| [deployConfig.filterEntities.sequences] | <code>Array</code> | filter list of sequences to deploy, e.g. ['name1', ..] |
+| [deployConfig.filterEntities.triggers] | <code>Array</code> | filter list of triggers to deploy, e.g. ['name1', ..] |
+| [deployConfig.filterEntities.rules] | <code>Array</code> | filter list of rules to deploy, e.g. ['name1', ..] |
+| [deployConfig.filterEntities.apis] | <code>Array</code> | filter list of apis to deploy, e.g. ['name1', ..] |
+| [deployConfig.filterEntities.dependencies] | <code>Array</code> | filter list of package dependencies to deploy, e.g. ['name1', ..] |
+| [deployConfig.useForce] | <code>boolean</code> | force deploy of actions |
+| [logFunc] | <code>object</code> | custom logger function |
 
 <a name="deployWsk"></a>
 
@@ -812,8 +803,7 @@ Print logs
 <a name="getActionEntryFile"></a>
 
 ## getActionEntryFile(pkgJsonPath) ⇒ <code>string</code>
-returns path to main function as defined in package.json OR default of index.js
-note: file MUST exist, caller's responsibility, this method will throw if it does not exist
+returns path to main function as defined in package.json OR default of index.jsnote: file MUST exist, caller's responsibility, this method will throw if it does not exist
 
 **Kind**: global function  
 **Returns**: <code>string</code> - path to the entry file  
@@ -1073,8 +1063,7 @@ Get the annotations for an action
 <a name="createApiRoutes"></a>
 
 ## createApiRoutes(pkg, pkgName, apiName, allowedActions, allowedSequences, pathOnly) ⇒ [<code>Array.&lt;OpenWhiskEntitiesRoute&gt;</code>](#OpenWhiskEntitiesRoute)
-Creates an array of route definitions from the given manifest-based package.
-See https://github.com/apache/openwhisk-wskdeploy/blob/master/parsers/manifest_parser.go#L1187
+Creates an array of route definitions from the given manifest-based package.See https://github.com/apache/openwhisk-wskdeploy/blob/master/parsers/manifest_parser.go#L1187
 
 **Kind**: global function  
 **Returns**: [<code>Array.&lt;OpenWhiskEntitiesRoute&gt;</code>](#OpenWhiskEntitiesRoute) - the array of route entities  
@@ -1101,18 +1090,6 @@ Create a sequence object that is compatible with the OpenWhisk API from a parsed
 | fullName | <code>string</code> | the full sequence name prefixed with the package, e.g. `pkg/sequence` |
 | manifestSequence | [<code>ManifestSequence</code>](#ManifestSequence) | a sequence object as defined in a valid manifest file |
 | packageName | <code>string</code> | the package name of the sequence, which will be set to for actions in the sequence |
-
-<a name="checkWebFlags"></a>
-
-## checkWebFlags(flag) ⇒ <code>object</code>
-Check the web flags
-
-**Kind**: global function  
-**Returns**: <code>object</code> - object with the appropriate web flags for an action  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| flag | <code>string</code> \| <code>boolean</code> | the flag to check |
 
 <a name="createActionObject"></a>
 
@@ -1142,7 +1119,7 @@ Process the manifest and deployment content and returns deployment entities.
 | deploymentTriggers | <code>object</code> |  | the deployment triggers |
 | params | <code>object</code> |  | the package params |
 | [namesOnly] | <code>boolean</code> | <code>false</code> | if false, set the namespaces as well |
-| [owOptions] | <code>object</code> | <code>{}</code> | additional OpenWhisk options |
+| [owOptions] | <code>object</code> |  | additional OpenWhisk options |
 
 <a name="setPaths"></a>
 
@@ -1173,8 +1150,7 @@ Deploy all processed entities: can deploy packages, actions, triggers, rules and
 <a name="undeployPackage"></a>
 
 ## undeployPackage(entities, ow, logger)
-Undeploy all processed entities: can undeploy packages, actions, triggers, rules and apis.
-Entity definitions do not need to be complete, only the names are needed for un-deployment.
+Undeploy all processed entities: can undeploy packages, actions, triggers, rules and apis.Entity definitions do not need to be complete, only the names are needed for un-deployment.
 
 **Kind**: global function  
 
@@ -1187,12 +1163,7 @@ Entity definitions do not need to be complete, only the names are needed for un-
 <a name="syncProject"></a>
 
 ## syncProject(projectName, manifestPath, manifestContent, entities, ow, logger, imsOrgId, deleteEntities)
-Sync a project. This is a higher level function that can be used to sync a local
-manifest with deployed entities.
-
-`syncProject` doesn't only deploy entities it might also undeploy entities that are not
-defined in the manifest. This behavior can be disabled via the `deleteEntities` boolean
-parameter.
+Sync a project. This is a higher level function that can be used to sync a localmanifest with deployed entities.`syncProject` doesn't only deploy entities it might also undeploy entities that are notdefined in the manifest. This behavior can be disabled via the `deleteEntities` booleanparameter.
 
 **Kind**: global function  
 
@@ -1210,13 +1181,7 @@ parameter.
 <a name="getProjectEntities"></a>
 
 ## getProjectEntities(project, isProjectHash, ow) ⇒ [<code>Promise.&lt;OpenWhiskEntities&gt;</code>](#OpenWhiskEntities)
-Get deployed entities for a managed project. This methods retrieves all the deployed
-entities for a given project name or project hash. This only works if the project was
-deployed using the `whisk-managed` annotation. This annotation can be set
-pre-deployement using `[addManagedProjectAnnotations](#addmanagedprojectannotations)`.
-
-Note that returned apis will always be empty as they don't support annotations and
-hence are not managed as part of a project.
+Get deployed entities for a managed project. This methods retrieves all the deployedentities for a given project name or project hash. This only works if the project wasdeployed using the `whisk-managed` annotation. This annotation can be setpre-deployement using `[addManagedProjectAnnotations](#addmanagedprojectannotations)`.Note that returned apis will always be empty as they don't support annotations andhence are not managed as part of a project.
 
 **Kind**: global function  
 **Returns**: [<code>Promise.&lt;OpenWhiskEntities&gt;</code>](#OpenWhiskEntities) - the deployed project entities  
@@ -1230,8 +1195,7 @@ hence are not managed as part of a project.
 <a name="addManagedProjectAnnotations"></a>
 
 ## addManagedProjectAnnotations(entities, manifestPath, projectName, projectHash)
-Add the `whisk-managed` annotation to processed entities. This is needed for syncing
-managed projects.
+Add the `whisk-managed` annotation to processed entities. This is needed for syncingmanaged projects.
 
 **Kind**: global function  
 
@@ -1245,8 +1209,7 @@ managed projects.
 <a name="getProjectHash"></a>
 
 ## getProjectHash(manifestContent) ⇒ <code>string</code>
-Compute the project hash based on the manifest content string. This is used
-for syncing managed projects.
+Compute the project hash based on the manifest content string. This is usedfor syncing managed projects.
 
 **Kind**: global function  
 **Returns**: <code>string</code> - the project hash  
@@ -1520,8 +1483,7 @@ Gets a list of the supported runtime kinds from the apihost.
 <a name="ManifestPackages"></a>
 
 ## ManifestPackages : [<code>Array.&lt;ManifestPackage&gt;</code>](#ManifestPackage)
-The entry point to the information read from the manifest, this can be extracted using
-[setPaths](#setpaths).
+The entry point to the information read from the manifest, this can be extracted using[setPaths](#setpaths).
 
 **Kind**: global typedef  
 <a name="ManifestPackage"></a>
@@ -1560,7 +1522,6 @@ The manifest action definition
 | [inputs] | <code>object</code> | the list of action default parameters |
 | [limits] | <code>Array.&lt;object&gt;</code> | limits for the action |
 | [web] | <code>string</code> | indicate if an action should be exported as web, can take the                    value of: true | false | yes | no | raw |
-| [web-export] | <code>string</code> | same as web |
 | [raw-http] | <code>boolean</code> | indicate if an action should be exported as raw web action, this                     option is only valid if `web` or `web-export` is set to true |
 | [docker] | <code>string</code> | the docker container to run the action into |
 | [annotations] | <code>Array.&lt;object&gt;</code> | the manifest action annotations |
@@ -1579,8 +1540,7 @@ The manifest action definition
 <a name="ManifestSequence"></a>
 
 ## ManifestSequence : <code>object</code>
-The manifest sequence definition
-TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md
+The manifest sequence definitionTODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_sequences.md
 
 **Kind**: global typedef  
 **Properties**
@@ -1592,8 +1552,7 @@ TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specificatio
 <a name="ManifestTrigger"></a>
 
 ## ManifestTrigger : <code>object</code>
-The manifest trigger definition
-TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_triggers.md
+The manifest trigger definitionTODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_triggers.md
 
 **Kind**: global typedef  
 **Properties**
@@ -1607,8 +1566,7 @@ TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specificatio
 <a name="ManifestRule"></a>
 
 ## ManifestRule : <code>object</code>
-The manifest rule definition
-TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_rules.md
+The manifest rule definitionTODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specification/html/spec_rules.md
 
 **Kind**: global typedef  
 **Properties**
@@ -1621,8 +1579,7 @@ TODO: see https://github.com/apache/openwhisk-wskdeploy/blob/master/specificatio
 <a name="ManifestDependency"></a>
 
 ## ManifestDependency : <code>object</code>
-The manifest dependency definition
-TODO
+The manifest dependency definitionTODO
 
 **Kind**: global typedef  
 **Properties**
@@ -1635,8 +1592,7 @@ TODO
 <a name="OpenWhiskEntities"></a>
 
 ## OpenWhiskEntities : <code>object</code>
-The OpenWhisk entities definitions, which are compatible with the `openwhisk` node
-client module. Can be obtained using (processpackage)[#processpackage] (with `onlyNames=true` for un-deployment)
+The OpenWhisk entities definitions, which are compatible with the `openwhisk` nodeclient module. Can be obtained using (processpackage)[#processpackage] (with `onlyNames=true` for un-deployment)
 
 **Kind**: global typedef  
 **Properties**
@@ -1669,8 +1625,7 @@ The api entity definition
 <a name="OpenWhiskEntitiesAction"></a>
 
 ## OpenWhiskEntitiesAction : <code>object</code>
-The action entity definition
-TODO
+The action entity definitionTODO
 
 **Kind**: global typedef  
 **Properties**
@@ -1684,8 +1639,7 @@ TODO
 <a name="OpenWhiskEntitiesRule"></a>
 
 ## OpenWhiskEntitiesRule : <code>object</code>
-The rule entity definition
-TODO
+The rule entity definitionTODO
 
 **Kind**: global typedef  
 **Properties**
@@ -1698,8 +1652,7 @@ TODO
 <a name="OpenWhiskEntitiesTrigger"></a>
 
 ## OpenWhiskEntitiesTrigger : <code>object</code>
-The trigger entity definition
-TODO
+The trigger entity definitionTODO
 
 **Kind**: global typedef  
 **Properties**
@@ -1713,8 +1666,7 @@ TODO
 <a name="OpenWhiskEntitiesPackage"></a>
 
 ## OpenWhiskEntitiesPackage : <code>object</code>
-The package entity definition
-TODO
+The package entity definitionTODO
 
 **Kind**: global typedef  
 **Properties**
@@ -1727,9 +1679,7 @@ TODO
 <a name="DeploymentPackages"></a>
 
 ## DeploymentPackages : <code>Array.&lt;object&gt;</code>
-The entry point to the information read from the deployment file, this can be extracted using
-[setPaths](#setpaths).
-TODO
+The entry point to the information read from the deployment file, this can be extracted using[setPaths](#setpaths).TODO
 
 **Kind**: global typedef  
 <a name="DeploymentFileComponents"></a>
