@@ -19,6 +19,8 @@ const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime
 const cloneDeep = require('lodash.clonedeep')
 const { getCliEnv } = require('@adobe/aio-lib-env')
 const { hashElement } = require('folder-hash')
+const crypto = require('node:crypto')
+const dependencyTree = require('dependency-tree')
 
 const uniqueArr = (items) => {
   return [...new Set(items)]
@@ -193,8 +195,6 @@ const prepareToBuildAction = async (action, root, dist) => {
     return fs.existsSync(path.join(dir, file))
   }
 
-  const actionDir = path.dirname(actionPath)
-  const srcHash = await hashElement(actionDir, { folders: { exclude: ['node_modules'] } })
   if (isDirectory) {
     // make sure package.json exists OR index.js exists
     if (!filePathExists(actionPath, 'package.json')) {
@@ -242,7 +242,6 @@ const prepareToBuildAction = async (action, root, dist) => {
     actionName,
     legacy: defaultPackage,
     outPath,
-    srcHash,
     tempBuildDir,
     tempActionName: 'index.js'
   }
@@ -317,20 +316,44 @@ const buildActions = async (config, filterActions, skipCheck = false, emptyDist 
 
       // here we should check if there are changes since the last build
       const actionPath = path.resolve(config.root, action.function)
+      // actionDir is the directory of this paticular action
       const actionDir = path.dirname(actionPath)
+      // use dependency-tree to get a list of all dependencies excluding node_modules
+      const actionDepList = dependencyTree.toList({
+        filename: actionPath,
+        directory: actionDir,
+        filter: path => path.indexOf('node_modules') === -1 // exclude node_modules
+      })
+
+      // generate a hash for each dependency
+      const depHashes = []
+      for await (const dep of actionDepList) {
+        const elem = await hashElement(dep)
+        // console.log('elem hash = ', elem)
+        depHashes.push(elem.hash)
+      }
 
       // get a hash of the current action folder
       const srcHash = await hashElement(actionDir, { folders: { exclude: ['node_modules'] } })
-      // lastBuiltData[actionName] === contentHash
-      // if the flag to skip is set, then we ALWAYS build
+
+      // fullHash is what we will use to compare if the action has changed
+      // this is a hash of the action folder, and all its dependencies
+      const fullHash = crypto.createHash('sha256')
+      fullHash.update(srcHash.hash)
+      depHashes.forEach(hash => {
+        fullHash.update(hash)
+      })
+      const fullHashDigest = fullHash.digest('hex')
+
+      // if the flag to skip is set, then we ALWAYS build (TODO: check for skip before calculating hash)
       // if the hash is different, we build
       // if the user has specified a filter, we build even if hash is the same, they are explicitly asking for it
       // but we don't need to add a case, before we are called, skipCheck is set to true if there is a filter
-      if (skipCheck || lastBuiltData[actionFullName] !== srcHash.hash) {
+      if (skipCheck || lastBuiltData[actionFullName] !== fullHashDigest) {
         // todo: inform the user that the action has changed and we are rebuilding
-        // console.log('action has changed since last build, zipping', actionFullName)
+        aioLogger.debug('action has changed since last build, building ..', actionFullName)
         const buildResult = await prepareToBuildAction(action, config.root, distFolder)
-        buildResult.buildHash = { [actionFullName]: srcHash.hash }
+        buildResult.buildHash = { [actionFullName]: fullHashDigest }
         toBuildList.push(buildResult)
       } else {
         // inform the user that the action has not changed ???
