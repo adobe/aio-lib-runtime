@@ -13,22 +13,21 @@ const utils = require('../src/utils')
 const buildActions = require('../src/build-actions')
 const path = require('path')
 const fs = require('fs-extra')
-jest.mock('dependency-tree')
 const execa = require('execa')
-jest.mock('execa')
 const deepClone = require('lodash.clonedeep')
-
 const globby = require('globby')
-jest.mock('globby')
-
+const webpack = require('webpack')
 const mockLogger = require('@adobe/aio-lib-core-logging')
+
+jest.mock('dependency-tree')
+jest.mock('execa')
+jest.mock('globby')
+// todo move webpack mock to __mocks__
+jest.mock('webpack')
 
 // zip implementation is complex to test => tested in utils.test.js
 utils.zip = jest.fn()
 
-// todo move webpack mock to __mocks__
-jest.mock('webpack')
-const webpack = require('webpack')
 const webpackMock = {
   run: jest.fn()
 }
@@ -54,6 +53,7 @@ beforeEach(() => {
   execa.mockReset()
   utils.zip.mockReset()
   fs.emptyDirSync = jest.fn()
+  fs.copySync = jest.fn()
 })
 
 describe('build by zipping js action folder', () => {
