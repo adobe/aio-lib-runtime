@@ -53,6 +53,7 @@ beforeEach(() => {
   execa.mockReset()
   utils.zip.mockReset()
   fs.emptyDirSync = jest.fn()
+  fs.copySync = jest.fn()
 })
 
 describe('build by zipping js action folder', () => {
