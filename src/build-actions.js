@@ -339,6 +339,7 @@ const buildActions = async (config, filterActions, skipCheck = false, emptyDist 
       // fullHash is what we will use to compare if the action has changed
       // this is a hash of the action folder, and all its dependencies
       const fullHash = crypto.createHash('sha256')
+      fullHash.update(actionPath)
       fullHash.update(srcHash.hash)
       depHashes.forEach(hash => {
         fullHash.update(hash)
