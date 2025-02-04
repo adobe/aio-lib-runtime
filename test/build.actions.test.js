@@ -346,7 +346,55 @@ describe('build by bundling js action file with webpack', () => {
       },
       target: 'node'
     }])
-    expect(globby).toHaveBeenCalledWith(expect.arrayContaining([path.resolve('/actions/*webpack-config.js')]))
+    expect(globby).toHaveBeenCalledWith(expect.arrayContaining([path.resolve('/actions/*webpack-config.{js,cjs}')]))
+    expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp'),
+      path.normalize('/dist/actions/sample-app-include-1.0.0/action.zip'))
+    expect(Object.keys(global.fakeFileSystem.files())).toEqual(expect.arrayContaining(['/includeme.txt']))
+  })
+
+  test('should bundle a single action file using webpack and zip it with includes using webpack-config.cjs in actions root', async () => {
+    global.fakeFileSystem.reset()
+    global.fakeFileSystem.addJson({
+      'actions/action.js': global.fixtureFile('/sample-app-includes/actions/action.js'),
+      'includeme.txt': global.fixtureFile('/sample-app-includes/includeme.txt'),
+      'manifest.yml': global.fixtureFile('/sample-app-includes/manifest.yml'),
+      'package.json': global.fixtureFile('/sample-app-includes/package.json')
+    })
+    globby.mockReturnValueOnce(['/includeme.txt'])
+    globby.mockReturnValueOnce(['actions/mock.webpack-config.cjs'])
+
+    jest.mock('actions/mock.webpack-config.cjs', () => {
+      return [{
+        mode: 'none',
+        optimization: { somefakefield: true },
+        output: { fake: false },
+        entry: ['file.js'],
+        resolve: {
+          extensions: ['html', 'json', 'css'],
+          mainFields: ['another'],
+          anotherFake: ['yo']
+        },
+        plugins: ['hello'],
+        target: 'cannotovewrite'
+      }]
+    }, { virtual: true })
+
+    await buildActions(global.sampleAppIncludesConfig)
+    expect(webpackMock.run).toHaveBeenCalledTimes(1)
+    expect(webpack).toHaveBeenCalledWith([{
+      entry: [path.resolve('actions/file.js'), path.resolve('/actions/action.js')],
+      mode: 'none',
+      optimization: { minimize: false, somefakefield: true },
+      output: { fake: false, filename: 'index.js', libraryTarget: 'commonjs2', path: path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp') },
+      plugins: ['hello', {}],
+      resolve: {
+        anotherFake: ['yo'],
+        extensions: ['html', 'json', 'css', '.js', '.json'],
+        mainFields: ['another', 'main']
+      },
+      target: 'node'
+    }])
+    expect(globby).toHaveBeenCalledWith(expect.arrayContaining([path.resolve('/actions/*webpack-config.{js,cjs}')]))
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp'),
       path.normalize('/dist/actions/sample-app-include-1.0.0/action.zip'))
     expect(Object.keys(global.fakeFileSystem.files())).toEqual(expect.arrayContaining(['/includeme.txt']))
