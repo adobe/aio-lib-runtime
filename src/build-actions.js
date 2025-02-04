@@ -40,7 +40,7 @@ const getWebpackConfigPath = async (actionPath, root) => {
   let configPath = null
 
   do {
-    const paths = await globby([path.join(parentDir, '*webpack-config.js')])
+    const paths = await globby([path.join(parentDir, '*webpack-config.{js,cjs}')])
     if (paths && paths.length > 0) {
       configPath = paths[0]
     }
