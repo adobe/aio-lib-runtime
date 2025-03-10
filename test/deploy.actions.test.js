@@ -120,6 +120,30 @@ test('deploy full manifest', async () => {
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', global.sampleAppConfig.manifest.src, expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
 })
 
+test('deploy full manifest with OpenWhishk Auth Handler', async () => {
+  addSampleAppFiles()
+  runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
+
+  const buildDir = global.sampleAppConfig.actions.dist
+  // fake a previous build
+  const fakeFiles = {}
+  fakeFiles[path.join(buildDir, 'action.js')] = 'fakecontent'
+  fakeFiles[path.join(buildDir, 'action-zip.zip')] = 'fake-content'
+  global.fakeFileSystem.addJson(fakeFiles)
+
+  let sampleConfigWithAuthHandler = structuredClone(global.sampleAppConfig)
+  sampleConfigWithAuthHandler.ow.auth_handler = 'fake:BearerToken'
+  await deployActions(sampleConfigWithAuthHandler)
+
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistManifest.packages, {}, {}, {}, false, { ...expectedOWOptions, auth_handler: 'fake:BearerToken' })
+
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
+
+  expect(runtimeLibUtils.syncProject).toHaveBeenCalledWith('sample-app-1.0.0', sampleConfigWithAuthHandler.manifest.src, expectedDistManifest, mockEntities, { fake: 'ow' }, expect.anything(), undefined, true)
+  sampleConfigWithAuthHandler = null
+})
+
 test('deploy full manifest with package name specified', async () => {
   addNamedPackageFiles()
   runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))

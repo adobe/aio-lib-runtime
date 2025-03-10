@@ -115,6 +115,28 @@ test('should undeploy two already deployed actions', async () => {
   expect(runtimeLibUtils.undeployPackage).toHaveBeenCalledWith(expectedEntities, owMock, expect.anything())
 })
 
+test('should undeploy two already deployed actions with Openwhisk Auth handler', async () => {
+  setOwGetPackageMockResponse('sample-app-1.0.0', ['action', 'action-zip'])
+  setRuntimeGetProjectEntitiesMock('sample-app-1.0.0', ['action', 'action-zip'])
+  runtimeLibUtils.processPackage.mockReturnValue({ apis: [], rules: [] })
+
+  const expectedEntities = {
+    actions: [{ name: 'sample-app-1.0.0/action' }, { name: 'sample-app-1.0.0/action-zip' }],
+    pkgAndDeps: [],
+    triggers: [],
+    rules: [],
+    apis: []
+  }
+
+  let sampleAppConfigWithAuthHandler = structuredClone(global.sampleAppConfig)
+  sampleAppConfigWithAuthHandler.ow.auth_handler = 'fake:BearerToken'
+
+  await undeployActions(sampleAppConfigWithAuthHandler)
+  expect(runtimeLibUtils.undeployPackage).toHaveBeenCalledTimes(1)
+  expect(runtimeLibUtils.undeployPackage).toHaveBeenCalledWith(expectedEntities, owMock, expect.anything())
+  sampleAppConfigWithAuthHandler = null
+})
+
 test('should undeploy already deployed actions (default package)', async () => {
   setOwListActionsMockResponse([
     { name: 'action', namespace: 'foxy-bear-123' },

@@ -172,11 +172,17 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
   // note, logFunc is always defined here because we can only ever be called by deployActions
   const packageName = scriptConfig.ow.package
   const manifestPath = scriptConfig.manifest.src
+  const authHandler = scriptConfig.ow.auth_handler ?? null
   const owOptions = {
     apihost: scriptConfig.ow.apihost,
     apiversion: scriptConfig.ow.apiversion,
     api_key: scriptConfig.ow.auth,
     namespace: scriptConfig.ow.namespace
+  }
+
+  // adding a conditional check for auth_handler
+  if (authHandler) {
+    owOptions.auth_handler = authHandler
   }
 
   const lastDeployedActionsPath = path.join(scriptConfig.root, 'dist', 'last-deployed-actions.json')
