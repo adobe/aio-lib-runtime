@@ -35,16 +35,14 @@ const sleep = util.promisify(setTimeout)
 async function printActionLogs (config, logger, limit, filterActions, strip, tail = false, fetchLogsInterval = 10000, startTime) {
   // check for runtime credentials
   checkOpenWhiskCredentials(config)
-  const authHandler = config.ow.auth_handler ?? null
   const runtimeOptions = {
     apihost: config.ow.apihost,
     apiversion: config.ow.apiversion,
     api_key: config.ow.auth,
-    namespace: config.ow.namespace
+    namespace: config.ow.namespace,
+    auth_handler: config.ow.auth_handler
   }
-  if (authHandler) {
-    runtimeOptions.auth_handler = authHandler
-  }
+
   const runtime = await new IOruntime().init(runtimeOptions)
 
   let lastActivationTime = tail ? Date.now() : startTime

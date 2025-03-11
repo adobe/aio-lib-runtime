@@ -27,16 +27,12 @@ async function undeployActions (config, logFunc) {
 
   // 0. check credentials
   utils.checkOpenWhiskCredentials(config)
-  const authHandler = config.ow.auth_handler ?? null
   const owOptions = {
     apihost: config.ow.apihost,
     apiversion: config.ow.apiversion,
     api_key: config.ow.auth,
-    namespace: config.ow.namespace
-  }
-  // adding a conditional check for auth_handler
-  if (authHandler) {
-    owOptions.auth_handler = authHandler
+    namespace: config.ow.namespace,
+    auth_handler: config.ow.auth_handler
   }
 
   // replace package name
