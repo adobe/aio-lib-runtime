@@ -62,7 +62,9 @@ describe('printActionLogs', () => {
 
   test('inits the runtime lib instance with OpenWhisk Auth Handler', async () => {
     let fakeConfigWithAuthHandler = structuredClone(fakeConfig)
-    fakeConfigWithAuthHandler.ow.auth_handler = 'fake:BearerToken'
+    fakeConfigWithAuthHandler.ow.auth_handler = {
+      getAuthHandler: async () => {}
+    }
     owListActivationMock.mockResolvedValue([])
     owLogsActivationMock.mockResolvedValue({ logs: [] })
     await printActionLogs(fakeConfigWithAuthHandler, logger, 1)

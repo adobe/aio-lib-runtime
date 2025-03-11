@@ -129,7 +129,9 @@ test('should undeploy two already deployed actions with Openwhisk Auth handler',
   }
 
   let sampleAppConfigWithAuthHandler = structuredClone(global.sampleAppConfig)
-  sampleAppConfigWithAuthHandler.ow.auth_handler = 'fake:BearerToken'
+  sampleAppConfigWithAuthHandler.ow.auth_handler = {
+    getAuthHandler: async () => {}
+  }
 
   await undeployActions(sampleAppConfigWithAuthHandler)
   expect(runtimeLibUtils.undeployPackage).toHaveBeenCalledTimes(1)

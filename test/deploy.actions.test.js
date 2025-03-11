@@ -132,11 +132,15 @@ test('deploy full manifest with OpenWhishk Auth Handler', async () => {
   global.fakeFileSystem.addJson(fakeFiles)
 
   let sampleConfigWithAuthHandler = structuredClone(global.sampleAppConfig)
-  sampleConfigWithAuthHandler.ow.auth_handler = 'fake:BearerToken'
+  sampleConfigWithAuthHandler.ow.auth_handler = {
+    getAuthHandler: async () => { }
+  }
   await deployActions(sampleConfigWithAuthHandler)
 
   expect(runtimeLibUtils.processPackage).toHaveBeenCalledTimes(1)
-  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistManifest.packages, {}, {}, {}, false, { ...expectedOWOptions, auth_handler: 'fake:BearerToken' })
+  expect(runtimeLibUtils.processPackage).toHaveBeenCalledWith(expectedDistManifest.packages, {}, {}, {}, false, {
+    ...expectedOWOptions, auth_handler: sampleConfigWithAuthHandler.ow.auth_handler
+  })
 
   expect(runtimeLibUtils.syncProject).toHaveBeenCalledTimes(1)
 
