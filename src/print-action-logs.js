@@ -39,8 +39,12 @@ async function printActionLogs (config, logger, limit, filterActions, strip, tai
     apihost: config.ow.apihost,
     apiversion: config.ow.apiversion,
     api_key: config.ow.auth,
-    namespace: config.ow.namespace,
-    auth_handler: config.ow.auth_handler
+    namespace: config.ow.namespace
+  }
+
+  // TODO: remove this once the feature flag is removed
+  if ('auth_handler' in config.ow && config.ow.auth_handler) {
+    runtimeOptions.auth_handler = config.ow.auth_handler
   }
 
   const runtime = await new IOruntime().init(runtimeOptions)
