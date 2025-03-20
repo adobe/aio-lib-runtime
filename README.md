@@ -1769,11 +1769,6 @@ LOG_LEVEL=debug <your_call_here>
 
 Prepend the `LOG_LEVEL` environment variable and `debug` value to the call that invokes your function, on the command line. This should output a lot of debug data for your SDK calls.
 
-To debug Openwhisk API requests and responses, you can use this environment variable:
-```bash
-NODE_DEBUG=needle <your_call_here>
-```
-
 ## Contributing
 
 Contributions are welcome! Read the [Contributing Guide](./.github/CONTRIBUTING.md) for more information.
