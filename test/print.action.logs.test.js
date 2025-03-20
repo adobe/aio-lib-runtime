@@ -60,6 +60,19 @@ describe('printActionLogs', () => {
     expect(owListActivationMock).toHaveBeenCalled()
   })
 
+  test('inits the runtime lib instance with OpenWhisk Auth Handler', async () => {
+    let fakeConfigWithAuthHandler = structuredClone(fakeConfig)
+    fakeConfigWithAuthHandler.ow.auth_handler = {
+      getAuthHandler: async () => {}
+    }
+    owListActivationMock.mockResolvedValue([])
+    owLogsActivationMock.mockResolvedValue({ logs: [] })
+    await printActionLogs(fakeConfigWithAuthHandler, logger, 1)
+    expect(ioruntime).toHaveBeenCalled()
+    expect(owListActivationMock).toHaveBeenCalled()
+    fakeConfigWithAuthHandler = null
+  })
+
   test('(config, limit=1, logger) and no activations', async () => {
     owListActivationMock.mockResolvedValue([])
     owLogsActivationMock.mockResolvedValue({ logs: [] })

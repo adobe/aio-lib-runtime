@@ -179,6 +179,11 @@ async function deployWsk (scriptConfig, manifestContent, logFunc, filterEntities
     namespace: scriptConfig.ow.namespace
   }
 
+  // TODO: remove this once the feature flag is removed
+  if ('auth_handler' in scriptConfig.ow && scriptConfig.ow.auth_handler) {
+    owOptions.auth_handler = scriptConfig.ow.auth_handler
+  }
+
   const lastDeployedActionsPath = path.join(scriptConfig.root, 'dist', 'last-deployed-actions.json')
   let lastDeployData = {}
   if (useForce) {

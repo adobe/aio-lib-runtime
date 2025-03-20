@@ -34,6 +34,11 @@ async function undeployActions (config, logFunc) {
     namespace: config.ow.namespace
   }
 
+  // TODO: remove this once the feature flag is removed
+  if ('auth_handler' in config.ow && config.ow.auth_handler) {
+    owOptions.auth_handler = config.ow.auth_handler
+  }
+
   // replace package name
   const modifiedConfig = utils.replacePackagePlaceHolder(config)
   const manifest = modifiedConfig.manifest.full
