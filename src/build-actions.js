@@ -27,8 +27,8 @@ const uniqueArr = (items) => {
 }
 
 const toPosixPath = (path) => {
-  return path.replace(/^[A-Z]:/, '').replaceAll("\\", "/");
-};
+  return path.replace(/^[A-Z]:/, '').replaceAll('\\', '/')
+}
 
 /**
  *  Searches for a webpack config file, starting at the action path and working
