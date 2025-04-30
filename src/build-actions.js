@@ -26,6 +26,10 @@ const uniqueArr = (items) => {
   return [...new Set(items)]
 }
 
+const toPosixPath = (path) => {
+  return path.replace(/^[A-Z]:/, '').replaceAll("\\", "/");
+};
+
 /**
  *  Searches for a webpack config file, starting at the action path and working
  *  towards the root of the project. Will return the first one it finds.
@@ -35,9 +39,10 @@ const uniqueArr = (items) => {
  * @returns {Promise<string>} Webpack config file path, will be 'null' if not found
  */
 const getWebpackConfigPath = async (actionPath, root) => {
-  const posixActionPath = actionPath.replaceAll('\\', '/')
+  const posixRoot = toPosixPath(root)
+  const posixActionPath = toPosixPath(actionPath)
   let parentDir = path.posix.dirname(posixActionPath)
-  const rootParent = path.resolve(path.posix.dirname(root))
+  const rootParent = path.posix.resolve(path.posix.dirname(posixRoot))
   let configPath = null
 
   do {
