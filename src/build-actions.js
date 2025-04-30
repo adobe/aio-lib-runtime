@@ -35,12 +35,13 @@ const uniqueArr = (items) => {
  * @returns {Promise<string>} Webpack config file path, will be 'null' if not found
  */
 const getWebpackConfigPath = async (actionPath, root) => {
-  let parentDir = path.dirname(actionPath)
-  const rootParent = path.resolve(path.dirname(root))
+  const posixActionPath = actionPath.replaceAll('\\', '/')
+  let parentDir = path.posix.dirname(posixActionPath)
+  const rootParent = path.resolve(path.posix.dirname(root))
   let configPath = null
 
   do {
-    const paths = await globby([path.join(parentDir, '*webpack-config.{js,cjs}')])
+    const paths = await globby([path.posix.join(parentDir, '*webpack-config.{js,cjs}')])
     if (paths && paths.length > 0) {
       configPath = paths[0]
     }
