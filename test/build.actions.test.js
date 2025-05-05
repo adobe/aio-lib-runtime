@@ -346,7 +346,7 @@ describe('build by bundling js action file with webpack', () => {
       },
       target: 'node'
     }])
-    expect(globby).toHaveBeenCalledWith(expect.arrayContaining([path.resolve('/actions/*webpack-config.{js,cjs}')]))
+    expect(globby).toHaveBeenCalledWith(expect.arrayContaining([path.posix.resolve('/actions/*webpack-config.{js,cjs}')]))
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp'),
       path.normalize('/dist/actions/sample-app-include-1.0.0/action.zip'))
     expect(Object.keys(global.fakeFileSystem.files())).toEqual(expect.arrayContaining(['/includeme.txt']))
@@ -394,7 +394,7 @@ describe('build by bundling js action file with webpack', () => {
       },
       target: 'node'
     }])
-    expect(globby).toHaveBeenCalledWith(expect.arrayContaining([path.resolve('/actions/*webpack-config.{js,cjs}')]))
+    expect(globby).toHaveBeenCalledWith(expect.arrayContaining([path.posix.resolve('/actions/*webpack-config.{js,cjs}')]))
     expect(utils.zip).toHaveBeenCalledWith(path.normalize('/dist/actions/sample-app-include-1.0.0/action-temp'),
       path.normalize('/dist/actions/sample-app-include-1.0.0/action.zip'))
     expect(Object.keys(global.fakeFileSystem.files())).toEqual(expect.arrayContaining(['/includeme.txt']))
