@@ -67,6 +67,37 @@ test('get', async () => {
   })
 })
 
+test('get with auth handler', async () => {
+  const authorizationHeader = 'Bearer token'
+  const authHandler = {
+    getAuthHeader: jest.fn().mockResolvedValue(authorizationHeader)
+  }
+  logForwarding = new LogForwarding(
+    'some_namespace',
+    'host',
+    'key',
+    new LogForwardingLocalDestinationsProvider(),
+    authHandler
+  )
+  expect(logForwarding.authHandler).toEqual(authHandler)
+
+  return new Promise(resolve => {
+    mockFetch.mockReturnValue(new Promise(resolve => {
+      resolve({
+        ok: true,
+        json: jest.fn().mockResolvedValue('result')
+      })
+    }))
+    return logForwarding.get()
+      .then((res) => {
+        expect(mockFetch).toHaveBeenCalledTimes(1)
+        expect(res).toBe('result')
+        assertRequest('get', undefined, '', authorizationHeader)
+        resolve()
+      })
+  })
+})
+
 test('get request failed', async () => {
   mockFetch.mockRejectedValue(new Error('mocked error'))
   await expect(logForwarding.get()).rejects.toThrow("Could not get log forwarding settings for namespace 'some_namespace': mocked error")
@@ -216,13 +247,18 @@ test('could not get errors', async () => {
     .rejects.toThrow("Could not get log forwarding errors for namespace 'some_namespace': mocked error")
 })
 
-const assertRequest = (expectedMethod, expectedData, expectedSubPath = '') => {
+const assertRequest = (
+  expectedMethod,
+  expectedData,
+  expectedSubPath = '',
+  expectedAuthorization = `Basic ${Buffer.from('key').toString('base64')}`
+) => {
   expect(mockFetch).toHaveBeenCalledWith(apiUrl + expectedSubPath, {
     method: expectedMethod,
     body: JSON.stringify(expectedData),
     headers: {
       'Content-Type': 'application/json',
-      Authorization: 'Basic ' + Buffer.from('key').toString('base64')
+      Authorization: expectedAuthorization
     }
   })
 }
