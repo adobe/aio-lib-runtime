@@ -162,7 +162,7 @@ class LogForwarding {
 
     let Authorization = `Basic ${Buffer.from(this.auth).toString('base64')}`
     if (this.authHandler?.getAuthHeader && typeof this.authHandler?.getAuthHeader === 'function') {
-      Authorization = this.authHandler.getAuthHeader()
+      Authorization = await this.authHandler.getAuthHeader()
     }
 
     const fetch = createFetch()

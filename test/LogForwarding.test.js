@@ -70,7 +70,7 @@ test('get', async () => {
 test('get with auth handler', async () => {
   const authorizationHeader = 'Bearer token'
   const authHandler = {
-    getAuthHeader: jest.fn().mockReturnValue(authorizationHeader)
+    getAuthHeader: jest.fn().mockResolvedValue(authorizationHeader)
   }
   logForwarding = new LogForwarding(
     'some_namespace',
