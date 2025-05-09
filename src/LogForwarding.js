@@ -15,7 +15,7 @@ const { createFetch } = require('@adobe/aio-lib-core-networking')
  * Log Forwarding management API
  */
 class LogForwarding {
-  constructor (namespace, apiHost, apiKey, destinationsProvider) {
+  constructor (namespace, apiHost, apiKey, destinationsProvider, authHandler) {
     this.apiHost = apiHost
     // if apihost does not have the protocol, assume HTTPS
     if (!apiHost.match(/^http(s)?:\/\//)) {
@@ -25,6 +25,7 @@ class LogForwarding {
     this.auth = apiKey
     this.namespace = namespace
     this.destinationsProvider = destinationsProvider
+    this.authHandler = authHandler
   }
 
   /**
@@ -159,6 +160,11 @@ class LogForwarding {
       throw new Error("Namespace '_' is not supported by log forwarding management API")
     }
 
+    let Authorization = `Basic ${Buffer.from(this.auth).toString('base64')}`
+    if (this.authHandler?.getAuthHeader && typeof this.authHandler?.getAuthHeader === 'function') {
+      Authorization = this.authHandler.getAuthHeader()
+    }
+
     const fetch = createFetch()
     const res = await fetch(
       this.apiHost + '/runtime/namespaces/' + this.namespace + '/logForwarding' + subPath,
@@ -167,7 +173,7 @@ class LogForwarding {
         body: JSON.stringify(data),
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Basic ' + Buffer.from(this.auth).toString('base64')
+          Authorization
         }
       }
     )

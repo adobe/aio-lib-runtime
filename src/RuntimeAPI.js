@@ -89,7 +89,8 @@ class RuntimeAPI {
         clonedOptions.namespace,
         clonedOptions.apihost,
         clonedOptions.api_key,
-        new LogForwardingLocalDestinationsProvider()
+        new LogForwardingLocalDestinationsProvider(),
+        clonedOptions.auth_handler
       ),
       initOptions: clonedOptions
     }
