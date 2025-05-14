@@ -114,15 +114,6 @@ global.fakeConfig = {
       auth: 'fake:auth'
     }
   },
-  local: {
-    runtime: {
-      defaultApihost: 'https://adobeioruntime.net',
-      // those must match the once set by dev cmd
-      apihost: 'http://localhost:3233',
-      namespace: 'guest',
-      auth: '23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP'
-    }
-  },
   creds: {
     runtime: {
       defaultApihost: 'https://adobeioruntime.net',
