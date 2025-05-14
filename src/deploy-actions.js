@@ -33,7 +33,6 @@ const { createHash } = require('node:crypto')
 
 /**
  * @typedef {object} DeployConfig
- * @property {boolean} [isLocalDev] local dev flag // todo: remove
  * @property {FilterEntities} [filterEntities] add filters to deploy only specified OpenWhisk entities
  * @property {boolean} [useForce] force deploy of actions
  */
@@ -51,7 +50,6 @@ async function deployActions (config, deployConfig = {}, logFunc) {
     throw new Error('cannot deploy actions, app has no backend')
   }
 
-  const isLocalDev = deployConfig.isLocalDev // todo: remove
   const useForce = deployConfig.useForce
   const log = logFunc || console.log
   let filterEntities = deployConfig.filterEntities
@@ -147,7 +145,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   )
   // enrich actions array with urls
   if (Array.isArray(deployedEntities.actions)) {
-    const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote, isLocalDev)
+    const actionUrlsFromManifest = utils.getActionUrls(config, config.actions.devRemote)
     deployedEntities.actions = deployedEntities.actions.map(action => {
       const retAction = deepCopy(action)
       const url = actionUrlsFromManifest[action.name]

@@ -1835,11 +1835,12 @@ function checkOpenWhiskCredentials (config) {
  *
  * @param {object} appConfig app config
  * @param {boolean} isRemoteDev remote dev
- * @param {boolean} isLocalDev local dev
+ * @param {boolean} _isLocalDev local dev UNUSED
  * @param {boolean} legacy default false add backwards compatibility for urls keys.
  * @returns {object} urls of actions
  */
-function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ isLocalDev = false, legacy = false) {
+function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = false, /* istanbul ignore next */ _isLocalDev = false, legacy = false) {
+  const isLocalDev = false // TODO: clean this all up ... for now the argument is ignored
   // sets action urls [{ name: url }]
   const config = replacePackagePlaceHolder(appConfig)
   const cleanApihost = removeProtocolFromURL(config.ow.apihost)
