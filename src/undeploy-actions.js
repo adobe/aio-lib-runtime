@@ -31,12 +31,8 @@ async function undeployActions (config, logFunc) {
     apihost: config.ow.apihost,
     apiversion: config.ow.apiversion,
     api_key: config.ow.auth,
-    namespace: config.ow.namespace
-  }
-
-  // TODO: remove this once the feature flag is removed
-  if ('auth_handler' in config.ow && config.ow.auth_handler) {
-    owOptions.auth_handler = config.ow.auth_handler
+    namespace: config.ow.namespace,
+    auth_handler: config.ow.auth_handler
   }
 
   // replace package name

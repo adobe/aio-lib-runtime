@@ -2232,6 +2232,7 @@ describe('zip', () => {
     await expect(utils.zip('/notexist.js', '/out.zip')).rejects.toEqual(expect.objectContaining({
       message: expect.stringContaining('ENOENT')
     }))
+
     expect(archiver.mockFile).toHaveBeenCalledTimes(0)
     expect(archiver.mockDirectory).toHaveBeenCalledTimes(0)
     expect(fs.existsSync('/out.zip')).toEqual(false)
