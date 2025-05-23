@@ -437,21 +437,20 @@ function getActionEntryFile (pkgJsonPath) {
  */
 function zip (filePath, out, pathInZip = false) {
   aioLogger.debug(`Creating zip of file/folder ${filePath}`)
-  const stream = fs.createWriteStream(out)
-  const archive = archiver('zip', { zlib: { level: 9 } })
 
   return new Promise((resolve, reject) => {
-    stream.on('close', () => resolve())
-    archive.pipe(stream)
-    archive.on('error', err => reject(err))
-
     let stats
     try {
       stats = fs.lstatSync(filePath) // throws if ENOENT
     } catch (e) {
-      archive.destroy()
-      reject(e)
+      return reject(e)
     }
+
+    const stream = fs.createWriteStream(out)
+    const archive = archiver('zip', { zlib: { level: 9 } })
+    stream.on('close', () => resolve())
+    archive.pipe(stream)
+    archive.on('error', err => reject(err))
 
     if (stats.isDirectory()) {
       archive.directory(filePath, pathInZip)
