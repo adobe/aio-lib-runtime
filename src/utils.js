@@ -22,6 +22,13 @@ const archiver = require('archiver')
 // this is a static list that comes from here: https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
 const SupportedRuntimes = ['sequence', 'blackbox', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18', 'nodejs:20', 'nodejs:22']
 
+const SUPPORTED_ADOBE_ANNOTATION_ENDPOINTS = [
+  'https://adobeioruntime.net',
+  'https://deploy-service.dev.app-builder.corp.adp.adobe.io/runtime',
+  'https://deploy-service.stg.app-builder.corp.adp.adobe.io/runtime',
+  'https://deploy-service.app-builder.adp.adobe.io/runtime'
+]
+
 const DEFAULT_PACKAGE_RESERVED_NAME = 'default'
 const ANNOTATION_WEB_EXPORT = 'web-export'
 const ANNOTATION_RAW_HTTP = 'raw-http'
@@ -1193,7 +1200,9 @@ function processPackage (packages,
   // eslint - do not rewrite function arguments
   let pkgs = packages
   let deploymentPkgs = deploymentPackages
-  if (owOptions.apihost === 'https://adobeioruntime.net') {
+
+  const isAdobeEndpoint = SUPPORTED_ADOBE_ANNOTATION_ENDPOINTS.includes(owOptions.apihost)
+  if (isAdobeEndpoint) {
     // rewrite packages in case there are any `require-adobe-auth` annotations
     // this is a temporary feature and will be replaced by a native support in Adobe I/O Runtime
     const { newPackages, newDeploymentPackages } = rewriteActionsWithAdobeAuthAnnotation(pkgs, deploymentPkgs)
