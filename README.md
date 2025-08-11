@@ -246,7 +246,7 @@ for syncing managed projects.</p>
 <dt><a href="#checkOpenWhiskCredentials">checkOpenWhiskCredentials(config)</a></dt>
 <dd><p>Checks the existence of required openwhisk credentials</p>
 </dd>
-<dt><a href="#getActionUrls">getActionUrls(appConfig, isRemoteDev, isLocalDev, legacy)</a> ⇒ <code>object</code></dt>
+<dt><a href="#getActionUrls">getActionUrls(appConfig, isRemoteDev, _isLocalDev, legacy)</a> ⇒ <code>object</code></dt>
 <dd><p>Returns action URLs based on the manifest config</p>
 </dd>
 <dt><a href="#urlJoin">urlJoin(...args)</a> ⇒ <code>string</code></dt>
@@ -1301,7 +1301,7 @@ Checks the existence of required openwhisk credentials
 
 <a name="getActionUrls"></a>
 
-## getActionUrls(appConfig, isRemoteDev, isLocalDev, legacy) ⇒ <code>object</code>
+## getActionUrls(appConfig, isRemoteDev, _isLocalDev, legacy) ⇒ <code>object</code>
 Returns action URLs based on the manifest config
 
 **Kind**: global function  
@@ -1311,7 +1311,7 @@ Returns action URLs based on the manifest config
 | --- | --- | --- | --- |
 | appConfig | <code>object</code> |  | app config |
 | isRemoteDev | <code>boolean</code> | <code>false</code> | remote dev |
-| isLocalDev | <code>boolean</code> | <code>false</code> | local dev |
+| _isLocalDev | <code>boolean</code> | <code>false</code> | local dev UNUSED |
 | legacy | <code>boolean</code> | <code>false</code> | default false add backwards compatibility for urls keys. |
 
 <a name="urlJoin"></a>
@@ -1475,7 +1475,6 @@ Gets a list of the supported runtime kinds from the apihost.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| [isLocalDev] | <code>boolean</code> | local dev flag // todo: remove |
 | [filterEntities] | [<code>FilterEntities</code>](#FilterEntities) | add filters to deploy only specified OpenWhisk entities |
 | [useForce] | <code>boolean</code> | force deploy of actions |
 
