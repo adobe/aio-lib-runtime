@@ -1853,10 +1853,11 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   const config = replacePackagePlaceHolder(appConfig)
   const cleanApihost = removeProtocolFromURL(config.ow.apihost)
   const cleanHostname = removeProtocolFromURL(config.app.hostname)
+  const apihostIsCustom = !SUPPORTED_ADOBE_ANNOTATION_ENDPOINTS.includes(config.ow.apihost)
 
-  const apihostIsCustom = cleanApihost !== removeProtocolFromURL(config.ow.defaultApihost)
   const hostnameIsCustom = cleanHostname !== removeProtocolFromURL(config.app.defaultHostname)
 
+   aioLogger.debug('apihostIsCustom ', apihostIsCustom, 'hostnameIsCustom', hostnameIsCustom)
   // second condition allows users to point to its own http local ow stack
   const isHttp = isLocalDev || !!config.ow.apihost.match(/^http:\/\/localhost/)
 
