@@ -1857,7 +1857,7 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
 
   const hostnameIsCustom = cleanHostname !== removeProtocolFromURL(config.app.defaultHostname)
 
-   aioLogger.debug('apihostIsCustom ', apihostIsCustom, 'hostnameIsCustom', hostnameIsCustom)
+   aioLogger.debug('apihostIsCustom', apihostIsCustom, 'hostnameIsCustom', hostnameIsCustom)
   // second condition allows users to point to its own http local ow stack
   const isHttp = isLocalDev || !!config.ow.apihost.match(/^http:\/\/localhost/)
 
