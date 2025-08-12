@@ -2191,6 +2191,22 @@ describe('getActionUrls', () => {
     expect(result).toEqual(expect.objectContaining(expected))
   })
 
+  // this test proves we still have an issue with non default package actions
+  // eslint-disable-next-line jest/no-commented-out-tests
+  // test('should not fail if default package has no actions with deploy-service apihost', () => {
+  //   const expected = {
+  //     'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-sequence',
+  //     'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
+  //     'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+  //   }
+  //   config.ow.apihost = 'https://deploy-service.app-builder.adp.adobe.io/runtime'
+  //   config.app.hostname = 'adobeio-static.net'
+  //   config.manifest.full.packages.pkg2.actions.thataction.web = false
+  //   delete config.manifest.full.packages.__APP_PACKAGE__.actions
+  //   const result = utils.getActionUrls(config, false, false)
+  //   expect(result).toEqual(expect.objectContaining(expected))
+  // })
+
   test('urls with action keys when legacy on', () => {
     const expected = {
       'pkg2/thataction': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thataction',
