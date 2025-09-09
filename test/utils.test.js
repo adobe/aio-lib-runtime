@@ -1241,6 +1241,120 @@ describe('require-adobe-auth annotation', () => {
       triggers: []
     })
   })
+
+  test('apihost: localhost', () => {
+    const spy = jest.spyOn(fs, 'readFileSync')
+    const fakeCode = 'fake action code'
+    spy.mockImplementation(() => fakeCode)
+
+    // basic case 1 action using the annotation
+    const res = utils.processPackage(BASIC_PACKAGE, {}, {}, {}, false, { apihost: 'http://localhost' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true, 'raw-http': false }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+  })
+
+  test('apihost: 127.0.0.1', () => {
+    const spy = jest.spyOn(fs, 'readFileSync')
+    const fakeCode = 'fake action code'
+    spy.mockImplementation(() => fakeCode)
+
+    // basic case 1 action using the annotation
+    const res = utils.processPackage(BASIC_PACKAGE, {}, {}, {}, false, { apihost: 'https://127.0.0.1' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true, 'raw-http': false }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+  })
+
+  test('apihost: adobeioruntime.net', () => {
+    const spy = jest.spyOn(fs, 'readFileSync')
+    const fakeCode = 'fake action code'
+    spy.mockImplementation(() => fakeCode)
+
+    // basic case 1 action using the annotation
+    const res = utils.processPackage(BASIC_PACKAGE, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true, 'raw-http': false }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+  })
+
+  test('apihost: deploy-service-va6.dev.app-builder.corp.adp.adobe.io/runtime', () => {
+    const spy = jest.spyOn(fs, 'readFileSync')
+    const fakeCode = 'fake action code'
+    spy.mockImplementation(() => fakeCode)
+
+    // basic case 1 action using the annotation
+    const res = utils.processPackage(BASIC_PACKAGE, {}, {}, {}, false, { apihost: 'https://deploy-service-va6.dev.app-builder.corp.adp.adobe.io/runtime' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true, 'raw-http': false }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+  })
+
+  test('apihost: deploy-service-va6.stg.app-builder.corp.adp.adobe.io/runtime', () => {
+    const spy = jest.spyOn(fs, 'readFileSync')
+    const fakeCode = 'fake action code'
+    spy.mockImplementation(() => fakeCode)
+
+    // basic case 1 action using the annotation
+    const res = utils.processPackage(BASIC_PACKAGE, {}, {}, {}, false, { apihost: 'https://deploy-service-va6.stg.app-builder.corp.adp.adobe.io/runtime' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true, 'raw-http': false }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+  })
+
+  test('apihost: deploy-service-va6.app-builder.adp.adobe.io/runtime', () => {
+    const spy = jest.spyOn(fs, 'readFileSync')
+    const fakeCode = 'fake action code'
+    spy.mockImplementation(() => fakeCode)
+
+    // basic case 1 action using the annotation
+    const res = utils.processPackage(BASIC_PACKAGE, {}, {}, {}, false, { apihost: 'https://deploy-service-va6.app-builder.adp.adobe.io/runtime' })
+    expect(res).toEqual({
+      actions: [
+        { name: 'pkg1/__secured_theaction', annotations: { 'web-export': false, 'raw-http': false }, action: fakeCode },
+        { name: 'pkg1/theaction', action: '', annotations: { 'web-export': true, 'raw-http': false }, exec: { components: [HEADLESS_VALIDATOR, 'pkg1/__secured_theaction'], kind: 'sequence' } }
+      ],
+      apis: [],
+      pkgAndDeps: [{ name: 'pkg1' }],
+      rules: [],
+      triggers: []
+    })
+  })
 })
 
 describe('syncProject', () => {

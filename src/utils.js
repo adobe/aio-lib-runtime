@@ -22,11 +22,17 @@ const archiver = require('archiver')
 // this is a static list that comes from here: https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
 const SupportedRuntimes = ['sequence', 'blackbox', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18', 'nodejs:20', 'nodejs:22']
 
-const SUPPORTED_ADOBE_ANNOTATION_ENDPOINTS = [
-  'https://adobeioruntime.net',
-  'https://deploy-service.dev.app-builder.corp.adp.adobe.io/runtime',
-  'https://deploy-service.stg.app-builder.corp.adp.adobe.io/runtime',
-  'https://deploy-service.app-builder.adp.adobe.io/runtime'
+const SUPPORTED_ADOBE_ANNOTATION_ENDPOINT_REGEXES = [
+  /http(s)?:\/\/localhost/,
+  /http(s)?:\/\/127\.0\.0\.1/,
+  /https:\/\/adobeioruntime\.net/,
+  /https:\/\/deploy-service.*\.app-builder\.corp\.adp\.adobe\.io\/runtime/,
+  /https:\/\/deploy-service.*\.app-builder\.adp\.adobe\.io\/runtime/
+]
+const NON_CUSTOM_ADOBE_APIHOSTS_REGEXES = [
+  /adobeioruntime\.net/,
+  /deploy-service.*\.app-builder\.corp\.adp\.adobe\.io\/runtime/,
+  /deploy-service.*\.app-builder\.adp\.adobe\.io\/runtime/
 ]
 
 const DEFAULT_PACKAGE_RESERVED_NAME = 'default'
@@ -1201,7 +1207,7 @@ function processPackage (packages,
   let pkgs = packages
   let deploymentPkgs = deploymentPackages
 
-  const isAdobeEndpoint = SUPPORTED_ADOBE_ANNOTATION_ENDPOINTS.includes(owOptions.apihost)
+  const isAdobeEndpoint = SUPPORTED_ADOBE_ANNOTATION_ENDPOINT_REGEXES.some(regex => regex.test(owOptions.apihost))
   if (isAdobeEndpoint) {
     // rewrite packages in case there are any `require-adobe-auth` annotations
     // this is a temporary feature and will be replaced by a native support in Adobe I/O Runtime
@@ -1853,9 +1859,8 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
   const config = replacePackagePlaceHolder(appConfig)
   const cleanApihost = removeProtocolFromURL(config.ow.apihost)
   const cleanHostname = removeProtocolFromURL(config.app.hostname)
-  const endpointHosts = SUPPORTED_ADOBE_ANNOTATION_ENDPOINTS.map(endpoint => removeProtocolFromURL(endpoint))
 
-  const apihostIsCustom = !endpointHosts.includes(cleanApihost)
+  const apihostIsCustom = !NON_CUSTOM_ADOBE_APIHOSTS_REGEXES.some(regex => regex.test(cleanApihost))
 
   const hostnameIsCustom = cleanHostname !== removeProtocolFromURL(config.app.defaultHostname)
 
