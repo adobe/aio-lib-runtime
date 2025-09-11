@@ -22,17 +22,16 @@ const archiver = require('archiver')
 // this is a static list that comes from here: https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
 const SupportedRuntimes = ['sequence', 'blackbox', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18', 'nodejs:20', 'nodejs:22']
 
+// must cover 'deploy-service[-region][.env].app-builder[.int|.corp].adp.adobe.io/runtime
 const SUPPORTED_ADOBE_ANNOTATION_ENDPOINT_REGEXES = [
   /http(s)?:\/\/localhost/,
   /http(s)?:\/\/127\.0\.0\.1/,
   /https:\/\/adobeioruntime\.net/,
-  /https:\/\/deploy-service.*\.app-builder\.corp\.adp\.adobe\.io\/runtime/,
-  /https:\/\/deploy-service.*\.app-builder\.adp\.adobe\.io\/runtime/
+  /https:\/\/deploy-service.*\.app-builder.*\.adp\.adobe\.io\/runtime/
 ]
 const NON_CUSTOM_ADOBE_APIHOSTS_REGEXES = [
   /adobeioruntime\.net/,
-  /deploy-service.*\.app-builder\.corp\.adp\.adobe\.io\/runtime/,
-  /deploy-service.*\.app-builder\.adp\.adobe\.io\/runtime/
+  /deploy-service.*\.app-builder.*\.adp\.adobe\.io\/runtime/
 ]
 
 const DEFAULT_PACKAGE_RESERVED_NAME = 'default'
@@ -1917,8 +1916,10 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
     } else {
       // if (!actionIsBehindCdn && !apihostIsCustom)
       // https://<ns>.adobeioruntime.net/api/v1/web/<package>/<action>
+      // note: if the apihost matches /deploy-service.*\.app-builder\.*\.adp\.adobe\.io\/runtime/
+      //       we still want to serve dataplane requests on adobeioruntime.net
       return urlJoin(
-        'https://' + config.ow.namespace + '.' + cleanApihost,
+        'https://' + config.ow.namespace + '.' + 'adobeioruntime.net',
         'api',
         config.ow.apiversion,
         webUri,
