@@ -2217,6 +2217,96 @@ describe('getActionUrls', () => {
     expect(result).toEqual(expected)
   })
 
+  test('some non web actions, with ui, deploy-service prod environment apihost, no custom hostname', () => {
+    const expected = {
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'deploy-service.app-builder.adp.adobe.io/runtime'
+    config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = 'no'
+    config.manifest.full.packages.pkg2.actions.thataction.web = 'no'
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expected)
+  })
+
+  test('some non web actions, with ui, deploy-service-region prod environment apihost, no custom hostname', () => {
+    const expected = {
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'deploy-service-va6.app-builder.adp.adobe.io/runtime'
+    config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = 'no'
+    config.manifest.full.packages.pkg2.actions.thataction.web = 'no'
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expected)
+  })
+
+  test('some non web actions, with ui, deploy-service-region prod int environment apihost, no custom hostname', () => {
+    const expected = {
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'deploy-service-va6.app-builder.int.adp.adobe.io/runtime'
+    config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = 'no'
+    config.manifest.full.packages.pkg2.actions.thataction.web = 'no'
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expected)
+  })
+
+  test('some non web actions, with ui, deploy-service-region stg corp environment apihost, no custom hostname', () => {
+    const expected = {
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'deploy-service-va6.stg.app-builder.corp.adp.adobe.io/runtime'
+    config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = 'no'
+    config.manifest.full.packages.pkg2.actions.thataction.web = 'no'
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expected)
+  })
+
+  test('some non web actions, with ui, deploy-service-region stg int environment apihost, no custom hostname', () => {
+    const expected = {
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'deploy-service-va6.stg.app-builder.int.adp.adobe.io/runtime'
+    config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = 'no'
+    config.manifest.full.packages.pkg2.actions.thataction.web = 'no'
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expected)
+  })
+
+  test('some non web actions, with ui, deploy-service-region dev int environment apihost, no custom hostname', () => {
+    const expected = {
+      'sample-app-1.0.0/action': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action',
+      'sample-app-1.0.0/action-sequence': 'https://fake_ns.adobeioruntime.net/api/v1/sample-app-1.0.0/action-sequence',
+      'sample-app-1.0.0/action-zip': 'https://fake_ns.adobeio-static.net/api/v1/web/sample-app-1.0.0/action-zip',
+      'pkg2/thataction': 'https://fake_ns.adobeioruntime.net/api/v1/pkg2/thataction',
+      'pkg2/thatsequence': 'https://fake_ns.adobeio-static.net/api/v1/web/pkg2/thatsequence'
+    }
+    config.ow.apihost = 'deploy-service-va6.dev.app-builder.int.adp.adobe.io/runtime'
+    config.manifest.full.packages.__APP_PACKAGE__.sequences['action-sequence'].web = 'no'
+    config.manifest.full.packages.pkg2.actions.thataction.web = 'no'
+    const result = utils.getActionUrls(config, false, false)
+    expect(result).toEqual(expected)
+  })
+
   test('some non web actions, with ui, remote dev, no custom apihost, no custom hostname', () => {
     const expected = {
       'sample-app-1.0.0/action': 'https://fake_ns.adobeioruntime.net/api/v1/web/sample-app-1.0.0/action',
