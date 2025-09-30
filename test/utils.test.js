@@ -1936,6 +1936,20 @@ describe('getProjectHash', () => {
 })
 
 describe('findProjectHashOnServer', () => {
+  test('default projectHash (null annotations in packages, actions, triggers, rules)', async () => {
+    const testProjectName = 'ThisIsTheNameOfTheProject'
+    const pkgList = ow.mockResolved('packages.list', [{ annotations: null }])
+    const actList = ow.mockResolved('actions.list', [{ annotations: null }])
+    const trgList = ow.mockResolved('triggers.list', [{ annotations: null }])
+    const rlzList = ow.mockResolved('rules.list', [{ annotations: null }])
+    const result = await utils.findProjectHashOnServer(ow, testProjectName)
+    expect(pkgList).toHaveBeenCalled()
+    expect(actList).toHaveBeenCalled()
+    expect(trgList).toHaveBeenCalled()
+    expect(rlzList).toHaveBeenCalled()
+    expect(result).toBe('')
+  })
+
   test('default projectHash (no packages, actions, triggers, rules found)', async () => {
     const testProjectName = 'ThisIsTheNameOfTheProject'
     const pkgList = ow.mockResolved('packages.list', '')
