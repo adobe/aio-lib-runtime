@@ -1731,7 +1731,7 @@ async function findProjectHashOnServer (ow, projectName) {
   // check for package with the projectName in manifest File and if found -> return the projectHash on the server
   const resultSync = await ow.packages.list(options)
   for (const pkg of resultSync) {
-    if (pkg.annotations.length > 0) {
+    if (pkg.annotations?.length > 0) {
       const whiskManaged = pkg.annotations.find(elem => elem.key === 'whisk-managed')
       if (whiskManaged !== undefined && whiskManaged.value.projectName === projectName) {
         projectHash = whiskManaged.value.projectHash
@@ -1742,7 +1742,7 @@ async function findProjectHashOnServer (ow, projectName) {
   // if no package exists with the projectName -> look in actions
   const resultActionList = await ow.actions.list()
   for (const action of resultActionList) {
-    if (action.annotations.length > 0) {
+    if (action.annotations?.length > 0) {
       const whiskManaged = action.annotations.find(elem => elem.key === 'whisk-managed')
       if (whiskManaged !== undefined && whiskManaged.value.projectName === projectName) {
         projectHash = whiskManaged.value.projectHash
@@ -1754,7 +1754,7 @@ async function findProjectHashOnServer (ow, projectName) {
   // if no action exists with the projectName -> look in triggers
   const resultTriggerList = await ow.triggers.list()
   for (const trigger of resultTriggerList) {
-    if (trigger.annotations.length > 0) {
+    if (trigger.annotations?.length > 0) {
       const whiskManaged = trigger.annotations.find(elem => elem.key === 'whisk-managed')
       if (whiskManaged !== undefined && whiskManaged.value.projectName === projectName) {
         projectHash = whiskManaged.value.projectHash
@@ -1766,7 +1766,7 @@ async function findProjectHashOnServer (ow, projectName) {
   // if no trigger exists with the projectName -> look in rules
   const resultRules = await ow.rules.list()
   for (const rule of resultRules) {
-    if (rule.annotations.length > 0) {
+    if (rule.annotations?.length > 0) {
       const whiskManaged = rule.annotations.find(elem => elem.key === 'whisk-managed')
       if (whiskManaged !== undefined &&
           whiskManaged.value.projectName === projectName) {
