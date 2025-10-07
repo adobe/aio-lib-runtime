@@ -17,6 +17,8 @@ const deepCopy = require('lodash.clonedeep')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:RuntimeAPI', { provider: 'debug', level: process.env.LOG_LEVEL })
 const LogForwarding = require('./LogForwarding')
 const LogForwardingLocalDestinationsProvider = require('./LogForwardingLocalDestinationsProvider')
+const { patchOWForTunnelingIssue } = require('./openwhisk-patch')
+const { getProxyAgent } = require('./utils')
 
 require('./types.jsdoc') // for VS Code autocomplete
 /* global OpenwhiskOptions, OpenwhiskClient */ // for linter
@@ -35,7 +37,13 @@ class RuntimeAPI {
    */
   async init (options) {
     aioLogger.debug(`init options: ${JSON.stringify(options, null, 2)}`)
+
     const clonedOptions = deepCopy(options)
+
+    clonedOptions.use_proxy_from_env_var = false // default, unless env var is set
+    if (process.env.NEEDLE_USE_PROXY_FROM_ENV_VAR === 'true') { // legacy support
+      clonedOptions.use_proxy_from_env_var = true
+    }
 
     const initErrors = []
     if (!clonedOptions || !clonedOptions.api_key) {
@@ -53,7 +61,13 @@ class RuntimeAPI {
     const proxyUrl = getProxyForUrl(clonedOptions.apihost)
     if (proxyUrl) {
       aioLogger.debug(`using proxy url: ${proxyUrl}`)
-      clonedOptions.proxy = proxyUrl
+      if (clonedOptions.use_proxy_from_env_var !== false) {
+        clonedOptions.proxy = proxyUrl
+        clonedOptions.agent = null
+      } else {
+        clonedOptions.proxy = null
+        clonedOptions.agent = getProxyAgent(clonedOptions.apihost, proxyUrl)
+      }
     } else {
       aioLogger.debug('proxy settings not found')
     }
@@ -67,7 +81,7 @@ class RuntimeAPI {
     const shouldIgnoreCerts = process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0'
     clonedOptions.ignore_certs = clonedOptions.ignore_certs || shouldIgnoreCerts
 
-    this.ow = ow(clonedOptions)
+    this.ow = patchOWForTunnelingIssue(ow(clonedOptions), clonedOptions.use_proxy_from_env_var)
     const self = this
 
     return {

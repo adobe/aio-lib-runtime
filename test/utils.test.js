@@ -1751,6 +1751,11 @@ describe('createKeyValueObjectFromArray', () => {
     // falsy value, empty string
     expect(() => utils.createKeyValueObjectFromArray([{ key: 'a', value: '' }])).not.toThrow()
   })
+
+  test('handles default parameter (empty array)', () => {
+    const res = utils.createKeyValueObjectFromArray()
+    expect(res).toEqual({})
+  })
 })
 
 describe('createKeyValueArrayFromFlag', () => {
@@ -2658,5 +2663,49 @@ describe('getSupportedServerRuntimes', () => {
 
     await expect(utils.getSupportedServerRuntimes(APIHOST))
       .rejects.toThrow()
+  })
+})
+
+describe('getProxyAgent', () => {
+  const { HttpProxyAgent } = require('http-proxy-agent')
+  const PatchedHttpsProxyAgent = require('../src/PatchedHttpsProxyAgent.js')
+
+  test('returns PatchedHttpsProxyAgent for HTTPS endpoint', () => {
+    const endpoint = 'https://example.com'
+    const proxyUrl = 'http://proxy.example.com:8080'
+    const proxyOptions = { timeout: 5000 }
+
+    const result = utils.getProxyAgent(endpoint, proxyUrl, proxyOptions)
+
+    expect(result).toBeInstanceOf(PatchedHttpsProxyAgent)
+  })
+
+  test('returns HttpProxyAgent for HTTP endpoint', () => {
+    const endpoint = 'http://example.com'
+    const proxyUrl = 'http://proxy.example.com:8080'
+    const proxyOptions = { timeout: 5000 }
+
+    const result = utils.getProxyAgent(endpoint, proxyUrl, proxyOptions)
+
+    expect(result).toBeInstanceOf(HttpProxyAgent)
+  })
+
+  test('returns HttpProxyAgent for non-HTTPS endpoint', () => {
+    const endpoint = 'ws://example.com'
+    const proxyUrl = 'http://proxy.example.com:8080'
+    const proxyOptions = {}
+
+    const result = utils.getProxyAgent(endpoint, proxyUrl, proxyOptions)
+
+    expect(result).toBeInstanceOf(HttpProxyAgent)
+  })
+
+  test('handles default proxyOptions parameter', () => {
+    const endpoint = 'https://example.com'
+    const proxyUrl = 'http://proxy.example.com:8080'
+
+    const result = utils.getProxyAgent(endpoint, proxyUrl)
+
+    expect(result).toBeInstanceOf(PatchedHttpsProxyAgent)
   })
 })
