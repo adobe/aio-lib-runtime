@@ -21,6 +21,8 @@ const path = require('path')
 const archiver = require('archiver')
 // this is a static list that comes from here: https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
 const SupportedRuntimes = ['sequence', 'blackbox', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18', 'nodejs:20', 'nodejs:22']
+const { HttpProxyAgent } = require('http-proxy-agent')
+const PatchedHttpsProxyAgent = require('./PatchedHttpsProxyAgent.js')
 
 // must cover 'deploy-service[-region][.env].app-builder[.int|.corp].adp.adobe.io/runtime
 const SUPPORTED_ADOBE_ANNOTATION_ENDPOINT_REGEXES = [
@@ -2113,7 +2115,24 @@ async function getSupportedServerRuntimes (apihost) {
   return json.runtimes.nodejs.map(item => item.kind)
 }
 
+/**
+ * Get the proxy agent for the given endpoint
+ *
+ * @param {string} endpoint - The endpoint to get the proxy agent for
+ * @param {string} proxyUrl - The proxy URL to use
+ * @param {Object} proxyOptions - The proxy options to use
+ * @returns {HttpsProxyAgent | HttpProxyAgent} - The proxy agent
+ */
+function getProxyAgent(endpoint, proxyUrl, proxyOptions = {}) {
+  if (endpoint.startsWith('https')) {
+      return new PatchedHttpsProxyAgent(proxyUrl, proxyOptions);
+  } else {
+      return new HttpProxyAgent(proxyUrl, proxyOptions);
+  }
+}
+
 module.exports = {
+  getProxyAgent,
   getSupportedServerRuntimes,
   checkOpenWhiskCredentials,
   getActionEntryFile,
