@@ -2120,14 +2120,14 @@ async function getSupportedServerRuntimes (apihost) {
  *
  * @param {string} endpoint - The endpoint to get the proxy agent for
  * @param {string} proxyUrl - The proxy URL to use
- * @param {Object} proxyOptions - The proxy options to use
- * @returns {HttpsProxyAgent | HttpProxyAgent} - The proxy agent
+ * @param {object} proxyOptions - The proxy options to use
+ * @returns {PatchedHttpsProxyAgent | HttpProxyAgent} - The proxy agent
  */
-function getProxyAgent(endpoint, proxyUrl, proxyOptions = {}) {
+function getProxyAgent (endpoint, proxyUrl, proxyOptions = {}) {
   if (endpoint.startsWith('https')) {
-      return new PatchedHttpsProxyAgent(proxyUrl, proxyOptions);
+    return new PatchedHttpsProxyAgent(proxyUrl, proxyOptions)
   } else {
-      return new HttpProxyAgent(proxyUrl, proxyOptions);
+    return new HttpProxyAgent(proxyUrl, proxyOptions)
   }
 }
 

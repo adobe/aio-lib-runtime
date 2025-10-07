@@ -38,12 +38,12 @@ class RuntimeAPI {
   async init (options) {
     aioLogger.debug(`init options: ${JSON.stringify(options, null, 2)}`)
 
-    options.use_proxy_from_env_var = false // default, unless env var is set
-    if (process.env.NEEDLE_USE_PROXY_FROM_ENV_VAR === 'true') { // legacy support
-      options.use_proxy_from_env_var = true
-    }
-
     const clonedOptions = deepCopy(options)
+
+    clonedOptions.use_proxy_from_env_var = false // default, unless env var is set
+    if (process.env.NEEDLE_USE_PROXY_FROM_ENV_VAR === 'true') { // legacy support
+      clonedOptions.use_proxy_from_env_var = true
+    }
 
     const initErrors = []
     if (!clonedOptions || !clonedOptions.api_key) {
@@ -57,7 +57,7 @@ class RuntimeAPI {
       const sdkDetails = { clonedOptions }
       throw new codes.ERROR_SDK_INITIALIZATION({ sdkDetails, messageValues: `${initErrors.join(', ')}` })
     }
-    
+
     const proxyUrl = getProxyForUrl(clonedOptions.apihost)
     if (proxyUrl) {
       aioLogger.debug(`using proxy url: ${proxyUrl}`)

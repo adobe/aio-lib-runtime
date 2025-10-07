@@ -1,3 +1,5 @@
+/* eslint-disable no-param-reassign */
+/* eslint-disable camelcase */
 /*
 Copyright 2025 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
@@ -13,29 +15,29 @@ governing permissions and limitations under the License.
 /**
  * This patches the Openwhisk client to handle a tunneling issue with openwhisk > v3.0.0
  * See https://github.com/tomas/needle/issues/406
- * 
+ *
  * Once openwhisk.js supports the use_proxy_from_env_var option (for needle), we can remove this patch.
- * 
- * @param {object} ow 
- * @param {boolean} use_proxy_from_env_var
+ *
+ * @param {object} ow the Openwhisk object to patch
+ * @param {boolean} use_proxy_from_env_var the needle option to add
  * @returns {object} the patched openwhisk object
  */
-function patchOWForTunnelingIssue(ow, use_proxy_from_env_var) {
+function patchOWForTunnelingIssue (ow, use_proxy_from_env_var) {
   // we must set proxy to null here if agent is set, since it was already
   //  internally initialzed in Openwhisk with the proxy url from env vars
   const agentIsSet = ow.actions.client.options.agent !== null
   if (agentIsSet && use_proxy_from_env_var === false) {
-    ow.actions.client.options.proxy = undefined; 
+    ow.actions.client.options.proxy = undefined
   }
 
   // The issue is patching openwhisk.js to use use_proxy_from_env_var (a needle option) - the contribution process might take too long.
   // monkey-patch client.params: patch one, all the rest should be patched (shared client)
   // we wrap the original params to add the use_proxy_from_env_var boolean
   const originalParams = ow.actions.client.params.bind(ow.actions.client)
-  ow.actions.client.params = function(...args) {
+  ow.actions.client.params = function (...args) {
     return originalParams(...args).then(params => {
-      params.use_proxy_from_env_var = use_proxy_from_env_var;
-      return params;
+      params.use_proxy_from_env_var = use_proxy_from_env_var
+      return params
     }).catch(err => {
       console.error('Error patching openwhisk client params: ', err)
       throw err
@@ -44,7 +46,6 @@ function patchOWForTunnelingIssue(ow, use_proxy_from_env_var) {
 
   return ow
 }
-
 
 module.exports = {
   patchOWForTunnelingIssue

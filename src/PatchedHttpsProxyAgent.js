@@ -25,10 +25,10 @@ class PatchedHttpsProxyAgent extends HttpsProxyAgent {
   }
 
   async connect (req, opts) {
-    return super.connect(req, { 
-      ...this.savedOpts, 
-      keepAliveInitialDelay: 1000, 
-      keepAlive: true, 
+    return super.connect(req, {
+      ...this.savedOpts,
+      keepAliveInitialDelay: 1000,
+      keepAlive: true,
       ...opts
     })
   }
