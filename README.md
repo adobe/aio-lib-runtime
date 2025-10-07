@@ -103,6 +103,11 @@ with valid options argument</p>
 <dt><a href="#init">init(options)</a> ⇒ <code><a href="#OpenwhiskClient">Promise.&lt;OpenwhiskClient&gt;</a></code></dt>
 <dd><p>Returns a Promise that resolves with a new RuntimeAPI object.</p>
 </dd>
+<dt><a href="#patchOWForTunnelingIssue">patchOWForTunnelingIssue(ow, use_proxy_from_env_var)</a> ⇒ <code>object</code></dt>
+<dd><p>This patches the Openwhisk client to handle a tunneling issue with openwhisk &gt; v3.0.0
+See <a href="https://github.com/tomas/needle/issues/406">https://github.com/tomas/needle/issues/406</a></p>
+<p>Once openwhisk.js supports the use_proxy_from_env_var option (for needle), we can remove this patch.</p>
+</dd>
 <dt><a href="#printActionLogs">printActionLogs(config, logger, limit, filterActions, strip, tail, fetchLogsInterval, startTime)</a> ⇒ <code>object</code></dt>
 <dd><p>Prints action logs.</p>
 </dd>
@@ -276,6 +281,9 @@ for syncing managed projects.</p>
 </dd>
 <dt><a href="#getSupportedServerRuntimes">getSupportedServerRuntimes(apihost)</a> ⇒ <code>Array.&lt;string&gt;</code></dt>
 <dd><p>Gets a list of the supported runtime kinds from the apihost.</p>
+</dd>
+<dt><a href="#getProxyAgent">getProxyAgent(endpoint, proxyUrl, proxyOptions)</a> ⇒ <code>PatchedHttpsProxyAgent</code> | <code>HttpProxyAgent</code></dt>
+<dd><p>Get the proxy agent for the given endpoint</p>
 </dd>
 </dl>
 
@@ -660,6 +668,22 @@ Returns a Promise that resolves with a new RuntimeAPI object.
 | Param | Type | Description |
 | --- | --- | --- |
 | options | [<code>OpenwhiskOptions</code>](#OpenwhiskOptions) | options for initialization |
+
+<a name="patchOWForTunnelingIssue"></a>
+
+## patchOWForTunnelingIssue(ow, use_proxy_from_env_var) ⇒ <code>object</code>
+This patches the Openwhisk client to handle a tunneling issue with openwhisk > v3.0.0
+See https://github.com/tomas/needle/issues/406
+
+Once openwhisk.js supports the use_proxy_from_env_var option (for needle), we can remove this patch.
+
+**Kind**: global function  
+**Returns**: <code>object</code> - the patched openwhisk object  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ow | <code>object</code> | the Openwhisk object to patch |
+| use_proxy_from_env_var | <code>boolean</code> | the needle option to add |
 
 <a name="printActionLogs"></a>
 
@@ -1435,6 +1459,20 @@ Gets a list of the supported runtime kinds from the apihost.
 | Param | Type | Description |
 | --- | --- | --- |
 | apihost | <code>string</code> | the URL of the runtime apihost |
+
+<a name="getProxyAgent"></a>
+
+## getProxyAgent(endpoint, proxyUrl, proxyOptions) ⇒ <code>PatchedHttpsProxyAgent</code> \| <code>HttpProxyAgent</code>
+Get the proxy agent for the given endpoint
+
+**Kind**: global function  
+**Returns**: <code>PatchedHttpsProxyAgent</code> \| <code>HttpProxyAgent</code> - - The proxy agent  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| endpoint | <code>string</code> | The endpoint to get the proxy agent for |
+| proxyUrl | <code>string</code> | The proxy URL to use |
+| proxyOptions | <code>object</code> | The proxy options to use |
 
 <a name="ActionBuild"></a>
 
