@@ -19,8 +19,8 @@ const { createFetch } = require('@adobe/aio-lib-core-networking')
 const globby = require('globby')
 const path = require('path')
 const archiver = require('archiver')
-// this is a static list that comes from here: https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
-const SupportedRuntimes = ['sequence', 'blackbox', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18', 'nodejs:20', 'nodejs:22']
+// this is a static list that comes from here:  https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
+const SupportedRuntimes = ['sequence', 'blackbox', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18', 'nodejs:20', 'nodejs:22', 'nodejs:24']
 const { HttpProxyAgent } = require('http-proxy-agent')
 const PatchedHttpsProxyAgent = require('./PatchedHttpsProxyAgent.js')
 
