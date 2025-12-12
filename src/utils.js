@@ -1846,6 +1846,17 @@ function checkOpenWhiskCredentials (config) {
 }
 
 /**
+ * Checks if an action is an agent based on runtime
+ *
+ * @private
+ * @param {object} action action configuration
+ * @returns {boolean} true if action is an agent
+ */
+function isAgent (action) {
+  return action?.runtime === 'nodejs:22'
+}
+
+/**
  * Returns action URLs based on the manifest config
  *
  * @param {object} appConfig app config
@@ -1871,13 +1882,23 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
 
   /** @private */
   function getActionUrl (pkgAndActionName, action) {
+    // Check if this is an agent
+    const isAgentAction = isAgent(action)
+    
     const webArg = action?.annotations?.[ANNOTATION_WEB_EXPORT] || action?.web
     const webUri = (webArg && webArg !== 'no' && webArg !== 'false') ? 'web' : ''
+
+    // For agents, use 'state' instead of 'web'
+    const uriSegment = isAgentAction ? 'state' : webUri
+    
+    // Agents always need namespace in URL path (similar to non-web actions)
+    const needsNamespaceInPath = !webUri || isAgentAction
 
     const actionIsBehindCdn =
     // if local dev runtime actions are served locally actions can't be reached via CDN
     // if action is non web it cannot share cookies, and need to be called with auth, use ApiHost directly
-    !isLocalDev && webUri && (
+    // Agents never behind CDN
+    !isLocalDev && webUri && !isAgentAction && (
       // By default:
       // - if remote dev the UI runs on localhost so the actions can be served directly from the ApiHost domain
       // - if action has no UI no need to use the CDN url
@@ -1889,14 +1910,17 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
     // if the apihost is custom but no custom hostname is provided then CDN should not be used
     const customApihostButNoCustomHostname = apihostIsCustom && !hostnameIsCustom
 
+    let baseUrl
+    
     if (actionIsBehindCdn && !customApihostButNoCustomHostname) {
-      // https://<ns>.adobe-static.net/api/v1/web/<package>/<action></action>
-      // or https://<ns>.custom-hostname.xyz/api/v1/web/<package>/<action></action>
-      return urlJoin(
+      // CDN URL (never for agents)
+      // https://<ns>.adobe-static.net/api/v1/web/<package>/<action>
+      // or https://<ns>.custom-hostname.xyz/api/v1/web/<package>/<action>
+      baseUrl = urlJoin(
         'https://' + config.ow.namespace + '.' + cleanHostname,
         'api',
         config.ow.apiversion,
-        webUri,
+        uriSegment,
         pkgAndActionName
       )
     } else if (
@@ -1904,30 +1928,62 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
       (!actionIsBehindCdn && apihostIsCustom) ||
       (actionIsBehindCdn && customApihostButNoCustomHostname)
     ) {
+      // Custom/localhost URL
       // http://localhost:3233/api/v1/web/<ns>/<package>/<action>
       // or https://custom-ow-host.xyz/api/v1/web/<ns>/<package>/<action>
-      return urlJoin(
+      // or http://localhost:3233/api/v1/state/<ns>/<package>/<action> (for agents)
+      const pathParts = [
+        'api',
+        config.ow.apiversion,
+        uriSegment
+      ]
+      
+      if (needsNamespaceInPath) {
+        pathParts.push(config.ow.namespace)
+      }
+      
+      pathParts.push(pkgAndActionName)
+      
+      baseUrl = urlJoin(
         isHttp ? 'http://' : 'https://',
         cleanApihost,
-        'api',
-        config.ow.apiversion,
-        webUri,
-        config.ow.namespace,
-        pkgAndActionName
+        ...pathParts
       )
     } else {
-      // if (!actionIsBehindCdn && !apihostIsCustom)
+      // Standard adobeioruntime.net URL
       // https://<ns>.adobeioruntime.net/api/v1/web/<package>/<action>
+      // or https://adobeioruntime.net/api/v1/state/<ns>/<package>/<action> (for agents)
       // note: if the apihost matches /deploy-service.*\.app-builder\.*\.adp\.adobe\.io\/runtime/
       //       we still want to serve dataplane requests on adobeioruntime.net
-      return urlJoin(
-        'https://' + config.ow.namespace + '.' + 'adobeioruntime.net',
+      const pathParts = [
         'api',
         config.ow.apiversion,
-        webUri,
-        pkgAndActionName
+        uriSegment
+      ]
+      
+      if (needsNamespaceInPath) {
+        pathParts.push(config.ow.namespace)
+      }
+      
+      pathParts.push(pkgAndActionName)
+      
+      // Agents don't use namespace subdomain
+      const domain = isAgentAction 
+        ? 'adobeioruntime.net'
+        : config.ow.namespace + '.' + 'adobeioruntime.net'
+      
+      baseUrl = urlJoin(
+        'https://' + domain,
+        ...pathParts
       )
     }
+    
+    // For agents, append the {key}/{handler} placeholders
+    if (isAgentAction) {
+      baseUrl = urlJoin(baseUrl, '{key}', '{handler}')
+    }
+    
+    return baseUrl
   }
 
   // populate urls
