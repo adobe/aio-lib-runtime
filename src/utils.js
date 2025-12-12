@@ -1967,10 +1967,18 @@ function getActionUrls (appConfig, /* istanbul ignore next */ isRemoteDev = fals
       
       pathParts.push(pkgAndActionName)
       
+      // Extract base domain from cleanApihost (remove namespace subdomain if present)
+      // For example: "bladerunner-test.adobeioruntime.net" -> "adobeioruntime.net"
+      //              "namespace.custom.openwhisk.org" -> "custom.openwhisk.org"
+      let baseDomain = cleanApihost
+      if (cleanApihost.startsWith(config.ow.namespace + '.')) {
+        baseDomain = cleanApihost.substring(config.ow.namespace.length + 1)
+      }
+      
       // Agents don't use namespace subdomain
       const domain = isAgentAction 
-        ? 'adobeioruntime.net'
-        : config.ow.namespace + '.' + 'adobeioruntime.net'
+        ? baseDomain
+        : config.ow.namespace + '.' + baseDomain
       
       baseUrl = urlJoin(
         'https://' + domain,
