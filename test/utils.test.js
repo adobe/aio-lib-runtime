@@ -2710,3 +2710,138 @@ describe('getProxyAgent', () => {
     expect(result).toBeInstanceOf(PatchedHttpsProxyAgent)
   })
 })
+
+describe('include-ims-credentials annotation', () => {
+  const fakeCode = 'fake action code'
+  let spy
+  let originalEnv
+
+  beforeEach(() => {
+    spy = jest.spyOn(fs, 'readFileSync')
+    spy.mockImplementation(() => fakeCode)
+    originalEnv = process.env.IMS_OAUTH_S2S
+  })
+
+  afterEach(() => {
+    spy.mockRestore()
+    libEnv.getCliEnv.mockReturnValue(PROD_ENV)
+    if (originalEnv !== undefined) {
+      process.env.IMS_OAUTH_S2S = originalEnv
+    } else {
+      delete process.env.IMS_OAUTH_S2S
+    }
+  })
+
+  test('action with include-ims-credentials annotation gets IMS inputs added', () => {
+    const imsCredentials = { client_id: 'test-client', client_secret: 'test-secret' }
+    process.env.IMS_OAUTH_S2S = JSON.stringify(imsCredentials)
+    libEnv.getCliEnv.mockReturnValue(PROD_ENV)
+
+    const packages = {
+      pkg1: {
+        actions: {
+          theaction: {
+            function: 'fake.js',
+            web: 'yes',
+            inputs: { existingInput: 'value' },
+            annotations: {
+              'include-ims-credentials': true
+            }
+          }
+        }
+      }
+    }
+
+    const res = utils.processPackage(packages, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res.actions[0].params).toEqual({
+      existingInput: 'value',
+      __ims_oauth_s2s: imsCredentials,
+      __ims_env: PROD_ENV
+    })
+  })
+
+  test('action with include-ims-credentials annotation and no credentials logs warning', () => {
+    delete process.env.IMS_OAUTH_S2S
+    const loggerSpy = jest.spyOn(aioLogger, 'warn')
+
+    const packages = {
+      pkg1: {
+        actions: {
+          theaction: {
+            function: 'fake.js',
+            web: 'yes',
+            annotations: {
+              'include-ims-credentials': true
+            }
+          }
+        }
+      }
+    }
+
+    utils.processPackage(packages, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(loggerSpy).toHaveBeenCalledWith("The project has no credentials attached (missing the 'IMS_OAUTH_S2S' environment variable). The annotation 'include-ims-credentials' will be ignored.")
+  })
+})
+
+describe('getIncludeIMSCredentialsAnnotationInputs', () => {
+  afterEach(() => {
+    libEnv.getCliEnv.mockReturnValue(PROD_ENV)
+  })
+
+  test('returns undefined if annotation is not set', () => {
+    const action = {
+      annotations: {}
+    }
+    const result = utils.getIncludeIMSCredentialsAnnotationInputs(action, { client_id: 'test' })
+    expect(result).toBeUndefined()
+  })
+
+  test('returns undefined and warns if annotation is set but imsAuthObject is null', () => {
+    const action = {
+      annotations: { 'include-ims-credentials': true }
+    }
+    const loggerSpy = jest.spyOn(aioLogger, 'warn')
+    const result = utils.getIncludeIMSCredentialsAnnotationInputs(action, null)
+    expect(result).toBeUndefined()
+    expect(loggerSpy).toHaveBeenCalledWith("The project has no credentials attached (missing the 'IMS_OAUTH_S2S' environment variable). The annotation 'include-ims-credentials' will be ignored.")
+  })
+
+  test('returns inputs with ims credentials and prod env', () => {
+    libEnv.getCliEnv.mockReturnValue(PROD_ENV)
+    const action = {
+      annotations: { 'include-ims-credentials': true }
+    }
+    const imsAuthObject = { client_id: 'test-client', client_secret: 'test-secret' }
+    const result = utils.getIncludeIMSCredentialsAnnotationInputs(action, imsAuthObject)
+    expect(result).toEqual({
+      __ims_oauth_s2s: { client_id: 'test-client', client_secret: 'test-secret' },
+      __ims_env: PROD_ENV
+    })
+  })
+
+  test('returns inputs with ims credentials and stage env', () => {
+    libEnv.getCliEnv.mockReturnValue(STAGE_ENV)
+    const action = {
+      annotations: { 'include-ims-credentials': true }
+    }
+    const imsAuthObject = { client_id: 'test-client' }
+    const result = utils.getIncludeIMSCredentialsAnnotationInputs(action, imsAuthObject)
+    expect(result).toEqual({
+      __ims_oauth_s2s: { client_id: 'test-client' },
+      __ims_env: STAGE_ENV
+    })
+  })
+
+  test('returns inputs with default env when getCliEnv returns null', () => {
+    libEnv.getCliEnv.mockReturnValue(null)
+    const action = {
+      annotations: { 'include-ims-credentials': true }
+    }
+    const imsAuthObject = { client_id: 'test-client' }
+    const result = utils.getIncludeIMSCredentialsAnnotationInputs(action, imsAuthObject)
+    expect(result).toEqual({
+      __ims_oauth_s2s: { client_id: 'test-client' },
+      __ims_env: PROD_ENV
+    })
+  })
+})
