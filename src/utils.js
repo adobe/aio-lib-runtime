@@ -1200,13 +1200,7 @@ function rewriteActionsWithAdobeIncludeIMSCredentialsAnnotation (packages) {
   // avoid side effects, do not modify input packages
   const newPackages = cloneDeep(packages)
 
-  // constants
-  const IMS_OAUTH_S2S_ENV_KEY = 'IMS_OAUTH_S2S'
-
-  let imsAuthObject = null
-  try {
-    imsAuthObject = JSON.parse(process.env[IMS_OAUTH_S2S_ENV_KEY])
-  } catch (e) {}
+  const imsAuthObject = loadIMSCredentialsFromEnv()
 
   // traverse all actions in all packages
   Object.keys(newPackages).forEach((key) => {
@@ -1225,11 +1219,36 @@ function rewriteActionsWithAdobeIncludeIMSCredentialsAnnotation (packages) {
 }
 
 /**
+ * Load the IMS credentials from the environment variables.
+ *
+ * @returns {object} the IMS auth object
+ */
+function loadIMSCredentialsFromEnv () {
+  // constants
+  const IMS_OAUTH_S2S_ENV_KEY = 'IMS_OAUTH_S2S'
+
+  const imsAuthObject = {
+    client_id: process.env[`${IMS_OAUTH_S2S_ENV_KEY}_CLIENT_ID`],
+    client_secret: process.env[`${IMS_OAUTH_S2S_ENV_KEY}_CLIENT_SECRET`],
+    org_id: process.env[`${IMS_OAUTH_S2S_ENV_KEY}_ORG_ID`],
+    scopes: (() => {
+      try {
+        return JSON.parse(process.env[`${IMS_OAUTH_S2S_ENV_KEY}_SCOPES`])
+      } catch (e) {
+        return process.env[`${IMS_OAUTH_S2S_ENV_KEY}_SCOPES`] // pass in string as is
+      }
+    })()
+  }
+  return imsAuthObject
+}
+
+/**
  * Get the inputs for the include-ims-credentials annotation.
+ * Throws an error if the imsAuthObject is incomplete.
  *
  * @param {object} thisAction the action to process
  * @param {object} imsAuthObject the IMS auth object
- * @returns {object|undefined} the inputs
+ * @returns {object|undefined} the inputs or undefined with a warning
  */
 function getIncludeIMSCredentialsAnnotationInputs (thisAction, imsAuthObject) {
   const env = getCliEnv() || DEFAULT_ENV
@@ -1240,12 +1259,28 @@ function getIncludeIMSCredentialsAnnotationInputs (thisAction, imsAuthObject) {
 
   // check if the annotation is defined
   if (thisAction.annotations?.[ANNOTATION_INCLUDE_IMS_CREDENTIALS]) {
-    // check if the action is a web action
-    if (!imsAuthObject) {
-      aioLogger.warn(`The project has no credentials attached (missing the '${IMS_OAUTH_S2S_ENV_KEY}' environment variable). The annotation '${ANNOTATION_INCLUDE_IMS_CREDENTIALS}' will be ignored.`)
-      return
+    // check if the IMS credentials are loaded properly, if not emit a warning
+    if (Object.keys(imsAuthObject).length === 0) {
+      throw new Error(`Credentials for the project are missing, please ensure the Console Workspace is configured with an OAuth server to server credential.
+        Unset the annotation '${ANNOTATION_INCLUDE_IMS_CREDENTIALS}' if you don't want to include credentials.`)
     }
-
+    const missingEnvVars = []
+    if (!imsAuthObject.client_id) {
+      missingEnvVars.push(`${IMS_OAUTH_S2S_ENV_KEY}_CLIENT_ID`)
+    }
+    if (!imsAuthObject.client_secret) {
+      missingEnvVars.push(`${IMS_OAUTH_S2S_ENV_KEY}_CLIENT_SECRET`)
+    }
+    if (!imsAuthObject.org_id) {
+      missingEnvVars.push(`${IMS_OAUTH_S2S_ENV_KEY}_ORG_ID`)
+    }
+    if (!imsAuthObject.scopes) {
+      missingEnvVars.push(`${IMS_OAUTH_S2S_ENV_KEY}_SCOPES`)
+    }
+    if (missingEnvVars.length > 0) {
+      throw new Error(`Credentials for the project are incomplete. Missing '${missingEnvVars.join('|')}' env variables.
+       Unset the annotation '${ANNOTATION_INCLUDE_IMS_CREDENTIALS}' if you don't want to include credentials.`)
+    }
     return { [IMS_OAUTH_S2S_INPUT]: { ...imsAuthObject }, [IMS_ENV_INPUT]: env }
   }
 }
@@ -2253,5 +2288,6 @@ module.exports = {
   safeParse,
   isSupportedActionKind,
   getIncludeIMSCredentialsAnnotationInputs,
+  loadIMSCredentialsFromEnv,
   DEFAULT_PACKAGE_RESERVED_NAME
 }
