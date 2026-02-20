@@ -2768,6 +2768,38 @@ describe('include-ims-credentials annotation', () => {
     })
   })
 
+  test('action with include-ims-credentials and no inputs property gets IMS inputs added', () => {
+    const imsCredentials = {
+      client_id: 'test-client',
+      client_secret: 'test-secret',
+      org_id: 'test-org',
+      scopes: ['https://example.com/scope']
+    }
+    process.env.IMS_OAUTH_S2S_CLIENT_ID = imsCredentials.client_id
+    process.env.IMS_OAUTH_S2S_CLIENT_SECRET = imsCredentials.client_secret
+    process.env.IMS_OAUTH_S2S_ORG_ID = imsCredentials.org_id
+    process.env.IMS_OAUTH_S2S_SCOPES = JSON.stringify(imsCredentials.scopes)
+    libEnv.getCliEnv.mockReturnValue(PROD_ENV)
+
+    const packages = {
+      pkg1: {
+        actions: {
+          theaction: {
+            function: 'fake.js',
+            web: 'yes',
+            annotations: { 'include-ims-credentials': true }
+          }
+        }
+      }
+    }
+
+    const res = utils.processPackage(packages, {}, {}, {}, false, { apihost: 'https://adobeioruntime.net' })
+    expect(res.actions[0].params).toEqual({
+      __ims_oauth_s2s: imsCredentials,
+      __ims_env: PROD_ENV
+    })
+  })
+
   test('only actions with include-ims-credentials get IMS inputs; other actions unchanged', () => {
     const imsCredentials = {
       client_id: 'c',

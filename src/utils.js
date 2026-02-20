@@ -1209,6 +1209,9 @@ function rewriteActionsWithAdobeIncludeIMSCredentialsAnnotation (packages) {
         const thisAction = newPackages[key].actions[actionName]
         const newInputs = getIncludeIMSCredentialsAnnotationInputs(thisAction, imsAuthObject)
         if (newInputs) {
+          if (!thisAction.inputs) {
+            thisAction.inputs = {}
+          }
           Object.entries(newInputs).forEach(([k, v]) => { thisAction.inputs[k] = v })
           aioLogger.debug(`processed annotation '${ANNOTATION_INCLUDE_IMS_CREDENTIALS}' for action '${key}/${actionName}'.`)
         }
