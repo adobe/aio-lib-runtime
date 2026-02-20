@@ -23,6 +23,7 @@ const archiver = require('archiver')
 const SupportedRuntimes = ['sequence', 'blackbox', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18', 'nodejs:20', 'nodejs:22', 'nodejs:24']
 const { HttpProxyAgent } = require('http-proxy-agent')
 const PatchedHttpsProxyAgent = require('./PatchedHttpsProxyAgent.js')
+const { getCliEnv, DEFAULT_ENV } = require('@adobe/aio-lib-env')
 
 // must cover 'deploy-service[-region][.env].app-builder[.int|.corp].adp.adobe.io/runtime
 const SUPPORTED_ADOBE_ANNOTATION_ENDPOINT_REGEXES = [
@@ -41,6 +42,7 @@ const ANNOTATION_WEB_EXPORT = 'web-export'
 const ANNOTATION_RAW_HTTP = 'raw-http'
 const ANNOTATION_REQUIRE_ADOBE_AUTH = 'require-adobe-auth'
 const ANNOTATION_REQUIRE_WHISK_AUTH = 'require-whisk-auth'
+const ANNOTATION_INCLUDE_IMS_CREDENTIALS = 'include-ims-credentials'
 const VALUE_YES = 'yes'
 const VALUE_RAW = 'raw'
 
@@ -1187,6 +1189,106 @@ function rewriteActionsWithAdobeAuthAnnotation (packages, deploymentPackages) {
 }
 
 /**
+ * This function implements the support for the `include-ims-credentials` annotation.
+ * It will expand the IMS_OAUTH_S2S environment variable into an input object stored under params.__ims_oauth_s2s and params.__ims_env
+ *
+ * @access private
+ * @param {ManifestPackages} packages the manifest packages
+ * @returns {ManifestPackages} newPackages, rewritten package with added inputs
+ */
+function rewriteActionsWithAdobeIncludeIMSCredentialsAnnotation (packages) {
+  // avoid side effects, do not modify input packages
+  const newPackages = cloneDeep(packages)
+
+  const imsAuthObject = loadIMSCredentialsFromEnv()
+
+  // traverse all actions in all packages
+  Object.keys(newPackages).forEach((key) => {
+    if (newPackages[key].actions) {
+      Object.keys(newPackages[key].actions).forEach((actionName) => {
+        const thisAction = newPackages[key].actions[actionName]
+        const newInputs = getIncludeIMSCredentialsAnnotationInputs(thisAction, imsAuthObject)
+        if (newInputs) {
+          if (!thisAction.inputs) {
+            thisAction.inputs = {}
+          }
+          Object.entries(newInputs).forEach(([k, v]) => { thisAction.inputs[k] = v })
+          aioLogger.debug(`processed annotation '${ANNOTATION_INCLUDE_IMS_CREDENTIALS}' for action '${key}/${actionName}'.`)
+        }
+      })
+    }
+  })
+  return newPackages
+}
+
+/**
+ * Load the IMS credentials from the environment variables.
+ *
+ * @returns {object} the IMS auth object
+ */
+function loadIMSCredentialsFromEnv () {
+  // constants
+  const IMS_OAUTH_S2S_ENV_KEY = 'IMS_OAUTH_S2S'
+
+  const imsAuthObject = {
+    client_id: process.env[`${IMS_OAUTH_S2S_ENV_KEY}_CLIENT_ID`],
+    client_secret: process.env[`${IMS_OAUTH_S2S_ENV_KEY}_CLIENT_SECRET`],
+    org_id: process.env[`${IMS_OAUTH_S2S_ENV_KEY}_ORG_ID`],
+    scopes: (() => {
+      try {
+        return JSON.parse(process.env[`${IMS_OAUTH_S2S_ENV_KEY}_SCOPES`])
+      } catch (e) {
+        return process.env[`${IMS_OAUTH_S2S_ENV_KEY}_SCOPES`] // pass in string as is
+      }
+    })()
+  }
+  return imsAuthObject
+}
+
+/**
+ * Get the inputs for the include-ims-credentials annotation.
+ * Throws an error if the imsAuthObject is incomplete.
+ *
+ * @param {object} thisAction the action to process
+ * @param {object} imsAuthObject the IMS auth object
+ * @returns {object|undefined} the inputs or undefined with a warning
+ */
+function getIncludeIMSCredentialsAnnotationInputs (thisAction, imsAuthObject) {
+  const env = getCliEnv() || DEFAULT_ENV
+
+  const IMS_OAUTH_S2S_INPUT = '__ims_oauth_s2s'
+  const IMS_ENV_INPUT = '__ims_env'
+  const IMS_OAUTH_S2S_ENV_KEY = 'IMS_OAUTH_S2S'
+
+  // check if the annotation is defined
+  if (thisAction.annotations?.[ANNOTATION_INCLUDE_IMS_CREDENTIALS]) {
+    // check if the IMS credentials are loaded properly, if not emit a warning
+    if (Object.keys(imsAuthObject).length === 0) {
+      throw new Error(`Credentials for the project are missing, please ensure the Console Workspace is configured with an OAuth server to server credential.
+        Unset the annotation '${ANNOTATION_INCLUDE_IMS_CREDENTIALS}' if you don't want to include credentials.`)
+    }
+    const missingEnvVars = []
+    if (!imsAuthObject.client_id) {
+      missingEnvVars.push(`${IMS_OAUTH_S2S_ENV_KEY}_CLIENT_ID`)
+    }
+    if (!imsAuthObject.client_secret) {
+      missingEnvVars.push(`${IMS_OAUTH_S2S_ENV_KEY}_CLIENT_SECRET`)
+    }
+    if (!imsAuthObject.org_id) {
+      missingEnvVars.push(`${IMS_OAUTH_S2S_ENV_KEY}_ORG_ID`)
+    }
+    if (!imsAuthObject.scopes) {
+      missingEnvVars.push(`${IMS_OAUTH_S2S_ENV_KEY}_SCOPES`)
+    }
+    if (missingEnvVars.length > 0) {
+      throw new Error(`Credentials for the project are incomplete. Missing '${missingEnvVars.join('|')}' env variables.
+       Unset the annotation '${ANNOTATION_INCLUDE_IMS_CREDENTIALS}' if you don't want to include credentials.`)
+    }
+    return { [IMS_OAUTH_S2S_INPUT]: { ...imsAuthObject }, [IMS_ENV_INPUT]: env }
+  }
+}
+
+/**
  *
  * Process the manifest and deployment content and returns deployment entities.
  *
@@ -1210,11 +1312,14 @@ function processPackage (packages,
 
   const isAdobeEndpoint = SUPPORTED_ADOBE_ANNOTATION_ENDPOINT_REGEXES.some(regex => regex.test(owOptions.apihost))
   if (isAdobeEndpoint) {
+    // rewrite packages in case there are any `include-ims-credentials` annotations
+    const newPackages = rewriteActionsWithAdobeIncludeIMSCredentialsAnnotation(pkgs)
+
     // rewrite packages in case there are any `require-adobe-auth` annotations
     // this is a temporary feature and will be replaced by a native support in Adobe I/O Runtime
-    const { newPackages, newDeploymentPackages } = rewriteActionsWithAdobeAuthAnnotation(pkgs, deploymentPkgs)
-    pkgs = newPackages
-    deploymentPkgs = newDeploymentPackages
+    const ret = rewriteActionsWithAdobeAuthAnnotation(newPackages, deploymentPkgs)
+    pkgs = ret.newPackages
+    deploymentPkgs = ret.newDeploymentPackages
   }
 
   const pkgAndDeps = []
@@ -2185,5 +2290,7 @@ module.exports = {
   dumpActionsBuiltInfo,
   safeParse,
   isSupportedActionKind,
+  getIncludeIMSCredentialsAnnotationInputs,
+  loadIMSCredentialsFromEnv,
   DEFAULT_PACKAGE_RESERVED_NAME
 }
