@@ -200,6 +200,13 @@ See <a href="https://github.com/apache/openwhisk-wskdeploy/blob/master/parsers/m
 <dt><a href="#createActionObject">createActionObject(fullName, manifestAction)</a> ⇒ <code><a href="#OpenWhiskEntitiesAction">OpenWhiskEntitiesAction</a></code></dt>
 <dd><p>Create an action object compatible with the OpenWhisk API from an action object parsed from the manifest.</p>
 </dd>
+<dt><a href="#loadIMSCredentialsFromEnv">loadIMSCredentialsFromEnv()</a> ⇒ <code>object</code></dt>
+<dd><p>Load the IMS credentials from the environment variables.</p>
+</dd>
+<dt><a href="#getIncludeIMSCredentialsAnnotationInputs">getIncludeIMSCredentialsAnnotationInputs(thisAction, imsAuthObject)</a> ⇒ <code>object</code> | <code>undefined</code></dt>
+<dd><p>Get the inputs for the include-ims-credentials annotation.
+Throws an error if the imsAuthObject is incomplete.</p>
+</dd>
 <dt><a href="#processPackage">processPackage(packages, deploymentPackages, deploymentTriggers, params, [namesOnly], [owOptions])</a> ⇒ <code><a href="#OpenWhiskEntities">OpenWhiskEntities</a></code></dt>
 <dd><p>Process the manifest and deployment content and returns deployment entities.</p>
 </dd>
@@ -1129,6 +1136,27 @@ Create an action object compatible with the OpenWhisk API from an action object 
 | --- | --- | --- |
 | fullName | <code>string</code> | the full action name prefixed with the package, e.g. `pkg/action` |
 | manifestAction | [<code>ManifestAction</code>](#ManifestAction) | the action object as parsed from the manifest |
+
+<a name="loadIMSCredentialsFromEnv"></a>
+
+## loadIMSCredentialsFromEnv() ⇒ <code>object</code>
+Load the IMS credentials from the environment variables.
+
+**Kind**: global function  
+**Returns**: <code>object</code> - the IMS auth object  
+<a name="getIncludeIMSCredentialsAnnotationInputs"></a>
+
+## getIncludeIMSCredentialsAnnotationInputs(thisAction, imsAuthObject) ⇒ <code>object</code> \| <code>undefined</code>
+Get the inputs for the include-ims-credentials annotation.
+Throws an error if the imsAuthObject is incomplete.
+
+**Kind**: global function  
+**Returns**: <code>object</code> \| <code>undefined</code> - the inputs or undefined with a warning  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| thisAction | <code>object</code> | the action to process |
+| imsAuthObject | <code>object</code> | the IMS auth object |
 
 <a name="processPackage"></a>
 
