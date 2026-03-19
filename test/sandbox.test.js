@@ -326,7 +326,7 @@ describe('Sandbox', () => {
     sockets[0].closeWith(1011, 'server error')
 
     await expect(execPromise).rejects.toThrow(codes.ERROR_SANDBOX_WEBSOCKET)
-    await expect(sandbox.kill('exec-2')).rejects.toThrow(codes.ERROR_SANDBOX_WEBSOCKET)
+    expect(() => sandbox.kill('exec-2')).toThrow(codes.ERROR_SANDBOX_WEBSOCKET)
     await expect(sandbox.exec('after-close')).rejects.toThrow(codes.ERROR_SANDBOX_WEBSOCKET)
   })
 

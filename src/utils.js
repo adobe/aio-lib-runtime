@@ -2221,6 +2221,16 @@ async function getSupportedServerRuntimes (apihost) {
 }
 
 /**
+ * Builds a Basic Authorization header value from an API key.
+ *
+ * @param {string} apiKey the API key (uuid:key format)
+ * @returns {string} the Authorization header value
+ */
+function buildAuthorizationHeader (apiKey) {
+  return `Basic ${Buffer.from(apiKey).toString('base64')}`
+}
+
+/**
  * Get the proxy agent for the given endpoint
  *
  * @param {string} endpoint - The endpoint to get the proxy agent for
@@ -2237,6 +2247,7 @@ function getProxyAgent (endpoint, proxyUrl, proxyOptions = {}) {
 }
 
 module.exports = {
+  buildAuthorizationHeader,
   getProxyAgent,
   getSupportedServerRuntimes,
   checkOpenWhiskCredentials,

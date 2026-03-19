@@ -11,8 +11,10 @@ governing permissions and limitations under the License.
 
 const crypto = require('crypto')
 const WebSocket = require('ws')
+const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:Sandbox', { provider: 'debug', level: process.env.LOG_LEVEL })
 const { codes } = require('./SDKErrors')
 const { createFetch } = require('@adobe/aio-lib-core-networking')
+const { buildAuthorizationHeader } = require('./utils')
 require('./types.jsdoc') // for VS Code autocomplete
 /* global SandboxExecOptions, SandboxExecResult */
 
@@ -71,7 +73,7 @@ class Sandbox {
 
     socket.on('message', message => this._handleMessage(message))
     socket.on('close', (code, reason) => this._handleClose(code, reason))
-    socket.on('error', () => {})
+    socket.on('error', (err) => aioLogger.warn(`[${this.id}] WebSocket error: ${err.message}`))
 
     this._connectPromise = new Promise((resolve, reject) => {
       const onOpen = () => {
@@ -152,7 +154,7 @@ class Sandbox {
 
       if (options.timeout) {
         timeout = setTimeout(() => {
-          this.kill(execId).catch(() => {})
+          try { this.kill(execId) } catch (_) {}
           this._rejectPendingExec(execId, new codes.ERROR_SANDBOX_TIMEOUT({
             messageValues: `Command '${execId}' exceeded timeout of ${options.timeout}ms`
           }))
@@ -163,7 +165,13 @@ class Sandbox {
     })
 
     execPromise.execId = execId
-    this._sendFrame({ type: 'exec.run', execId, command })
+    try {
+      this._sendFrame({ type: 'exec.run', execId, command })
+    } catch (error) {
+      this._rejectPendingExec(execId, new codes.ERROR_SANDBOX_WEBSOCKET({
+        messageValues: `Could not send exec frame: ${error.message}`
+      }))
+    }
     return execPromise
   }
 
@@ -172,9 +180,8 @@ class Sandbox {
    *
    * @param {string} execId execution id
    * @param {string} [signal] signal to deliver
-   * @returns {Promise<void>}
    */
-  async kill (execId, signal = 'SIGTERM') {
+  kill (execId, signal = 'SIGTERM') {
     this._ensureOpen()
     this._sendFrame({ type: 'exec.kill', execId, signal })
   }
@@ -195,10 +202,9 @@ class Sandbox {
 
     if (this.agent) {
       requestOptions.agent = this.agent
-    }
-
-    if (this.ignoreCerts) {
-      requestOptions.rejectUnauthorized = false
+    } else if (this.ignoreCerts) {
+      const https = require('https')
+      requestOptions.agent = new https.Agent({ rejectUnauthorized: false })
     }
 
     let response
@@ -225,6 +231,7 @@ class Sandbox {
 
   _handleMessage (message) {
     const frame = this._parseFrame(message)
+    aioLogger.debug(`[${this.id}] received frame: ${JSON.stringify(frame)}`)
     if (!frame || this._isAuthAckFrame(frame)) {
       return
     }
@@ -242,7 +249,7 @@ class Sandbox {
       }
 
       if (pendingExec.onOutput) {
-        pendingExec.onOutput(frame.data || '')
+        pendingExec.onOutput(frame.data || '', frame.stream || 'stdout')
       }
       return
     }
@@ -323,7 +330,7 @@ class Sandbox {
   }
 
   _buildAuthorizationHeader () {
-    return `Basic ${Buffer.from(this.apiKey).toString('base64')}`
+    return buildAuthorizationHeader(this.apiKey)
   }
 }
 

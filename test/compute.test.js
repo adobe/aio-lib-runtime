@@ -262,4 +262,45 @@ describe('SandboxAPI', () => {
       `Basic ${Buffer.from('uuid:key').toString('base64')}`
     )
   })
+
+  test('getStatus returns sandbox status for a given sandbox id', async () => {
+    const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+    const statusPayload = { sandboxId: 'sb-1234', status: 'ready', cluster: 'cluster-a' }
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(statusPayload)
+    })
+
+    const result = await compute.getStatus('sb-1234')
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://runtime.example.net/api/v1/namespaces/1234-demo/sandbox/sb-1234',
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({
+          Authorization: `Basic ${Buffer.from('uuid:key').toString('base64')}`
+        })
+      })
+    )
+    expect(result).toEqual(statusPayload)
+  })
+
+  test('getStatus surfaces server errors', async () => {
+    const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      text: jest.fn().mockResolvedValue('not found')
+    })
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      text: jest.fn().mockResolvedValue('internal error')
+    })
+
+    await expect(compute.getStatus('sb-missing')).rejects.toThrow(codes.ERROR_SANDBOX_NOT_FOUND)
+    await expect(compute.getStatus('sb-broken')).rejects.toThrow(codes.ERROR_SANDBOX_CLIENT)
+  })
 })

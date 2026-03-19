@@ -12,6 +12,7 @@ governing permissions and limitations under the License.
 const { codes } = require('./SDKErrors')
 const Sandbox = require('./Sandbox')
 const { createFetch } = require('@adobe/aio-lib-core-networking')
+const { buildAuthorizationHeader } = require('./utils')
 require('./types.jsdoc') // for VS Code autocomplete
 /* global SandboxCreateOptions, SandboxSizes */
 
@@ -56,6 +57,20 @@ class SandboxAPI {
     )
 
     return await this._buildSandbox(payload)
+  }
+
+  /**
+   * Gets the status of an existing sandbox.
+   *
+   * @param {string} sandboxId sandbox ID
+   * @returns {Promise<object>} sandbox status response
+   */
+  async getStatus (sandboxId) {
+    return this._request(
+      'get sandbox status',
+      'GET',
+      `${this._getSandboxPath()}/${sandboxId}`
+    )
   }
 
   async _buildSandbox (payload) {
@@ -111,7 +126,7 @@ class SandboxAPI {
     }
 
     const entry = Object.entries(SANDBOX_SIZES)
-      .find(([, value]) => JSON.stringify(value) === JSON.stringify(size))
+      .find(([, value]) => value.cpu === size.cpu && value.memory === size.memory && value.gpu === size.gpu)
 
     if (entry) {
       return entry[0]
@@ -132,10 +147,9 @@ class SandboxAPI {
 
     if (this.agent) {
       requestOptions.agent = this.agent
-    }
-
-    if (this.ignoreCerts) {
-      requestOptions.rejectUnauthorized = false
+    } else if (this.ignoreCerts) {
+      const https = require('https')
+      requestOptions.agent = new https.Agent({ rejectUnauthorized: false })
     }
 
     if (body !== undefined) {
@@ -180,7 +194,7 @@ class SandboxAPI {
   }
 
   _buildAuthorizationHeader () {
-    return `Basic ${Buffer.from(this.apiKey).toString('base64')}`
+    return buildAuthorizationHeader(this.apiKey)
   }
 
   _getSandboxPath () {
