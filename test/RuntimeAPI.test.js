@@ -14,6 +14,7 @@ const { codes } = require('../src/SDKErrors')
 const Triggers = require('../src/triggers')
 const LogForwarding = require('../src/LogForwarding')
 const LogForwardingLocalDestinationsProvider = require('../src/LogForwardingLocalDestinationsProvider')
+const ComputeAPI = require('../src/ComputeAPI')
 const { patchOWForTunnelingIssue } = require('../src/openwhisk-patch')
 const { getProxyAgent } = require('../src/utils')
 
@@ -22,6 +23,7 @@ jest.mock('openwhisk')
 jest.mock('../src/triggers')
 jest.mock('../src/LogForwarding')
 jest.mock('../src/LogForwardingLocalDestinationsProvider')
+jest.mock('../src/ComputeAPI')
 jest.mock('../src/openwhisk-patch')
 jest.mock('../src/utils')
 jest.mock('proxy-from-env')
@@ -55,6 +57,9 @@ describe('RuntimeAPI', () => {
 
     ow.mockReturnValue(mockOWClient)
     patchOWForTunnelingIssue.mockReturnValue(mockOWClient)
+    ComputeAPI.mockImplementation(() => ({
+      sandbox: { mock: 'sandbox' }
+    }))
 
     // Create a spy that tracks modifications to the cloned object
     deepCopy.mockImplementation((obj) => {
@@ -91,6 +96,8 @@ describe('RuntimeAPI', () => {
       expect(result).toHaveProperty('triggers')
       expect(result).toHaveProperty('routes', mockOWClient.routes)
       expect(result).toHaveProperty('logForwarding')
+      expect(result).toHaveProperty('compute')
+      expect(result.compute).toHaveProperty('sandbox')
       expect(result).toHaveProperty('initOptions')
     })
 
@@ -278,6 +285,22 @@ describe('RuntimeAPI', () => {
         expect.any(LogForwardingLocalDestinationsProvider),
         undefined
       )
+    })
+
+    test('should create ComputeAPI instance with correct parameters', async () => {
+      const result = await runtimeAPI.init(validOptions)
+
+      expect(ComputeAPI).toHaveBeenCalledWith(
+        validOptions.apihost,
+        validOptions.namespace,
+        validOptions.api_key,
+        expect.objectContaining({
+          api_key: validOptions.api_key,
+          apihost: validOptions.apihost,
+          namespace: validOptions.namespace
+        })
+      )
+      expect(result.compute.sandbox).toBeDefined()
     })
 
     test('should return triggers proxy that delegates to Triggers class', async () => {

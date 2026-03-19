@@ -9,7 +9,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-/* global ow, LogForwarding */
+/* global ow, LogForwarding, ComputeAPI */
 
 /**
  * @typedef {object} OpenwhiskOptions
@@ -39,4 +39,46 @@ governing permissions and limitations under the License.
  * @property {ow.Triggers} triggers triggers
  * @property {ow.Routes} routes routes
  * @property {LogForwarding} logForwarding Log Forwarding management API
+ * @property {ComputeAPI} compute Compute management API
+ * @property {OpenwhiskOptions} initOptions init options
+ */
+
+/**
+ * @typedef {object} SandboxCreateOptions
+ * @property {string} name sandbox display name
+ * @property {string} [cluster] target cluster
+ * @property {string} [workspace] sandbox workspace
+ * @property {string|object} [size] sandbox size tier
+ * @property {string} [type] sandbox runtime type
+ * @property {number} [maxLifetime] maximum lifetime in seconds
+ * @property {object} [envs] environment variables
+ */
+
+/**
+ * @typedef {object} SandboxSize
+ * @property {string} cpu requested CPU
+ * @property {string} memory requested memory
+ * @property {number} gpu requested GPU count
+ */
+
+/**
+ * @typedef {object} SandboxSizes
+ * @property {SandboxSize} SMALL small sandbox size
+ * @property {SandboxSize} MEDIUM medium sandbox size
+ * @property {SandboxSize} LARGE large sandbox size
+ * @property {SandboxSize} XLARGE extra large sandbox size
+ */
+
+/**
+ * @typedef {object} SandboxExecOptions
+ * @property {function(string): void} [onOutput] output callback
+ * @property {number} [timeout] client-side timeout in milliseconds
+ */
+
+/**
+ * @typedef {object} SandboxExecResult
+ * @property {string} execId execution id
+ * @property {string} stdout stdout output
+ * @property {string} stderr stderr output
+ * @property {number} exitCode process exit code
  */
