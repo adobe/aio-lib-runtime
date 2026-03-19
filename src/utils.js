@@ -2231,6 +2231,27 @@ function buildAuthorizationHeader (apiKey) {
 }
 
 /**
+ * Maps an HTTP status code to a typed sandbox SDK error.
+ *
+ * @param {object} codes SDK error codes map
+ * @param {number} status HTTP status code
+ * @param {string} messageValues error message
+ * @returns {Error} the appropriate SDK error instance
+ */
+function createSandboxHttpError (codes, status, messageValues) {
+  if (status === 401 || status === 403) {
+    return new codes.ERROR_SANDBOX_UNAUTHORIZED({ messageValues })
+  }
+  if (status === 404) {
+    return new codes.ERROR_SANDBOX_NOT_FOUND({ messageValues })
+  }
+  if (status === 504) {
+    return new codes.ERROR_SANDBOX_TIMEOUT({ messageValues })
+  }
+  return new codes.ERROR_SANDBOX_CLIENT({ messageValues })
+}
+
+/**
  * Get the proxy agent for the given endpoint
  *
  * @param {string} endpoint - The endpoint to get the proxy agent for
@@ -2248,6 +2269,7 @@ function getProxyAgent (endpoint, proxyUrl, proxyOptions = {}) {
 
 module.exports = {
   buildAuthorizationHeader,
+  createSandboxHttpError,
   getProxyAgent,
   getSupportedServerRuntimes,
   checkOpenWhiskCredentials,

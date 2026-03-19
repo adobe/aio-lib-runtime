@@ -47,6 +47,7 @@ governing permissions and limitations under the License.
  * @typedef {object} SandboxCreateOptions
  * @property {string} name sandbox display name
  * @property {string} [cluster] target cluster
+ * @property {string} [region] target region (e.g. "va6", "aus3")
  * @property {string} [workspace] sandbox workspace
  * @property {string|object} [size] sandbox size tier
  * @property {string} [type] sandbox runtime type

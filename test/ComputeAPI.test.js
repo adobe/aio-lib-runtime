@@ -55,6 +55,7 @@ describe('SandboxAPI', () => {
     const result = await compute.create({
       name: 'app-instance',
       cluster: 'cluster-a',
+      region: 'va6',
       workspace: 'workspace-a',
       size: compute.sizes.SMALL,
       type: 'gpu:python',
@@ -75,6 +76,7 @@ describe('SandboxAPI', () => {
     expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({
       name: 'app-instance',
       cluster: 'cluster-a',
+      region: 'va6',
       workspace: 'workspace-a',
       size: 'SMALL',
       type: 'gpu:python',
@@ -153,8 +155,7 @@ describe('SandboxAPI', () => {
       'https://runtime.example.net/api/v1/namespaces/1234-demo/sandbox',
       expect.objectContaining({
         method: 'POST',
-        agent: { name: 'proxy-agent' },
-        rejectUnauthorized: false
+        agent: { name: 'proxy-agent' }
       })
     )
   })
@@ -202,18 +203,12 @@ describe('SandboxAPI', () => {
   test('create surfaces authorization and not-found responses', async () => {
     const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
 
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 401,
-      text: jest.fn().mockResolvedValue('unauthorized')
-    })
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 404,
-      text: jest.fn().mockResolvedValue('missing')
-    })
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 401, text: jest.fn().mockResolvedValue('unauthorized') })
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 403, text: jest.fn().mockResolvedValue('forbidden') })
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 404, text: jest.fn().mockResolvedValue('missing') })
 
-    await expect(compute.create({ name: 'sb-auth' })).rejects.toThrow(codes.ERROR_SANDBOX_UNAUTHORIZED)
+    await expect(compute.create({ name: 'sb-401' })).rejects.toThrow(codes.ERROR_SANDBOX_UNAUTHORIZED)
+    await expect(compute.create({ name: 'sb-403' })).rejects.toThrow(codes.ERROR_SANDBOX_UNAUTHORIZED)
     await expect(compute.create({ name: 'sb-missing' })).rejects.toThrow(codes.ERROR_SANDBOX_NOT_FOUND)
   })
 

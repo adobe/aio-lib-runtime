@@ -14,7 +14,7 @@ const WebSocket = require('ws')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:Sandbox', { provider: 'debug', level: process.env.LOG_LEVEL })
 const { codes } = require('./SDKErrors')
 const { createFetch } = require('@adobe/aio-lib-core-networking')
-const { buildAuthorizationHeader } = require('./utils')
+const { buildAuthorizationHeader, createSandboxHttpError } = require('./utils')
 require('./types.jsdoc') // for VS Code autocomplete
 /* global SandboxExecOptions, SandboxExecResult */
 
@@ -156,7 +156,7 @@ class Sandbox {
         timeout = setTimeout(() => {
           try { this.kill(execId) } catch (_) {}
           this._rejectPendingExec(execId, new codes.ERROR_SANDBOX_TIMEOUT({
-            messageValues: `Command '${execId}' exceeded timeout of ${options.timeout}ms`
+            messageValues: `Command '${command}' exceeded timeout of ${options.timeout}ms`
           }))
         }, options.timeout)
 
@@ -218,9 +218,9 @@ class Sandbox {
 
     if (!response.ok) {
       const message = await response.text()
-      throw new codes.ERROR_SANDBOX_CLIENT({
-        messageValues: `Could not destroy sandbox '${this.id}': ${response.status}${message ? ` ${message}` : ''}`
-      })
+      const status = response.status
+      const detail = `Could not destroy sandbox '${this.id}': ${status}${message ? ` ${message}` : ''}`
+      throw createSandboxHttpError(codes, status, detail)
     }
 
     const payload = await response.json()

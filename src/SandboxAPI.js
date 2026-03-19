@@ -12,7 +12,7 @@ governing permissions and limitations under the License.
 const { codes } = require('./SDKErrors')
 const Sandbox = require('./Sandbox')
 const { createFetch } = require('@adobe/aio-lib-core-networking')
-const { buildAuthorizationHeader } = require('./utils')
+const { buildAuthorizationHeader, createSandboxHttpError } = require('./utils')
 require('./types.jsdoc') // for VS Code autocomplete
 /* global SandboxCreateOptions, SandboxSizes */
 
@@ -105,6 +105,10 @@ class SandboxAPI {
       body.cluster = options.cluster
     }
 
+    if (options.region) {
+      body.region = options.region
+    }
+
     if (options.workspace) {
       body.workspace = options.workspace
     }
@@ -178,19 +182,7 @@ class SandboxAPI {
 
   _createHttpError (operation, status, message) {
     const messageValues = `Could not ${operation}: ${status}${message ? ` ${message}` : ''}`
-    if (status === 401 || status === 403) {
-      return new codes.ERROR_SANDBOX_UNAUTHORIZED({ messageValues })
-    }
-
-    if (status === 404) {
-      return new codes.ERROR_SANDBOX_NOT_FOUND({ messageValues })
-    }
-
-    if (status === 504) {
-      return new codes.ERROR_SANDBOX_TIMEOUT({ messageValues })
-    }
-
-    return new codes.ERROR_SANDBOX_CLIENT({ messageValues })
+    return createSandboxHttpError(codes, status, messageValues)
   }
 
   _buildAuthorizationHeader () {

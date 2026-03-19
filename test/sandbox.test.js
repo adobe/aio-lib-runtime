@@ -206,8 +206,8 @@ describe('Sandbox', () => {
       exitCode: 0
     })
     expect(onOutput).toHaveBeenCalledTimes(2)
-    expect(onOutput).toHaveBeenNthCalledWith(1, 'hello\n')
-    expect(onOutput).toHaveBeenNthCalledWith(2, 'warning\n')
+    expect(onOutput).toHaveBeenNthCalledWith(1, 'hello\n', 'stdout')
+    expect(onOutput).toHaveBeenNthCalledWith(2, 'warning\n', 'stderr')
   })
 
   test('concurrent exec calls are demultiplexed by execId', async () => {
@@ -388,7 +388,6 @@ describe('Sandbox', () => {
       {
         method: 'DELETE',
         agent: { name: 'proxy-agent' },
-        rejectUnauthorized: false,
         headers: {
           Authorization: `Basic ${Buffer.from('uuid:key').toString('base64')}`
         }
