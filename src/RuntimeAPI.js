@@ -17,6 +17,7 @@ const deepCopy = require('lodash.clonedeep')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:RuntimeAPI', { provider: 'debug', level: process.env.LOG_LEVEL })
 const LogForwarding = require('./LogForwarding')
 const LogForwardingLocalDestinationsProvider = require('./LogForwardingLocalDestinationsProvider')
+const ComputeAPI = require('./ComputeAPI')
 const { patchOWForTunnelingIssue } = require('./openwhisk-patch')
 const { getProxyAgent } = require('./utils')
 
@@ -105,6 +106,12 @@ class RuntimeAPI {
         clonedOptions.api_key,
         new LogForwardingLocalDestinationsProvider(),
         clonedOptions.auth_handler
+      ),
+      compute: new ComputeAPI(
+        clonedOptions.apihost,
+        clonedOptions.namespace,
+        clonedOptions.api_key,
+        clonedOptions
       ),
       initOptions: clonedOptions
     }
