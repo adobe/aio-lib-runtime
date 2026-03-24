@@ -16,7 +16,7 @@ const { codes } = require('./SDKErrors')
 const { createFetch } = require('@adobe/aio-lib-core-networking')
 const { buildAuthorizationHeader, createSandboxHttpError } = require('./utils')
 require('./types.jsdoc') // for VS Code autocomplete
-/* global SandboxExecOptions, SandboxExecResult */
+/* global SandboxExecOptions, SandboxExecResult, SandboxFileEntry */
 
 /**
  * Connected compute sandbox session.
@@ -43,6 +43,7 @@ class Sandbox {
     this._socket = null
     this._connectPromise = null
     this._pendingExecs = new Map()
+    this._pendingFileOps = new Map()
   }
 
   /**
@@ -187,6 +188,100 @@ class Sandbox {
   }
 
   /**
+   * Reads a file from the sandbox filesystem.
+   *
+   * @param {string} path absolute path inside the sandbox
+   * @returns {Promise<string>} file contents as a UTF-8 string
+   */
+  readFile (path) {
+    try {
+      this._ensureOpen()
+    } catch (error) {
+      return Promise.reject(error)
+    }
+
+    const execId = `file-${crypto.randomBytes(12).toString('hex')}`
+
+    const opPromise = new Promise((resolve, reject) => {
+      this._pendingFileOps.set(execId, { resolve, reject })
+    })
+
+    try {
+      this._sendFrame({ type: 'file.read', execId, path })
+    } catch (error) {
+      this._rejectPendingFileOp(execId, new codes.ERROR_SANDBOX_WEBSOCKET({
+        messageValues: `Could not send file.read frame: ${error.message}`
+      }))
+    }
+
+    return opPromise
+  }
+
+  /**
+   * Writes a file to the sandbox filesystem. Parent directories are created automatically.
+   *
+   * @param {string} path absolute path inside the sandbox
+   * @param {string|Buffer} content file contents
+   * @returns {Promise<{path: string, size: number, ok: boolean}>} write confirmation
+   */
+  writeFile (path, content) {
+    try {
+      this._ensureOpen()
+    } catch (error) {
+      return Promise.reject(error)
+    }
+
+    const execId = `file-${crypto.randomBytes(12).toString('hex')}`
+    const encoded = Buffer.isBuffer(content)
+      ? content.toString('base64')
+      : Buffer.from(content).toString('base64')
+
+    const opPromise = new Promise((resolve, reject) => {
+      this._pendingFileOps.set(execId, { resolve, reject })
+    })
+
+    try {
+      this._sendFrame({ type: 'file.write', execId, path, content: encoded, encoding: 'base64' })
+    } catch (error) {
+      this._rejectPendingFileOp(execId, new codes.ERROR_SANDBOX_WEBSOCKET({
+        messageValues: `Could not send file.write frame: ${error.message}`
+      }))
+    }
+
+    return opPromise
+  }
+
+  /**
+   * Lists the contents of a directory inside the sandbox.
+   *
+   * @param {string} path absolute directory path inside the sandbox
+   * @returns {Promise<SandboxFileEntry[]>} directory entries
+   */
+  listFiles (path) {
+    try {
+      this._ensureOpen()
+    } catch (error) {
+      return Promise.reject(error)
+    }
+
+    const execId = `file-${crypto.randomBytes(12).toString('hex')}`
+
+    const opPromise = new Promise((resolve, reject) => {
+      this._pendingFileOps.set(execId, { resolve, reject })
+    })
+
+    try {
+      this._sendFrame({ type: 'file.list', execId, path })
+    } catch (error) {
+      this._rejectPendingFileOp(execId, new codes.ERROR_SANDBOX_WEBSOCKET({
+        messageValues: `Could not send file.list frame: ${error.message}`
+      }))
+    }
+
+    return opPromise
+  }
+
+  /**
    * Destroys the sandbox and closes its WebSocket connection.
    *
    * @returns {Promise<object>} destroy response payload
@@ -236,6 +331,11 @@ class Sandbox {
       return
     }
 
+    if (this._pendingFileOps.has(frame.execId)) {
+      this._handleFileFrame(frame)
+      return
+    }
+
     const pendingExec = this._pendingExecs.get(frame.execId)
     if (!pendingExec) {
       return
@@ -273,10 +373,53 @@ class Sandbox {
     }
   }
 
+  _handleFileFrame (frame) {
+    const pendingOp = this._pendingFileOps.get(frame.execId)
+    if (!pendingOp) {
+      return
+    }
+
+    if (frame.type === 'file.content') {
+      this._pendingFileOps.delete(frame.execId)
+      const content = frame.encoding === 'base64'
+        ? Buffer.from(frame.content, 'base64').toString('utf8')
+        : (frame.content || '')
+      pendingOp.resolve(content)
+      return
+    }
+
+    if (frame.type === 'file.writeResult') {
+      this._pendingFileOps.delete(frame.execId)
+      if (!frame.ok) {
+        pendingOp.reject(new codes.ERROR_SANDBOX_CLIENT({
+          messageValues: `file.write failed for path '${frame.path}'`
+        }))
+      } else {
+        pendingOp.resolve({ path: frame.path, size: frame.size, ok: frame.ok })
+      }
+      return
+    }
+
+    if (frame.type === 'file.entries') {
+      this._pendingFileOps.delete(frame.execId)
+      pendingOp.resolve(frame.entries || [])
+      return
+    }
+
+    if (frame.type === 'error') {
+      this._rejectPendingFileOp(frame.execId, new codes.ERROR_SANDBOX_CLIENT({
+        messageValues: frame.message || `File operation '${frame.execId}' failed`
+      }))
+    }
+  }
+
   _handleClose (code) {
     const error = this._createCloseError(code)
     for (const execId of this._pendingExecs.keys()) {
       this._rejectPendingExec(execId, error)
+    }
+    for (const execId of this._pendingFileOps.keys()) {
+      this._rejectPendingFileOp(execId, error)
     }
     this._connectPromise = null
     this._socket = null
@@ -291,6 +434,16 @@ class Sandbox {
     this._pendingExecs.delete(execId)
     clearTimeout(pendingExec.timeout)
     pendingExec.reject(error)
+  }
+
+  _rejectPendingFileOp (execId, error) {
+    const pendingOp = this._pendingFileOps.get(execId)
+    if (!pendingOp) {
+      return
+    }
+
+    this._pendingFileOps.delete(execId)
+    pendingOp.reject(error)
   }
 
   _createCloseError (code) {

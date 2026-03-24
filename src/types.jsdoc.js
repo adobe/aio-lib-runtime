@@ -83,3 +83,10 @@ governing permissions and limitations under the License.
  * @property {string} stderr stderr output
  * @property {number} exitCode process exit code
  */
+
+/**
+ * @typedef {object} SandboxFileEntry
+ * @property {string} name file or directory name
+ * @property {'file'|'dir'} type entry type
+ * @property {number} [size] file size in bytes (present for files)
+ */
