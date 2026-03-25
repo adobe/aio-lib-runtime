@@ -1,4 +1,4 @@
-const EventEmitter = require('events')
+const EventEmitter = require('node:events')
 const Sandbox = require('../src/Sandbox')
 const WebSocket = require('ws')
 const { codes } = require('../src/SDKErrors')

@@ -152,7 +152,7 @@ class SandboxAPI {
     if (this.agent) {
       requestOptions.agent = this.agent
     } else if (this.ignoreCerts) {
-      const https = require('https')
+      const https = require('node:https')
       requestOptions.agent = new https.Agent({ rejectUnauthorized: false })
     }
 

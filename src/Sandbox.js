@@ -9,7 +9,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const crypto = require('crypto')
+const crypto = require('node:crypto')
 const WebSocket = require('ws')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:Sandbox', { provider: 'debug', level: process.env.LOG_LEVEL })
 const { codes } = require('./SDKErrors')
@@ -298,7 +298,7 @@ class Sandbox {
     if (this.agent) {
       requestOptions.agent = this.agent
     } else if (this.ignoreCerts) {
-      const https = require('https')
+      const https = require('node:https')
       requestOptions.agent = new https.Agent({ rejectUnauthorized: false })
     }
 
