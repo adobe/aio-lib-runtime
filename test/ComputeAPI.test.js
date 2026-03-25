@@ -250,6 +250,132 @@ describe('SandboxAPI', () => {
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
+  test('create includes policy with egress rules in the POST body', async () => {
+    const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        sandboxId: 'sb-policy',
+        token: 'tok',
+        status: 'ready'
+      })
+    })
+
+    await compute.create({
+      name: 'policy-sandbox',
+      policy: {
+        network: {
+          egress: [
+            { host: 'api.github.com', port: 443 },
+            { host: '*.adobe.io', port: 443 }
+          ]
+        }
+      }
+    })
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+    expect(body.policy).toEqual({
+      network: {
+        egress: [
+          { host: 'api.github.com', port: 443 },
+          { host: '*.adobe.io', port: 443 }
+        ]
+      }
+    })
+  })
+
+  test('create includes policy with allow-all egress in the POST body', async () => {
+    const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        sandboxId: 'sb-allow',
+        token: 'tok',
+        status: 'ready'
+      })
+    })
+
+    await compute.create({
+      name: 'allow-all-sandbox',
+      policy: { network: { egress: 'allow-all' } }
+    })
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+    expect(body.policy).toEqual({ network: { egress: 'allow-all' } })
+  })
+
+  test('create includes policy with empty egress array in the POST body', async () => {
+    const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        sandboxId: 'sb-deny',
+        token: 'tok',
+        status: 'ready'
+      })
+    })
+
+    await compute.create({
+      name: 'deny-all-sandbox',
+      policy: { network: { egress: [] } }
+    })
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+    expect(body.policy).toEqual({ network: { egress: [] } })
+  })
+
+  test('create omits policy from the POST body when not provided', async () => {
+    const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        sandboxId: 'sb-nopolicy',
+        token: 'tok',
+        status: 'ready'
+      })
+    })
+
+    await compute.create({ name: 'no-policy-sandbox' })
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+    expect(body).not.toHaveProperty('policy')
+  })
+
+  test('create passes through egress rules with protocol field', async () => {
+    const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        sandboxId: 'sb-proto',
+        token: 'tok',
+        status: 'ready'
+      })
+    })
+
+    await compute.create({
+      name: 'protocol-sandbox',
+      policy: {
+        network: {
+          egress: [
+            { host: 'api.github.com', port: 443 },
+            { host: 'ntp.ubuntu.com', port: 123, protocol: 'UDP' }
+          ]
+        }
+      }
+    })
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+    expect(body.policy.network.egress).toEqual([
+      { host: 'api.github.com', port: 443 },
+      { host: 'ntp.ubuntu.com', port: 123, protocol: 'UDP' }
+    ])
+  })
+
   test('builds an auth header from the provided api key', () => {
     const compute = new SandboxAPI('https://runtime.example.net', undefined, 'uuid:key')
 

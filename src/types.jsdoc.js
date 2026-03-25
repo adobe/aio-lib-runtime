@@ -44,6 +44,23 @@ governing permissions and limitations under the License.
  */
 
 /**
+ * @typedef {object} EgressRule
+ * @property {string} host - FQDN, wildcard FQDN (*.domain), IP address, or CIDR range
+ * @property {number} port - Destination port (1-65535)
+ * @property {string} [protocol='TCP'] - 'TCP' or 'UDP'
+ */
+
+/**
+ * @typedef {object} NetworkPolicyOptions
+ * @property {EgressRule[]|'allow-all'} [egress] - Allowed outbound endpoints, or 'allow-all' to permit all egress
+ */
+
+/**
+ * @typedef {object} PolicyOptions
+ * @property {NetworkPolicyOptions} [network] - Network policy configuration
+ */
+
+/**
  * @typedef {object} SandboxCreateOptions
  * @property {string} name sandbox display name
  * @property {string} [cluster] target cluster
@@ -53,6 +70,7 @@ governing permissions and limitations under the License.
  * @property {string} [type] sandbox runtime type
  * @property {number} [maxLifetime] maximum lifetime in seconds
  * @property {object} [envs] environment variables
+ * @property {PolicyOptions} [policy] - Network policy for the sandbox. When omitted, default-deny applies (DNS + NATS only).
  */
 
 /**

@@ -117,6 +117,10 @@ class SandboxAPI {
       body.envs = options.envs
     }
 
+    if (options.policy) {
+      body.policy = options.policy
+    }
+
     return body
   }
 
