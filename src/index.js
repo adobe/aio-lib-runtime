@@ -16,7 +16,7 @@ const deployActions = require('./deploy-actions')
 const undeployActions = require('./undeploy-actions')
 const printActionLogs = require('./print-action-logs')
 const RuntimeAPI = require('./RuntimeAPI')
-const NetworkPolicy = require('./SandboxNetworkPolicy')
+const SandboxNetworkPolicy = require('./SandboxNetworkPolicy')
 
 require('./types.jsdoc') // for VS Code autocomplete
 /* global OpenwhiskOptions, OpenwhiskClient */ // for linter
@@ -50,5 +50,5 @@ module.exports = {
   undeployActions,
   printActionLogs,
   utils,
-  NetworkPolicy
+  SandboxNetworkPolicy
 }
