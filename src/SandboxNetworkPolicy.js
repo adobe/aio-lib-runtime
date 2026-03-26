@@ -17,7 +17,6 @@ governing permissions and limitations under the License.
 //
 //   policy: { network: NetworkPolicy.base }
 //
-// Modelled after https://github.com/NVIDIA/OpenShell-Community/blob/main/sandboxes/base/policy.yaml
 // ---------------------------------------------------------------------------
 
 const freeze = obj => Object.freeze({ egress: Object.freeze(obj.egress) })
