@@ -81,6 +81,28 @@ const result = await sandbox.exec('curl -s --connect-timeout 5 -o /dev/null -w "
 console.log(`  github.com   (allowed) → HTTP ${result.stdout.trim()}`)
 ```
 
+## Write to Stdin
+
+### Command start
+```js
+const result = await sandbox.exec('python process_csv.py', {
+  stdin: 'col1,col2\nval1,val2\n',
+  timeout: 10000
+})
+console.log('stdout:', result.stdout.trim())
+```
+
+### Running command
+```js
+const execPromise = sandbox.exec('cat')
+sandbox.writeStdin(execPromise.execId, 'line 1\n')
+sandbox.writeStdin(execPromise.execId, 'line 2\n')
+sandbox.closeStdin(execPromise.execId)
+
+const result = await execPromise
+console.log('stdout:', result.stdout.trim())
+```
+
 ## Destroy
 
 ```js

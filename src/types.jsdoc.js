@@ -92,6 +92,7 @@ governing permissions and limitations under the License.
  * @typedef {object} SandboxExecOptions
  * @property {function(string): void} [onOutput] output callback
  * @property {number} [timeout] client-side timeout in milliseconds
+ * @property {string|Buffer} [stdin] data to send to stdin and close automatically
  */
 
 /**

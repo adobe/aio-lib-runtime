@@ -168,6 +168,10 @@ class Sandbox {
     execPromise.execId = execId
     try {
       this._sendFrame({ type: 'exec.run', execId, command })
+      if (options.stdin !== undefined) {
+        this.writeStdin(execId, options.stdin)
+        this.closeStdin(execId)
+      }
     } catch (error) {
       this._rejectPendingExec(execId, new codes.ERROR_SANDBOX_WEBSOCKET({
         messageValues: `Could not send exec frame: ${error.message}`
@@ -185,6 +189,36 @@ class Sandbox {
   kill (execId, signal = 'SIGTERM') {
     this._ensureOpen()
     this._sendFrame({ type: 'exec.kill', execId, signal })
+  }
+
+  /**
+   * Writes data to the stdin of a running command.
+   * Fire-and-forget — there is no response on success.
+   *
+   * @param {string} execId execution id from exec()
+   * @param {string|Buffer} data data to write (Buffer is base64-encoded on the wire)
+   */
+  writeStdin (execId, data) {
+    this._ensureOpen()
+    const frame = { type: 'exec.input', execId }
+    if (Buffer.isBuffer(data)) {
+      frame.data = data.toString('base64')
+      frame.encoding = 'base64'
+    } else {
+      frame.data = data
+    }
+    this._sendFrame(frame)
+  }
+
+  /**
+   * Closes stdin for a running command, delivering EOF.
+   * Fire-and-forget — there is no response on success.
+   *
+   * @param {string} execId execution id from exec()
+   */
+  closeStdin (execId) {
+    this._ensureOpen()
+    this._sendFrame({ type: 'exec.endInput', execId })
   }
 
   /**

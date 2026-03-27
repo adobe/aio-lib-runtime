@@ -455,4 +455,110 @@ describe('Sandbox', () => {
       `Basic ${Buffer.from('uuid:key').toString('base64')}`
     )
   })
+
+  describe('writeStdin / closeStdin', () => {
+    let sandbox
+    let fakeWS
+
+    async function connectSandbox (sb) {
+      const p = sb.connect()
+      sockets[sockets.length - 1].open()
+      sockets[sockets.length - 1].message({ type: 'auth.ok', sandboxId: sandboxOptions.id })
+      await p
+      fakeWS = sockets[sockets.length - 1]
+    }
+
+    beforeEach(async () => {
+      sandbox = new Sandbox(sandboxOptions)
+      await connectSandbox(sandbox)
+    })
+
+    test('writeStdin sends exec.input frame with text data', () => {
+      sandbox.writeStdin('exec-abc', 'print("hello")\n')
+
+      const frame = JSON.parse(fakeWS.sent[fakeWS.sent.length - 1])
+      expect(frame).toEqual({
+        type: 'exec.input',
+        execId: 'exec-abc',
+        data: 'print("hello")\n'
+      })
+    })
+
+    test('writeStdin sends base64-encoded frame for Buffer', () => {
+      const buf = Buffer.from('binary-data')
+      sandbox.writeStdin('exec-abc', buf)
+
+      const frame = JSON.parse(fakeWS.sent[fakeWS.sent.length - 1])
+      expect(frame).toEqual({
+        type: 'exec.input',
+        execId: 'exec-abc',
+        data: buf.toString('base64'),
+        encoding: 'base64'
+      })
+    })
+
+    test('writeStdin throws when socket not connected', () => {
+      fakeWS.readyState = 3
+      expect(() => sandbox.writeStdin('exec-abc', 'data')).toThrow(codes.ERROR_SANDBOX_WEBSOCKET)
+    })
+
+    test('closeStdin sends exec.endInput frame', () => {
+      sandbox.closeStdin('exec-abc')
+
+      const frame = JSON.parse(fakeWS.sent[fakeWS.sent.length - 1])
+      expect(frame).toEqual({
+        type: 'exec.endInput',
+        execId: 'exec-abc'
+      })
+    })
+
+    test('closeStdin throws when socket not connected', () => {
+      fakeWS.readyState = 3
+      expect(() => sandbox.closeStdin('exec-abc')).toThrow(codes.ERROR_SANDBOX_WEBSOCKET)
+    })
+
+    test('exec with stdin option sends run + input + endInput', async () => {
+      const execPromise = sandbox.exec('cat', { stdin: 'hello world\n' })
+      const { execId } = execPromise
+
+      const sentAfterAuth = fakeWS.sent.slice(1).map(s => JSON.parse(s))
+      expect(sentAfterAuth).toEqual([
+        { type: 'exec.run', execId, command: 'cat' },
+        { type: 'exec.input', execId, data: 'hello world\n' },
+        { type: 'exec.endInput', execId }
+      ])
+
+      fakeWS.message({ type: 'exec.exit', execId, exitCode: 0 })
+      await execPromise
+    })
+
+    test('exec with Buffer stdin sends base64 input', async () => {
+      const buf = Buffer.from('binary-stdin')
+      const execPromise = sandbox.exec('process', { stdin: buf })
+      const { execId } = execPromise
+
+      const sentAfterAuth = fakeWS.sent.slice(1).map(s => JSON.parse(s))
+      expect(sentAfterAuth).toEqual([
+        { type: 'exec.run', execId, command: 'process' },
+        { type: 'exec.input', execId, data: buf.toString('base64'), encoding: 'base64' },
+        { type: 'exec.endInput', execId }
+      ])
+
+      fakeWS.message({ type: 'exec.exit', execId, exitCode: 0 })
+      await execPromise
+    })
+
+    test('exec without stdin option does not send input frames', async () => {
+      const execPromise = sandbox.exec('ls')
+      const { execId } = execPromise
+
+      const sentAfterAuth = fakeWS.sent.slice(1).map(s => JSON.parse(s))
+      expect(sentAfterAuth).toEqual([
+        { type: 'exec.run', execId, command: 'ls' }
+      ])
+
+      fakeWS.message({ type: 'exec.exit', execId, exitCode: 0 })
+      await execPromise
+    })
+  })
 })
