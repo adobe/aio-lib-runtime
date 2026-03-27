@@ -49,3 +49,8 @@ module.exports = {
 
 // Define your error codes with the wrapper
 E('ERROR_SDK_INITIALIZATION', 'SDK initialization error(s). Missing arguments: %s')
+E('ERROR_SANDBOX_CLIENT', 'Sandbox client error: %s')
+E('ERROR_SANDBOX_NOT_FOUND', 'Sandbox not found: %s')
+E('ERROR_SANDBOX_UNAUTHORIZED', 'Sandbox authorization error: %s')
+E('ERROR_SANDBOX_TIMEOUT', 'Sandbox timeout error: %s')
+E('ERROR_SANDBOX_WEBSOCKET', 'Sandbox WebSocket error: %s')
