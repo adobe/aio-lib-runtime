@@ -21,8 +21,6 @@ const runtime = await init({
 ## Create Sandbox
 
 ```js
-const { SandboxNetworkPolicy } = require('@adobe/aio-lib-runtime')
-
 const sandbox = await runtime.compute.sandbox.create({
   name: 'my-sandbox',
   type: 'cpu:nodejs',
@@ -30,9 +28,6 @@ const sandbox = await runtime.compute.sandbox.create({
   maxLifetime: 3600,
   envs: {
     API_KEY: 'your-api-key'
-  },
-  policy: {
-    network: SandboxNetworkPolicy.base
   }
 })
 ```
@@ -116,48 +111,6 @@ await sandbox.destroy()
 Sandboxes are default-deny. All outbound traffic is blocked unless explicitly allowed.
 
 At creation time, a `policy.network` field is passed with an egress allowlist of `{ host, port }` pairs. Only matching traffic is permitted.
-
-This library provides composable presets (`SandboxNetworkPolicy.github`, `.pypi`, etc.) as starting points for common services.
-
-### Base Policy
-
-Includes GitHub, Anthropic, npm, pypi, and others.
-
-See [SandboxNetworkPolicy.js](../src/SandboxNetworkPolicy.js) for the full list.
-
-```js
-const { SandboxNetworkPolicy } = require('@adobe/aio-lib-runtime')
-
-const sandbox = await runtime.compute.sandbox.create({
-  name: 'my-sandbox',
-  type: 'cpu:nodejs',
-  workspace: 'workspace',
-  maxLifetime: 3600,
-  envs: { API_KEY: 'your-api-key' },
-  policy: { network: SandboxNetworkPolicy.base }
-})
-```
-
-### Specific Services
-
-```js
-const { SandboxNetworkPolicy } = require('@adobe/aio-lib-runtime')
-
-const sandbox = await runtime.compute.sandbox.create({
-  name: 'policy-composed',
-  type: 'cpu:nodejs',
-  workspace: 'policy-test',
-  maxLifetime: 300,
-  policy: {
-    network: {
-      egress: [
-        ...SandboxNetworkPolicy.github.egress,
-        ...SandboxNetworkPolicy.pypi.egress
-      ]
-    }
-  }
-})
-```
 
 ### Specific Hosts/Ports
 
