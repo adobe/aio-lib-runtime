@@ -356,6 +356,28 @@ declare type OpenwhiskClient = {
 };
 
 /**
+ * @property methods - HTTP methods to allow (e.g. ['GET', 'POST'])
+ * @property pathPattern - URL path pattern to match (e.g. '/repos/**')
+ */
+declare type L7Rule = {
+    methods: string[];
+    pathPattern: string;
+};
+
+/**
+ * @property host - FQDN, wildcard FQDN (*.domain), IP address, or CIDR range
+ * @property port - Destination port (1-65535)
+ * @property [protocol] - 'TCP' or 'UDP' (default: 'TCP')
+ * @property [rules] - Optional L7 HTTP rules; when present, only matching method+path combinations are allowed
+ */
+declare type EgressRule = {
+    host: string;
+    port: number;
+    protocol?: string;
+    rules?: L7Rule[];
+};
+
+/**
  * @property name - sandbox display name
  * @property [cluster] - target cluster
  * @property [workspace] - sandbox workspace
@@ -363,6 +385,7 @@ declare type OpenwhiskClient = {
  * @property [type] - sandbox runtime type
  * @property [maxLifetime] - maximum lifetime in seconds
  * @property [envs] - environment variables
+ * @property [policy] - network policy; when omitted, default-deny applies (DNS + NATS only)
  */
 declare type SandboxCreateOptions = {
     name: string;
@@ -372,6 +395,11 @@ declare type SandboxCreateOptions = {
     type?: string;
     maxLifetime?: number;
     envs?: any;
+    policy?: {
+        network?: {
+            egress?: EgressRule[] | 'allow-all';
+        };
+    };
 };
 
 /**

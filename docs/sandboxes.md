@@ -110,26 +110,29 @@ await sandbox.destroy()
 
 Sandboxes are default-deny. All outbound traffic is blocked unless explicitly allowed.
 
-At creation time, a `policy.network` field is passed with an egress allowlist of `{ host, port }` pairs. Only matching traffic is permitted.
-
-### Specific Hosts/Ports
+Pass a `policy.network.egress` array at creation time to allowlist outbound endpoints, paths, or HTTP verbs.
 
 ```js
 const sandbox = await runtime.compute.sandbox.create({
-  name: 'policy-composed',
+  name: 'policy-sandbox',
   workspace: 'policy-test',
   maxLifetime: 300,
   policy: {
     network: {
       egress: [
-        { host: 'httpbin.org', port: 443 }
+        { host: 'httpbin.org', port: 443 },
+        {
+          host: 'api.github.com',
+          port: 443,
+          rules: [{ methods: ['GET'], pathPattern: '/repos/**' }]
+        }
       ]
     }
   }
 })
 ```
 
-### Allow All (Debug only)
+### Allow All (Not recommended for production)
 
 ```js
 const sandbox = await runtime.compute.sandbox.create({

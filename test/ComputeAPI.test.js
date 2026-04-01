@@ -345,6 +345,49 @@ describe('SandboxAPI', () => {
     expect(body).not.toHaveProperty('policy')
   })
 
+  test('create includes egress rules with L7 rules in the POST body', async () => {
+    const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        sandboxId: 'sb-l7',
+        token: 'tok',
+        status: 'ready'
+      })
+    })
+
+    await compute.create({
+      name: 'l7-sandbox',
+      policy: {
+        network: {
+          egress: [
+            {
+              host: 'api.github.com',
+              port: 443,
+              rules: [
+                { methods: ['GET'], pathPattern: '/repos/**' },
+                { methods: ['GET', 'POST'], pathPattern: '/gists' }
+              ]
+            }
+          ]
+        }
+      }
+    })
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+    expect(body.policy.network.egress).toEqual([
+      {
+        host: 'api.github.com',
+        port: 443,
+        rules: [
+          { methods: ['GET'], pathPattern: '/repos/**' },
+          { methods: ['GET', 'POST'], pathPattern: '/gists' }
+        ]
+      }
+    ])
+  })
+
   test('create passes through egress rules with protocol field', async () => {
     const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
 

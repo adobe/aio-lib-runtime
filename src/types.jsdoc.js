@@ -44,10 +44,17 @@ governing permissions and limitations under the License.
  */
 
 /**
+ * @typedef {object} L7Rule
+ * @property {string[]} methods - HTTP methods to allow (e.g. ['GET', 'POST'])
+ * @property {string} pathPattern - URL path pattern to match (e.g. '/repos/**')
+ */
+
+/**
  * @typedef {object} EgressRule
  * @property {string} host - FQDN, wildcard FQDN (*.domain), IP address, or CIDR range
  * @property {number} port - Destination port (1-65535)
  * @property {string} [protocol='TCP'] - 'TCP' or 'UDP'
+ * @property {L7Rule[]} [rules] - Optional L7 HTTP rules; when present, only matching method+path combinations are allowed
  */
 
 /**
