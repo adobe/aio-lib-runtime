@@ -28,7 +28,8 @@
     "openwhisk-fqn": "0.0.2",
     "proxy-from-env": "^1.1.0",
     "sha1": "^1.1.1",
-    "webpack": "^5.26.3"
+    "webpack": "^5.26.3",
+    "ws": "^8.19.0"
   },
   "deprecated": false,
   "description": "Adobe I/O Runtime Lib",

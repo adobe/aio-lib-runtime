@@ -143,6 +143,33 @@ declare function prepareToBuildAction(action: any, root: string, dist: string): 
 declare function zipActions(buildsList: ActionBuild[], lastBuildsPath: string, distFolder: string): string[];
 
 /**
+ * Compute Sandbox management API.
+ * @param apiHost - Runtime API host
+ * @param namespace - Runtime namespace
+ * @param apiKey - Runtime auth key
+ * @param [options] - SDK transport options
+ */
+declare class ComputeSandbox {
+    constructor(apiHost: string, namespace: string, apiKey: string, options?: any);
+    /**
+     * Creates a new compute sandbox and connects its WebSocket session.
+     * @param [options] - sandbox create options
+     * @returns connected sandbox instance
+     */
+    create(options?: SandboxCreateOptions): Promise<Sandbox>;
+    /**
+     * Connects to an existing compute sandbox.
+     * @param options - sandbox reconnect options
+     * @returns connected sandbox instance
+     */
+    connect(options: SandboxConnectOptions): Promise<Sandbox>;
+    /**
+     * Named sandbox sizes.
+     */
+    static sizes: SandboxSizes;
+}
+
+/**
  * @property [actions] - filter list of actions to deploy by provided array, e.g. ['name1', ..]
  * @property [byBuiltActions] - if true, trim actions from the manifest based on the already built actions
  * @property [sequences] - filter list of sequences to deploy, e.g. ['name1', ..]
@@ -197,6 +224,17 @@ declare function deployWsk(scriptConfig: any, manifestContent: any, logFunc: any
 declare function init(options: OpenwhiskOptions): Promise<OpenwhiskClient>;
 
 /**
+ * This patches the Openwhisk client to handle a tunneling issue with openwhisk > v3.0.0
+ * See https://github.com/tomas/needle/issues/406
+ *
+ * Once openwhisk.js supports the use_proxy_from_env_var option (for needle), we can remove this patch.
+ * @param ow - the Openwhisk object to patch
+ * @param use_proxy_from_env_var - the needle option to add
+ * @returns the patched openwhisk object
+ */
+declare function patchOWForTunnelingIssue(ow: any, use_proxy_from_env_var: boolean): any;
+
+/**
  * Prints action logs.
  * @param config - openwhisk config
  * @param logger - an instance of a logger to emit messages to
@@ -213,6 +251,36 @@ declare function init(options: OpenwhiskOptions): Promise<OpenwhiskClient>;
  * @returns activation timestamp of the last retrieved activation or null
  */
 declare function printActionLogs(config: any, logger: any, limit: number, filterActions: any[], strip: boolean, tail: boolean, fetchLogsInterval?: number, startTime: number): any;
+
+/**
+ * Connected compute sandbox session.
+ * @param options - sandbox options
+ */
+declare class Sandbox {
+    constructor(options: any);
+    /**
+     * Opens the sandbox WebSocket connection.
+     */
+    connect(): Promise<void>;
+    /**
+     * Executes a command inside the sandbox.
+     * @param command - command to execute
+     * @param [options] - execution options
+     * @returns execution result promise
+     */
+    exec(command: string, options?: SandboxExecOptions): Promise<SandboxExecResult>;
+    /**
+     * Sends a kill signal to a running command.
+     * @param execId - execution id
+     * @param [signal = SIGTERM] - signal to deliver
+     */
+    kill(execId: string, signal?: string): Promise<void>;
+    /**
+     * Destroys the sandbox and closes its WebSocket connection.
+     * @returns destroy response payload
+     */
+    destroy(): Promise<object>;
+}
 
 /**
  * A class to manage triggers
@@ -271,6 +339,8 @@ declare type OpenwhiskRetryOptions = {
  * @property triggers - triggers
  * @property routes - routes
  * @property logForwarding - Log Forwarding management API
+ * @property compute - Compute sandbox management API
+ * @property initOptions - init options
  */
 declare type OpenwhiskClient = {
     actions: ow.Actions;
@@ -281,6 +351,110 @@ declare type OpenwhiskClient = {
     triggers: ow.Triggers;
     routes: ow.Routes;
     logForwarding: LogForwarding;
+    compute: any;
+    initOptions: OpenwhiskOptions;
+};
+
+/**
+ * @property methods - HTTP methods to allow (e.g. ['GET', 'POST'])
+ * @property pathPattern - URL path pattern to match (e.g. '/repos/**')
+ */
+declare type L7Rule = {
+    methods: string[];
+    pathPattern: string;
+};
+
+/**
+ * @property host - FQDN, wildcard FQDN (*.domain), IP address, or CIDR range
+ * @property port - Destination port (1-65535)
+ * @property [protocol] - 'TCP' or 'UDP' (default: 'TCP')
+ * @property [rules] - Optional L7 HTTP rules; when present, only matching method+path combinations are allowed
+ */
+declare type EgressRule = {
+    host: string;
+    port: number;
+    protocol?: string;
+    rules?: L7Rule[];
+};
+
+/**
+ * @property name - sandbox display name
+ * @property [cluster] - target cluster
+ * @property [workspace] - sandbox workspace
+ * @property [size] - sandbox size tier
+ * @property [type] - sandbox runtime type
+ * @property [maxLifetime] - maximum lifetime in seconds
+ * @property [envs] - environment variables
+ * @property [policy] - network policy; when omitted, default-deny applies (DNS + NATS only)
+ */
+declare type SandboxCreateOptions = {
+    name: string;
+    cluster?: string;
+    workspace?: string;
+    size?: string | any;
+    type?: string;
+    maxLifetime?: number;
+    envs?: any;
+    policy?: {
+        network?: {
+            egress?: EgressRule[] | 'allow-all';
+        };
+    };
+};
+
+/**
+ * @property sandboxId - sandbox identifier
+ * @property token - sandbox token
+ */
+declare type SandboxConnectOptions = {
+    sandboxId: string;
+    token: string;
+};
+
+/**
+ * @property cpu - requested CPU
+ * @property memory - requested memory
+ * @property gpu - requested GPU count
+ */
+declare type SandboxSize = {
+    cpu: string;
+    memory: string;
+    gpu: number;
+};
+
+/**
+ * @property SMALL - small sandbox size
+ * @property MEDIUM - medium sandbox size
+ * @property LARGE - large sandbox size
+ * @property XLARGE - extra large sandbox size
+ */
+declare type SandboxSizes = {
+    SMALL: SandboxSize;
+    MEDIUM: SandboxSize;
+    LARGE: SandboxSize;
+    XLARGE: SandboxSize;
+};
+
+/**
+ * @property [onOutput] - output callback
+ * @property [timeoutMs] - client-side timeout in milliseconds
+ */
+declare type SandboxExecOptions = {
+    onOutput?: (...params: any[]) => any;
+    timeoutMs?: number;
+};
+
+/**
+ * @property execId - execution id
+ * @property stdout - stdout output
+ * @property stderr - stderr output
+ * @property exitCode - process exit code
+ */
+declare type SandboxExecResult = {
+    execId: string;
+    stdout: string;
+    stderr: string;
+    exitCode: number;
 };
 
 /**
@@ -735,6 +909,21 @@ declare function createSequenceObject(fullName: string, manifestSequence: Manife
 declare function createActionObject(fullName: string, manifestAction: ManifestAction): OpenWhiskEntitiesAction;
 
 /**
+ * Load the IMS credentials from the environment variables.
+ * @returns the IMS auth object
+ */
+declare function loadIMSCredentialsFromEnv(): any;
+
+/**
+ * Get the inputs for the include-ims-credentials annotation.
+ * Throws an error if the imsAuthObject is incomplete.
+ * @param thisAction - the action to process
+ * @param imsAuthObject - the IMS auth object
+ * @returns the inputs or undefined with a warning
+ */
+declare function getIncludeIMSCredentialsAnnotationInputs(thisAction: any, imsAuthObject: any): any | undefined;
+
+/**
  * Process the manifest and deployment content and returns deployment entities.
  * @param packages - the manifest packages
  * @param deploymentPackages - the deployment packages
@@ -941,4 +1130,13 @@ declare function dumpActionsBuiltInfo(lastBuiltActionsPath: string, actionBuildD
  * @returns a list of runtime kinds supported by the runtime apihost
  */
 declare function getSupportedServerRuntimes(apihost: string): string[];
+
+/**
+ * Get the proxy agent for the given endpoint
+ * @param endpoint - The endpoint to get the proxy agent for
+ * @param proxyUrl - The proxy URL to use
+ * @param proxyOptions - The proxy options to use
+ * @returns - The proxy agent
+ */
+declare function getProxyAgent(endpoint: string, proxyUrl: string, proxyOptions: any): PatchedHttpsProxyAgent | HttpProxyAgent;
 
