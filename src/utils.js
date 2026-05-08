@@ -1853,7 +1853,7 @@ function checkOpenWhiskCredentials (config) {
  * @returns {boolean} true if action is an agent
  */
 function isAgent (action) {
-  return action?.runtime === 'nodejs:22'
+  return action?.runtime?.startsWith('restate:')
 }
 
 /**
