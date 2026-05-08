@@ -2575,6 +2575,7 @@ describe('validateActionRuntime', () => {
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:20' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:22' } })).not.toThrow()
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:24' } })).not.toThrow()
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'restate:nodejs:23' } })).not.toThrow()
   })
   test('no exec', () => {
     expect(utils.validateActionRuntime({})).toBeUndefined()
@@ -2590,6 +2591,9 @@ describe('validateActionRuntime', () => {
   })
   test('invalid nodejs version', () => {
     expect(() => utils.validateActionRuntime({ exec: { kind: 'nodejs:17' } })).toThrow('Unsupported node version')
+  })
+  test('invalid restate kind', () => {
+    expect(() => utils.validateActionRuntime({ exec: { kind: 'restate:nodejs:99' } })).toThrow('Unsupported node version')
   })
 
   test('dumpActionsBuiltInfo might catch some errors under unlikely conditions', async () => {
@@ -2619,7 +2623,7 @@ describe('validateActionRuntime', () => {
 describe('getSupportedServerRuntimes', () => {
   const APIHOST = 'https://some-server.net'
 
-  test('success', async () => {
+  test('success with nodejs kinds', async () => {
     const result = {
       runtimes: {
         nodejs: [
@@ -2641,6 +2645,32 @@ describe('getSupportedServerRuntimes', () => {
       ])
   })
 
+  test('success with nodejs and restate kinds', async () => {
+    const result = {
+      runtimes: {
+        nodejs: [
+          { kind: 'nodejs:22' },
+          { kind: 'nodejs:24' }
+        ],
+        'restate:nodejs': [
+          { kind: 'restate:nodejs:23' }
+        ]
+      }
+    }
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => result
+    })
+
+    await expect(utils.getSupportedServerRuntimes(APIHOST))
+      .resolves.toEqual([
+        'nodejs:22',
+        'nodejs:24',
+        'restate:nodejs:23'
+      ])
+  })
+
   test('http error', async () => {
     mockFetch.mockResolvedValue({
       status: 403,
@@ -2651,10 +2681,8 @@ describe('getSupportedServerRuntimes', () => {
       .rejects.toThrow('HTTP 403 - An error occurred when retrieving supported runtimes.')
   })
 
-  test('json error', async () => {
-    const result = {
-      runtimes: {}
-    }
+  test('json error - missing runtimes key', async () => {
+    const result = {}
 
     mockFetch.mockResolvedValue({
       status: 200,

@@ -20,7 +20,7 @@ const globby = require('globby')
 const path = require('path')
 const archiver = require('archiver')
 // this is a static list that comes from here:  https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
-const SupportedRuntimes = ['sequence', 'blackbox', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18', 'nodejs:20', 'nodejs:22', 'nodejs:24']
+const SupportedRuntimes = ['sequence', 'blackbox', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18', 'nodejs:20', 'nodejs:22', 'nodejs:24', 'restate:nodejs:23']
 const { HttpProxyAgent } = require('http-proxy-agent')
 const PatchedHttpsProxyAgent = require('./PatchedHttpsProxyAgent.js')
 
@@ -2080,9 +2080,12 @@ function validateActionRuntime (action) {
   // comes from action: runtime: in manifest -jm
   // it would be nice if we didn't throw an excption when we could just return a boolean, otherwise the caller
   // has to wrap this in a try/catch block -jm
-  if (action.exec && action.exec.kind && action.exec.kind.toLowerCase().startsWith('nodejs:')) {
-    if (!SupportedRuntimes.includes(action.exec.kind)) {
-      throw new Error(`Unsupported node version '${action.exec.kind}' in action ${action.name}. Supported versions are ${SupportedRuntimes}`)
+  if (action.exec && action.exec.kind) {
+    const kindLower = action.exec.kind.toLowerCase()
+    if (kindLower.startsWith('nodejs:') || kindLower.startsWith('restate:')) {
+      if (!SupportedRuntimes.includes(action.exec.kind)) {
+        throw new Error(`Unsupported node version '${action.exec.kind}' in action ${action.name}. Supported versions are ${SupportedRuntimes}`)
+      }
     }
   }
 }
@@ -2176,7 +2179,7 @@ async function getSupportedServerRuntimes (apihost) {
 
   const json = await response.json()
   aioLogger.debug(`Result from ${apihost}: ${JSON.stringify(json, null, 2)}`)
-  return json.runtimes.nodejs.map(item => item.kind)
+  return Object.values(json.runtimes).flat().map(item => item.kind)
 }
 
 /**
