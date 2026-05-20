@@ -116,3 +116,9 @@ governing permissions and limitations under the License.
  * @property {'file'|'dir'} type entry type
  * @property {number} [size] file size in bytes (present for files)
  */
+
+/**
+ * @typedef {object} SandboxGetUrlOptions
+ * @property {number} port port number inside the sandbox (integer 1–65535)
+ * @property {'http'|'https'} [protocol] overrides the scheme from the environment's publicUrlTemplate; when omitted, the template's scheme is used
+ */

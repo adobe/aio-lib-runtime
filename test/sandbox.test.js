@@ -439,6 +439,60 @@ describe('Sandbox', () => {
     expect(sandbox.status).toBe('ready')
   })
 
+  describe('getUrl', () => {
+    const publicUrlTemplate = 'https://{sandboxId}-va6-0-xK3mPq2nAeB-{port}.sandbox-adobeioruntime.net'
+
+    test('substitutes sandboxId and port into the template', async () => {
+      const sandbox = new Sandbox({ ...sandboxOptions, publicUrlTemplate })
+
+      const url = await sandbox.getUrl({ port: 3000 })
+
+      expect(url).toBe('https://sb-1234-va6-0-xK3mPq2nAeB-3000.sandbox-adobeioruntime.net')
+    })
+
+    test('overrides the scheme when protocol is provided', async () => {
+      const sandbox = new Sandbox({ ...sandboxOptions, publicUrlTemplate })
+
+      expect(await sandbox.getUrl({ port: 8080, protocol: 'http' }))
+        .toBe('http://sb-1234-va6-0-xK3mPq2nAeB-8080.sandbox-adobeioruntime.net')
+
+      expect(await sandbox.getUrl({ port: 443, protocol: 'https' }))
+        .toBe('https://sb-1234-va6-0-xK3mPq2nAeB-443.sandbox-adobeioruntime.net')
+    })
+
+    test('uses the template scheme verbatim when no protocol is provided', async () => {
+      const httpTemplate = 'http://{sandboxId}-use1-0-abc123def45-{port}.localhost:8080'
+      const sandbox = new Sandbox({ ...sandboxOptions, publicUrlTemplate: httpTemplate })
+
+      const url = await sandbox.getUrl({ port: 3000 })
+
+      expect(url).toBe('http://sb-1234-use1-0-abc123def45-3000.localhost:8080')
+    })
+
+    test('throws ERROR_SANDBOX_CLIENT when publicUrlTemplate is not available', async () => {
+      const sandbox = new Sandbox({ ...sandboxOptions })
+
+      await expect(sandbox.getUrl({ port: 3000 })).rejects.toThrow(codes.ERROR_SANDBOX_CLIENT)
+    })
+
+    test('throws ERROR_SANDBOX_CLIENT for invalid port values', async () => {
+      const sandbox = new Sandbox({ ...sandboxOptions, publicUrlTemplate })
+
+      await expect(sandbox.getUrl({ port: 0 })).rejects.toThrow(codes.ERROR_SANDBOX_CLIENT)
+      await expect(sandbox.getUrl({ port: 65536 })).rejects.toThrow(codes.ERROR_SANDBOX_CLIENT)
+      await expect(sandbox.getUrl({ port: 3.5 })).rejects.toThrow(codes.ERROR_SANDBOX_CLIENT)
+      await expect(sandbox.getUrl({ port: 'http' })).rejects.toThrow(codes.ERROR_SANDBOX_CLIENT)
+      await expect(sandbox.getUrl({})).rejects.toThrow(codes.ERROR_SANDBOX_CLIENT)
+    })
+
+    test('accepts boundary port values 1 and 65535', async () => {
+      const sandbox = new Sandbox({ ...sandboxOptions, publicUrlTemplate })
+
+      await expect(sandbox.getUrl({ port: 1 })).resolves.toContain('-1.')
+      await expect(sandbox.getUrl({ port: 65535 })).resolves.toContain('-65535.')
+    })
+  })
+
   test('rejecting an unknown exec id is a no-op', () => {
     const sandbox = new Sandbox(sandboxOptions)
 

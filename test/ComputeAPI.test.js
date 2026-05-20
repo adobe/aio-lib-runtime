@@ -160,6 +160,42 @@ describe('SandboxAPI', () => {
     )
   })
 
+  test('create forwards publicUrlTemplate from the server response to the Sandbox constructor', async () => {
+    const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+    const publicUrlTemplate = 'https://{sandboxId}-va6-0-xK3mPq2nAeB-{port}.sandbox-adobeioruntime.net'
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        sandboxId: 'sb-1234',
+        token: 'sandbox-token',
+        status: 'ready',
+        publicUrlTemplate
+      })
+    })
+
+    await compute.create({ name: 'url-sandbox' })
+
+    expect(Sandbox).toHaveBeenCalledWith(expect.objectContaining({ publicUrlTemplate }))
+  })
+
+  test('create passes null publicUrlTemplate when server response omits it', async () => {
+    const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        sandboxId: 'sb-1234',
+        token: 'sandbox-token',
+        status: 'ready'
+      })
+    })
+
+    await compute.create({ name: 'no-url-sandbox' })
+
+    expect(Sandbox).toHaveBeenCalledWith(expect.objectContaining({ publicUrlTemplate: null }))
+  })
+
   test('create supports omitted option objects and http websocket endpoints', async () => {
     const compute = new SandboxAPI('http://runtime.example.net', 'plainnamespace', 'uuid:key')
 

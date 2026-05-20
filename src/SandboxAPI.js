@@ -81,6 +81,8 @@ class SandboxAPI {
       cluster: payload.cluster,
       region: payload.region,
       maxLifetime: payload.maxLifetime,
+      publicUrlTemplate: payload.publicUrlTemplate || null,
+      managementEndpoint: payload.managementEndpoint || null,
       namespace: this.namespace,
       apiHost: this.apiHost,
       apiKey: this.apiKey,

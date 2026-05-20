@@ -16,7 +16,7 @@ const { codes } = require('./SDKErrors')
 const { createFetch } = require('@adobe/aio-lib-core-networking')
 const { buildAuthorizationHeader, createSandboxHttpError } = require('./utils')
 require('./types.jsdoc') // for VS Code autocomplete
-/* global SandboxExecOptions, SandboxExecResult, SandboxFileEntry */
+/* global SandboxExecOptions, SandboxExecResult, SandboxFileEntry, SandboxGetUrlOptions */
 
 /**
  * Connected compute sandbox session.
@@ -40,6 +40,8 @@ class Sandbox {
     this.ignoreCerts = options.ignore_certs
 
     this._token = options.token
+    this._publicUrlTemplate = options.publicUrlTemplate || null
+    this._managementEndpoint = options.managementEndpoint || null
     this._socket = null
     this._connectPromise = null
     this._pendingExecs = new Map()
@@ -316,11 +318,87 @@ class Sandbox {
   }
 
   /**
+   * Gets the current status of this sandbox using the cluster-pinned management endpoint.
+   *
+   * @returns {Promise<object>} sandbox status response
+   */
+  async getStatus () {
+    const base = this._managementEndpoint || this.apiHost
+    const fetch = createFetch()
+    const requestOptions = {
+      method: 'GET',
+      headers: { Authorization: this._buildAuthorizationHeader() }
+    }
+
+    if (this.agent) {
+      requestOptions.agent = this.agent
+    } else if (this.ignoreCerts) {
+      const https = require('node:https')
+      requestOptions.agent = new https.Agent({ rejectUnauthorized: false })
+    }
+
+    let response
+    try {
+      response = await fetch(`${base}/api/v1/namespaces/${this.namespace}/sandbox/${this.id}`, requestOptions)
+    } catch (error) {
+      throw new codes.ERROR_SANDBOX_CLIENT({
+        messageValues: `Could not get status for sandbox '${this.id}': ${error.message}`
+      })
+    }
+
+    if (!response.ok) {
+      const message = await response.text()
+      const status = response.status
+      const detail = `Could not get status for sandbox '${this.id}': ${status}${message ? ` ${message}` : ''}`
+      throw createSandboxHttpError(codes, status, detail)
+    }
+
+    return response.json()
+  }
+
+  /**
+   * Returns the public preview URL for a given port on this sandbox.
+   *
+   * The URL is derived from the `publicUrlTemplate` returned by the server at
+   * create or connect time. The SDK substitutes the `{sandboxId}` and `{port}`
+   * placeholders and otherwise treats the template as opaque. Always call
+   * `getUrl()` on the live `Sandbox` instance; never cache the resolved URL
+   * across sessions.
+   *
+   * @param {SandboxGetUrlOptions} options URL options
+   * @returns {Promise<string>} public preview URL for the given port
+   */
+  async getUrl ({ port, protocol } = {}) {
+    if (!this._publicUrlTemplate) {
+      throw new codes.ERROR_SANDBOX_CLIENT({
+        messageValues: `Cannot get URL for sandbox '${this.id}': publicUrlTemplate is not available`
+      })
+    }
+
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      throw new codes.ERROR_SANDBOX_CLIENT({
+        messageValues: `Invalid port '${port}': must be an integer between 1 and 65535`
+      })
+    }
+
+    let url = this._publicUrlTemplate
+      .replace('{sandboxId}', this.id)
+      .replace('{port}', String(port))
+
+    if (protocol) {
+      url = url.replace(/^https?:\/\//, `${protocol}://`)
+    }
+
+    return url
+  }
+
+  /**
    * Destroys the sandbox and closes its WebSocket connection.
    *
    * @returns {Promise<object>} destroy response payload
    */
   async destroy () {
+    const base = this._managementEndpoint || this.apiHost
     const fetch = createFetch()
     const requestOptions = {
       method: 'DELETE',
@@ -338,7 +416,7 @@ class Sandbox {
 
     let response
     try {
-      response = await fetch(`${this.apiHost}/api/v1/namespaces/${this.namespace}/sandbox/${this.id}`, requestOptions)
+      response = await fetch(`${base}/api/v1/namespaces/${this.namespace}/sandbox/${this.id}`, requestOptions)
     } catch (error) {
       throw new codes.ERROR_SANDBOX_CLIENT({
         messageValues: `Could not destroy sandbox '${this.id}': ${error.message}`
