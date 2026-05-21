@@ -10,11 +10,11 @@ governing permissions and limitations under the License.
 */
 
 const crypto = require('node:crypto')
+const WebSocket = require('ws')
 const aioLogger = require('@adobe/aio-lib-core-logging')('@adobe/aio-lib-runtime:Sandbox', { provider: 'debug', level: process.env.LOG_LEVEL })
 const { codes } = require('./SDKErrors')
 const { createFetch } = require('@adobe/aio-lib-core-networking')
 const { buildAuthorizationHeader, createSandboxHttpError } = require('./utils')
-const { SandboxSocket } = require('./ws')
 require('./types.jsdoc') // for VS Code autocomplete
 /* global SandboxExecOptions, SandboxExecResult, SandboxFileEntry, SandboxGetUrlOptions */
 
@@ -42,7 +42,10 @@ class Sandbox {
     this._token = options.token
     this._publicUrlTemplate = options.publicUrlTemplate || null
     this._managementEndpoint = options.managementEndpoint || null
-    this.ws = null
+    this._socket = null
+    this._connectPromise = null
+    this._pendingExecs = new Map()
+    this._pendingFileOps = new Map()
   }
 
   /**
@@ -51,16 +54,78 @@ class Sandbox {
    * @returns {Promise<void>}
    */
   connect () {
-    if (!this.ws) {
-      this.ws = new SandboxSocket({
-        id: this.id,
-        endpoint: this.endpoint,
-        token: this._token,
-        agent: this.agent,
-        ignoreCerts: this.ignoreCerts
-      })
+    if (this._socket && this._socket.readyState === WebSocket.OPEN) {
+      return Promise.resolve()
     }
-    return this.ws.connect()
+
+    if (this._connectPromise) {
+      return this._connectPromise
+    }
+
+    const wsOptions = {}
+    if (this.agent) {
+      wsOptions.agent = this.agent
+    }
+
+    if (this.ignoreCerts) {
+      wsOptions.rejectUnauthorized = false
+    }
+
+    this._socket = new WebSocket(this.endpoint, wsOptions)
+    const socket = this._socket
+
+    socket.on('message', message => this._handleMessage(message))
+    socket.on('close', (code, reason) => this._handleClose(code, reason))
+    socket.on('error', (err) => aioLogger.warn(`[${this.id}] WebSocket error: ${err.message}`))
+
+    this._connectPromise = new Promise((resolve, reject) => {
+      const onOpen = () => {
+        try {
+          this._sendFrame({ type: 'auth', token: this._token })
+        } catch (error) {
+          onError(error)
+        }
+      }
+
+      const onMessage = (message) => {
+        const frame = this._parseFrame(message)
+        if (!frame || !this._isAuthAckFrame(frame)) {
+          return
+        }
+
+        cleanup()
+        this._connectPromise = null
+        resolve()
+      }
+
+      const onClose = (code) => {
+        cleanup()
+        this._connectPromise = null
+        reject(this._createCloseError(code))
+      }
+
+      const onError = (error) => {
+        cleanup()
+        this._connectPromise = null
+        reject(new codes.ERROR_SANDBOX_WEBSOCKET({
+          messageValues: `Could not connect sandbox '${this.id}': ${error.message}`
+        }))
+      }
+
+      const cleanup = () => {
+        socket.off('open', onOpen)
+        socket.off('message', onMessage)
+        socket.off('close', onClose)
+        socket.off('error', onError)
+      }
+
+      socket.once('open', onOpen)
+      socket.on('message', onMessage)
+      socket.once('close', onClose)
+      socket.once('error', onError)
+    })
+
+    return this._connectPromise
   }
 
   /**
@@ -72,7 +137,7 @@ class Sandbox {
    */
   exec (command, options = {}) {
     try {
-      this.ensureOpen()
+      this._ensureOpen()
     } catch (error) {
       return Promise.reject(error)
     }
@@ -81,7 +146,7 @@ class Sandbox {
     let timeout
 
     const execPromise = new Promise((resolve, reject) => {
-      this.ws.pendingExecs.set(execId, {
+      this._pendingExecs.set(execId, {
         resolve,
         reject,
         stdout: '',
@@ -93,24 +158,24 @@ class Sandbox {
       if (options.timeout) {
         timeout = setTimeout(() => {
           try { this.kill(execId) } catch (_) {}
-          this.ws.rejectExec(execId, new codes.ERROR_SANDBOX_TIMEOUT({
+          this._rejectPendingExec(execId, new codes.ERROR_SANDBOX_TIMEOUT({
             messageValues: `Command '${command}' exceeded timeout of ${options.timeout}ms`
           }))
         }, options.timeout)
 
-        this.ws.pendingExecs.get(execId).timeout = timeout
+        this._pendingExecs.get(execId).timeout = timeout
       }
     })
 
     execPromise.execId = execId
     try {
-      this.sendFrame({ type: 'exec.run', execId, command })
+      this._sendFrame({ type: 'exec.run', execId, command })
       if (options.stdin !== undefined) {
         this.writeStdin(execId, options.stdin)
         this.closeStdin(execId)
       }
     } catch (error) {
-      this.ws.rejectExec(execId, new codes.ERROR_SANDBOX_WEBSOCKET({
+      this._rejectPendingExec(execId, new codes.ERROR_SANDBOX_WEBSOCKET({
         messageValues: `Could not send exec frame: ${error.message}`
       }))
     }
@@ -124,8 +189,8 @@ class Sandbox {
    * @param {string} [signal] signal to deliver
    */
   kill (execId, signal = 'SIGTERM') {
-    this.ensureOpen()
-    this.sendFrame({ type: 'exec.kill', execId, signal })
+    this._ensureOpen()
+    this._sendFrame({ type: 'exec.kill', execId, signal })
   }
 
   /**
@@ -136,7 +201,7 @@ class Sandbox {
    * @param {string|Buffer} data data to write (Buffer is base64-encoded on the wire)
    */
   writeStdin (execId, data) {
-    this.ensureOpen()
+    this._ensureOpen()
     const frame = { type: 'exec.input', execId }
     if (Buffer.isBuffer(data)) {
       frame.data = data.toString('base64')
@@ -144,7 +209,7 @@ class Sandbox {
     } else {
       frame.data = data
     }
-    this.sendFrame(frame)
+    this._sendFrame(frame)
   }
 
   /**
@@ -154,8 +219,8 @@ class Sandbox {
    * @param {string} execId execution id from exec()
    */
   closeStdin (execId) {
-    this.ensureOpen()
-    this.sendFrame({ type: 'exec.endInput', execId })
+    this._ensureOpen()
+    this._sendFrame({ type: 'exec.endInput', execId })
   }
 
   /**
@@ -166,7 +231,7 @@ class Sandbox {
    */
   readFile (path) {
     try {
-      this.ensureOpen()
+      this._ensureOpen()
     } catch (error) {
       return Promise.reject(error)
     }
@@ -174,13 +239,13 @@ class Sandbox {
     const execId = `file-${crypto.randomBytes(12).toString('hex')}`
 
     const opPromise = new Promise((resolve, reject) => {
-      this.ws.pendingFileOps.set(execId, { resolve, reject })
+      this._pendingFileOps.set(execId, { resolve, reject })
     })
 
     try {
-      this.sendFrame({ type: 'file.read', execId, path })
+      this._sendFrame({ type: 'file.read', execId, path })
     } catch (error) {
-      this.ws.rejectFileOp(execId, new codes.ERROR_SANDBOX_WEBSOCKET({
+      this._rejectPendingFileOp(execId, new codes.ERROR_SANDBOX_WEBSOCKET({
         messageValues: `Could not send file.read frame: ${error.message}`
       }))
     }
@@ -197,7 +262,7 @@ class Sandbox {
    */
   writeFile (path, content) {
     try {
-      this.ensureOpen()
+      this._ensureOpen()
     } catch (error) {
       return Promise.reject(error)
     }
@@ -208,13 +273,13 @@ class Sandbox {
       : Buffer.from(content).toString('base64')
 
     const opPromise = new Promise((resolve, reject) => {
-      this.ws.pendingFileOps.set(execId, { resolve, reject })
+      this._pendingFileOps.set(execId, { resolve, reject })
     })
 
     try {
-      this.sendFrame({ type: 'file.write', execId, path, content: encoded, encoding: 'base64' })
+      this._sendFrame({ type: 'file.write', execId, path, content: encoded, encoding: 'base64' })
     } catch (error) {
-      this.ws.rejectFileOp(execId, new codes.ERROR_SANDBOX_WEBSOCKET({
+      this._rejectPendingFileOp(execId, new codes.ERROR_SANDBOX_WEBSOCKET({
         messageValues: `Could not send file.write frame: ${error.message}`
       }))
     }
@@ -230,7 +295,7 @@ class Sandbox {
    */
   listFiles (path) {
     try {
-      this.ensureOpen()
+      this._ensureOpen()
     } catch (error) {
       return Promise.reject(error)
     }
@@ -238,13 +303,13 @@ class Sandbox {
     const execId = `file-${crypto.randomBytes(12).toString('hex')}`
 
     const opPromise = new Promise((resolve, reject) => {
-      this.ws.pendingFileOps.set(execId, { resolve, reject })
+      this._pendingFileOps.set(execId, { resolve, reject })
     })
 
     try {
-      this.sendFrame({ type: 'file.list', execId, path })
+      this._sendFrame({ type: 'file.list', execId, path })
     } catch (error) {
-      this.ws.rejectFileOp(execId, new codes.ERROR_SANDBOX_WEBSOCKET({
+      this._rejectPendingFileOp(execId, new codes.ERROR_SANDBOX_WEBSOCKET({
         messageValues: `Could not send file.list frame: ${error.message}`
       }))
     }
@@ -367,25 +432,166 @@ class Sandbox {
 
     const payload = await response.json()
     this.status = payload.status || this.status
-    this.ws?.close()
+    this._socket?.close()
     return payload
   }
 
-  // ------------------------------------------------------------------
-  // Private helpers
-  // ------------------------------------------------------------------
+  _handleMessage (message) {
+    const frame = this._parseFrame(message)
+    aioLogger.debug(`[${this.id}] received frame: ${JSON.stringify(frame)}`)
+    if (!frame || this._isAuthAckFrame(frame)) {
+      return
+    }
 
-  ensureOpen () {
-    if (!this.ws) {
+    if (this._pendingFileOps.has(frame.execId)) {
+      this._handleFileFrame(frame)
+      return
+    }
+
+    const pendingExec = this._pendingExecs.get(frame.execId)
+    if (!pendingExec) {
+      return
+    }
+
+    if (frame.type === 'exec.output') {
+      if (frame.stream === 'stderr') {
+        pendingExec.stderr += frame.data || ''
+      } else {
+        pendingExec.stdout += frame.data || ''
+      }
+
+      if (pendingExec.onOutput) {
+        pendingExec.onOutput(frame.data || '', frame.stream || 'stdout')
+      }
+      return
+    }
+
+    if (frame.type === 'exec.exit') {
+      this._pendingExecs.delete(frame.execId)
+      clearTimeout(pendingExec.timeout)
+      pendingExec.resolve({
+        execId: frame.execId,
+        stdout: pendingExec.stdout,
+        stderr: pendingExec.stderr,
+        exitCode: frame.exitCode
+      })
+      return
+    }
+
+    if (frame.type === 'error') {
+      this._rejectPendingExec(frame.execId, new codes.ERROR_SANDBOX_CLIENT({
+        messageValues: frame.message || `Command '${frame.execId}' failed`
+      }))
+    }
+  }
+
+  _handleFileFrame (frame) {
+    const pendingOp = this._pendingFileOps.get(frame.execId)
+    if (!pendingOp) {
+      return
+    }
+
+    if (frame.type === 'file.content') {
+      this._pendingFileOps.delete(frame.execId)
+      const content = frame.encoding === 'base64'
+        ? Buffer.from(frame.content, 'base64').toString('utf8')
+        : (frame.content || '')
+      pendingOp.resolve(content)
+      return
+    }
+
+    if (frame.type === 'file.writeResult') {
+      this._pendingFileOps.delete(frame.execId)
+      if (!frame.ok) {
+        pendingOp.reject(new codes.ERROR_SANDBOX_CLIENT({
+          messageValues: `file.write failed for path '${frame.path}'`
+        }))
+      } else {
+        pendingOp.resolve({ path: frame.path, size: frame.size, ok: frame.ok })
+      }
+      return
+    }
+
+    if (frame.type === 'file.entries') {
+      this._pendingFileOps.delete(frame.execId)
+      pendingOp.resolve(frame.entries || [])
+      return
+    }
+
+    if (frame.type === 'error') {
+      this._rejectPendingFileOp(frame.execId, new codes.ERROR_SANDBOX_CLIENT({
+        messageValues: frame.message || `File operation '${frame.execId}' failed`
+      }))
+    }
+  }
+
+  _handleClose (code) {
+    const error = this._createCloseError(code)
+    for (const execId of this._pendingExecs.keys()) {
+      this._rejectPendingExec(execId, error)
+    }
+    for (const execId of this._pendingFileOps.keys()) {
+      this._rejectPendingFileOp(execId, error)
+    }
+    this._connectPromise = null
+    this._socket = null
+  }
+
+  _rejectPendingExec (execId, error) {
+    const pendingExec = this._pendingExecs.get(execId)
+    if (!pendingExec) {
+      return
+    }
+
+    this._pendingExecs.delete(execId)
+    clearTimeout(pendingExec.timeout)
+    pendingExec.reject(error)
+  }
+
+  _rejectPendingFileOp (execId, error) {
+    const pendingOp = this._pendingFileOps.get(execId)
+    if (!pendingOp) {
+      return
+    }
+
+    this._pendingFileOps.delete(execId)
+    pendingOp.reject(error)
+  }
+
+  _createCloseError (code) {
+    if (code === 4001) {
+      return new codes.ERROR_SANDBOX_UNAUTHORIZED({
+        messageValues: `Sandbox '${this.id}' rejected the WebSocket authentication token`
+      })
+    }
+
+    return new codes.ERROR_SANDBOX_WEBSOCKET({
+      messageValues: `Sandbox '${this.id}' WebSocket closed with code ${code}`
+    })
+  }
+
+  _ensureOpen () {
+    if (!this._socket || this._socket.readyState !== WebSocket.OPEN) {
       throw new codes.ERROR_SANDBOX_WEBSOCKET({
         messageValues: `Sandbox '${this.id}' is not connected`
       })
     }
-    this.ws.ensureOpen()
   }
 
-  sendFrame (frame) {
-    this.ws.send(frame)
+  _sendFrame (frame) {
+    this._socket.send(JSON.stringify(frame))
+  }
+
+  _parseFrame (message) {
+    try {
+      return JSON.parse(message.toString())
+    } catch (error) {
+      return null
+    }
+  }
+
+  _isAuthAckFrame (frame) {
+    return frame?.type === 'auth.ok' && (!frame.sandboxId || frame.sandboxId === this.id)
   }
 
   _buildAuthorizationHeader () {
