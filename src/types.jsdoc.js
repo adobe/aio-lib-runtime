@@ -122,3 +122,16 @@ governing permissions and limitations under the License.
  * @property {number} port port number inside the sandbox (integer 1–65535)
  * @property {'http'|'https'} [protocol] overrides the scheme from the environment's publicUrlTemplate; when omitted, the template's scheme is used
  */
+
+/**
+ * @typedef {object} SandboxCreateResponse
+ * @property {string} sandboxId unique sandbox identifier
+ * @property {string} token WebSocket authentication token
+ * @property {string} status current sandbox status (e.g. 'ready')
+ * @property {string} [wsEndpoint] WebSocket endpoint URL; omit to use the default derived from apihost
+ * @property {string} [cluster] target cluster name
+ * @property {string} [region] target region (e.g. 'va6')
+ * @property {number} [maxLifetime] maximum lifetime in seconds
+ * @property {string} managementEndpoint sticky cluster-pinned HTTPS base URL used for all subsequent REST and WebSocket calls
+ * @property {string} publicUrlTemplate opaque URL template with {sandboxId} and {port} placeholders; substitute locally via Sandbox.getUrl()
+ */

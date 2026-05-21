@@ -73,6 +73,101 @@ class SandboxAPI {
     )
   }
 
+  /**
+   * Looks up an existing sandbox by ID, returning a Sandbox instance with
+   * `managementEndpoint` populated.
+   *
+   * If the primary apihost returns 404, a second request is made with
+   * `?resolve=true` to trigger scatter-gather resolution. If the sandbox is
+   * not found after both phases, `null` is returned without throwing.
+   *
+   * @param {string} sandboxId sandbox ID
+   * @returns {Promise<Sandbox|null>} sandbox instance, or null if not found
+   */
+  async getById (sandboxId) {
+    let payload
+    try {
+      payload = await this._request('get sandbox', 'GET', `${this._getSandboxPath()}/${sandboxId}`)
+    } catch (error) {
+      if (!(error instanceof codes.ERROR_SANDBOX_NOT_FOUND)) {
+        throw error
+      }
+      try {
+        payload = await this._request('get sandbox', 'GET', `${this._getSandboxPath()}/${sandboxId}?resolve=true`)
+      } catch (resolveError) {
+        if (resolveError instanceof codes.ERROR_SANDBOX_NOT_FOUND) {
+          return null
+        }
+        throw resolveError
+      }
+    }
+
+    return new Sandbox({
+      id: payload.sandboxId || sandboxId,
+      endpoint: null,
+      status: payload.status,
+      cluster: payload.cluster,
+      region: payload.region,
+      maxLifetime: payload.maxLifetime,
+      managementEndpoint: payload.managementEndpoint || null,
+      publicUrlTemplate: null,
+      namespace: this.namespace,
+      apiHost: this.apiHost,
+      apiKey: this.apiKey,
+      token: payload.token || null,
+      agent: this.agent,
+      ignore_certs: this.ignoreCerts
+    })
+  }
+
+  /**
+   * Reconnects to an existing sandbox by resolving its `managementEndpoint`
+   * via two-phase routing and opening a WebSocket session.
+   *
+   * If the primary apihost returns 404, a second request is made with
+   * `?resolve=true` to trigger scatter-gather resolution.
+   *
+   * @param {object} options connect options
+   * @param {string} options.sandboxId sandbox ID
+   * @param {string} options.token WebSocket authentication token
+   * @returns {Promise<Sandbox>} connected sandbox instance
+   */
+  async connect ({ sandboxId, token }) {
+    let payload
+    try {
+      payload = await this._request('connect sandbox', 'GET', `${this._getSandboxPath()}/${sandboxId}`)
+    } catch (error) {
+      if (!(error instanceof codes.ERROR_SANDBOX_NOT_FOUND)) {
+        throw error
+      }
+      payload = await this._request('connect sandbox', 'GET', `${this._getSandboxPath()}/${sandboxId}?resolve=true`)
+    }
+
+    const managementEndpoint = payload.managementEndpoint || null
+    const wsBase = managementEndpoint || this.apiHost
+    const endpoint = payload.wsEndpoint || this._buildWebSocketEndpoint(sandboxId, wsBase)
+
+    const sandbox = new Sandbox({
+      id: sandboxId,
+      endpoint,
+      status: payload.status,
+      cluster: payload.cluster,
+      region: payload.region,
+      maxLifetime: payload.maxLifetime,
+      publicUrlTemplate: payload.publicUrlTemplate || null,
+      managementEndpoint,
+      namespace: this.namespace,
+      apiHost: this.apiHost,
+      apiKey: this.apiKey,
+      token,
+      agent: this.agent,
+      ignore_certs: this.ignoreCerts
+    })
+
+    await sandbox.connect()
+    return sandbox
+  }
+
   async _buildSandbox (payload) {
     const sandbox = new Sandbox({
       id: payload.sandboxId,
@@ -205,8 +300,8 @@ class SandboxAPI {
     return `/api/v1/namespaces/${this.namespace}/sandbox`
   }
 
-  _buildWebSocketEndpoint (sandboxId) {
-    const url = new URL(this.apiHost)
+  _buildWebSocketEndpoint (sandboxId, base = this.apiHost) {
+    const url = new URL(base)
     url.protocol = url.protocol === 'http:' ? 'ws:' : 'wss:'
     url.pathname = `/ws/v1/namespaces/${this.namespace}/sandbox/${sandboxId}/exec`
     url.search = ''

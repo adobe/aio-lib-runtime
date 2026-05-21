@@ -366,6 +366,30 @@ describe('Sandbox', () => {
     expect(sockets[0].readyState).toBe(3)
   })
 
+  test('destroy routes to managementEndpoint instead of apiHost when set', async () => {
+    const sandbox = new Sandbox({
+      ...sandboxOptions,
+      managementEndpoint: 'https://mgmt.cluster-a.runtime.net'
+    })
+
+    const connectPromise = sandbox.connect()
+    sockets[0].open()
+    sockets[0].message({ type: 'auth.ok', sandboxId: sandboxOptions.id })
+    await connectPromise
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ sandboxId: 'sb-1234', status: 'terminating' })
+    })
+
+    await sandbox.destroy()
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://mgmt.cluster-a.runtime.net/api/v1/namespaces/1234-demo/sandbox/sb-1234',
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
   test('destroy forwards configured transport options to fetch', async () => {
     const sandbox = new Sandbox({
       ...sandboxOptions,

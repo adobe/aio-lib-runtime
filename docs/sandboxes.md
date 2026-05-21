@@ -39,6 +39,16 @@ const status = await runtime.compute.sandbox.getStatus(sandbox.id)
 console.log('status:', status)
 ```
 
+## Preview URLs
+
+Use preview URLs to get access to servers or web services running in a sandbox on a particular port: 
+
+```js
+const url = await sandbox.getUrl({ port: 3000 })
+console.log('preview:', url)
+// https://sb-abc123-va6-0-xK3mPq2nAeB-3000.sandbox-adobeioruntime.net
+```
+
 ## Exec
 
 ```js

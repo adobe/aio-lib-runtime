@@ -463,6 +463,173 @@ describe('SandboxAPI', () => {
     )
   })
 
+  describe('getById', () => {
+    test('returns a Sandbox when the primary apihost lookup succeeds', async () => {
+      const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+      const responsePayload = {
+        sandboxId: 'sb-1234',
+        status: 'ready',
+        cluster: 'cluster-a',
+        region: 'va6',
+        maxLifetime: 3600,
+        managementEndpoint: 'https://mgmt.cluster-a.runtime.net'
+      }
+
+      mockFetch.mockResolvedValueOnce({ ok: true, json: jest.fn().mockResolvedValue(responsePayload) })
+
+      const result = await compute.getById('sb-1234')
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://runtime.example.net/api/v1/namespaces/1234-demo/sandbox/sb-1234',
+        expect.objectContaining({ method: 'GET' })
+      )
+      expect(Sandbox).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'sb-1234',
+        managementEndpoint: 'https://mgmt.cluster-a.runtime.net'
+      }))
+      expect(result).toBeDefined()
+    })
+
+    test('retries with ?resolve=true on 404 from apihost and returns resolved Sandbox', async () => {
+      const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+      const resolvedPayload = {
+        sandboxId: 'sb-1234',
+        status: 'ready',
+        cluster: 'cluster-b',
+        managementEndpoint: 'https://mgmt.cluster-b.runtime.net'
+      }
+
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 404, text: jest.fn().mockResolvedValue('not found') })
+      mockFetch.mockResolvedValueOnce({ ok: true, json: jest.fn().mockResolvedValue(resolvedPayload) })
+
+      const result = await compute.getById('sb-1234')
+
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        'https://runtime.example.net/api/v1/namespaces/1234-demo/sandbox/sb-1234?resolve=true',
+        expect.anything()
+      )
+      expect(Sandbox).toHaveBeenCalledWith(expect.objectContaining({
+        managementEndpoint: 'https://mgmt.cluster-b.runtime.net'
+      }))
+      expect(result).toBeDefined()
+    })
+
+    test('returns null when sandbox is not found after both phases', async () => {
+      const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 404, text: jest.fn().mockResolvedValue('not found') })
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 404, text: jest.fn().mockResolvedValue('not found') })
+
+      const result = await compute.getById('missing')
+
+      expect(result).toBeNull()
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+
+    test('does not trigger scatter-gather for non-404 errors', async () => {
+      const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 500, text: jest.fn().mockResolvedValue('server error') })
+
+      await expect(compute.getById('sb-err')).rejects.toThrow(codes.ERROR_SANDBOX_CLIENT)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    })
+
+    test('propagates non-404 errors from the scatter-gather resolve request', async () => {
+      const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 404, text: jest.fn().mockResolvedValue('not found') })
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 500, text: jest.fn().mockResolvedValue('resolver error') })
+
+      await expect(compute.getById('sb-resolve-err')).rejects.toThrow(codes.ERROR_SANDBOX_CLIENT)
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('connect', () => {
+    test('resolves managementEndpoint from primary apihost and returns connected Sandbox', async () => {
+      const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+      const responsePayload = {
+        sandboxId: 'sb-1234',
+        status: 'ready',
+        wsEndpoint: 'wss://mgmt.cluster-a.runtime.net/ws/v1/namespaces/1234-demo/sandbox/sb-1234/exec',
+        publicUrlTemplate: 'https://{sandboxId}-va6-0-abc123-{port}.sandbox-adobeioruntime.net',
+        managementEndpoint: 'https://mgmt.cluster-a.runtime.net'
+      }
+
+      mockFetch.mockResolvedValueOnce({ ok: true, json: jest.fn().mockResolvedValue(responsePayload) })
+
+      const result = await compute.connect({ sandboxId: 'sb-1234', token: 'tok-xyz' })
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(Sandbox).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'sb-1234',
+        endpoint: responsePayload.wsEndpoint,
+        token: 'tok-xyz',
+        publicUrlTemplate: responsePayload.publicUrlTemplate,
+        managementEndpoint: 'https://mgmt.cluster-a.runtime.net'
+      }))
+      expect(result.connect).toHaveBeenCalledTimes(1)
+    })
+
+    test('uses scatter-gather on 404 to resolve managementEndpoint before connecting', async () => {
+      const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+      const resolvedPayload = {
+        sandboxId: 'sb-1234',
+        status: 'ready',
+        managementEndpoint: 'https://mgmt.cluster-b.runtime.net',
+        publicUrlTemplate: 'https://{sandboxId}-use1-0-xyz-{port}.sandbox-adobeioruntime.net'
+      }
+
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 404, text: jest.fn().mockResolvedValue('not found') })
+      mockFetch.mockResolvedValueOnce({ ok: true, json: jest.fn().mockResolvedValue(resolvedPayload) })
+
+      await compute.connect({ sandboxId: 'sb-1234', token: 'tok-abc' })
+
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        'https://runtime.example.net/api/v1/namespaces/1234-demo/sandbox/sb-1234?resolve=true',
+        expect.anything()
+      )
+      expect(Sandbox).toHaveBeenCalledWith(expect.objectContaining({
+        managementEndpoint: 'https://mgmt.cluster-b.runtime.net',
+        publicUrlTemplate: resolvedPayload.publicUrlTemplate
+      }))
+    })
+
+    test('derives WS endpoint from managementEndpoint when wsEndpoint is absent', async () => {
+      const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          sandboxId: 'sb-1234',
+          status: 'ready',
+          managementEndpoint: 'https://mgmt.cluster-a.runtime.net'
+        })
+      })
+
+      await compute.connect({ sandboxId: 'sb-1234', token: 'tok' })
+
+      expect(Sandbox).toHaveBeenCalledWith(expect.objectContaining({
+        endpoint: 'wss://mgmt.cluster-a.runtime.net/ws/v1/namespaces/1234-demo/sandbox/sb-1234/exec'
+      }))
+    })
+
+    test('propagates non-404 errors without scatter-gather', async () => {
+      const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
+
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 401, text: jest.fn().mockResolvedValue('unauthorized') })
+
+      await expect(compute.connect({ sandboxId: 'sb-1234', token: 'tok' })).rejects.toThrow(codes.ERROR_SANDBOX_UNAUTHORIZED)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    })
+  })
+
   test('getStatus returns sandbox status for a given sandbox id', async () => {
     const compute = new SandboxAPI('https://runtime.example.net', '1234-demo', 'uuid:key')
     const statusPayload = { sandboxId: 'sb-1234', status: 'ready', cluster: 'cluster-a' }
