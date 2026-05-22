@@ -278,6 +278,30 @@ describe('build by bundling js action file with webpack', () => {
       path.normalize('/dist/actions/sample-app-1.0.0/action.zip'))
   })
 
+  test('should drop a sibling package.json with type: commonjs in the webpack temp dir (IOEXT-1726)', async () => {
+    await buildActions(config)
+
+    const tempDir = path.normalize('/dist/actions/sample-app-1.0.0/action-temp')
+
+    // confirm webpack was asked to emit the bundle to the expected temp dir
+    expect(webpack).toHaveBeenCalledWith(expect.arrayContaining([
+      expect.objectContaining({
+        output: expect.objectContaining({
+          path: tempDir,
+          filename: 'index.js'
+        })
+      })
+    ]))
+
+    // the sibling package.json must scope the bundle as CommonJS so that Node
+    // does not treat it as ESM when the user's project package.json declares
+    // "type": "module".
+    const siblingPath = path.join(tempDir, 'package.json').split(path.sep).join('/')
+    const siblingRaw = global.fakeFileSystem.files()[siblingPath]
+    expect(siblingRaw).toBeDefined()
+    expect(JSON.parse(siblingRaw)).toEqual({ type: 'commonjs' })
+  })
+
   test('should bundle a single action file using webpack and zip it with includes', async () => {
     global.fakeFileSystem.reset()
     global.fakeFileSystem.addJson({

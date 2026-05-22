@@ -242,6 +242,17 @@ const prepareToBuildAction = async (action, root, dist) => {
         return resolve(stats)
       })
     })
+
+    // Fix for IOEXT-1726: webpack emits CommonJS (libraryTarget: 'commonjs2'),
+    // but Node walks up the directory tree to find the closest package.json
+    // when deciding the module type for the bundled index.js. If the user's
+    // project sets "type": "module" (ESM), Node parses the CJS bundle as ESM
+    // and aio-cli-plugin-app-dev's require()-based loader fails with
+    // "action not found, or does not export main". Drop a sibling package.json
+    // that pins the bundle output to CommonJS regardless of the project type.
+    fs.writeJsonSync(path.join(tempBuildDir, 'package.json'), {
+      type: 'commonjs'
+    })
   }
 
   return {
