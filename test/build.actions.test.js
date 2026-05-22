@@ -296,7 +296,7 @@ describe('build by bundling js action file with webpack', () => {
     // the sibling package.json must scope the bundle as CommonJS so that Node
     // does not treat it as ESM when the user's project package.json declares
     // "type": "module".
-    const siblingPath = path.join(tempDir, 'package.json')
+    const siblingPath = path.join(tempDir, 'package.json').split(path.sep).join('/')
     const siblingRaw = global.fakeFileSystem.files()[siblingPath]
     expect(siblingRaw).toBeDefined()
     expect(JSON.parse(siblingRaw)).toEqual({ type: 'commonjs' })
