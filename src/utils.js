@@ -2104,7 +2104,9 @@ function replacePackagePlaceHolder (config) {
     // Using custom package name.
     // Set config.ow.package so that syncProject can use it as project name for annotations.
     const packageNames = Object.keys(packages)
-    modifiedConfig.ow.package = packageNames[0]
+    if (packageNames.length > 0) {
+      modifiedConfig.ow.package = packageNames[0]
+    }
   }
   return modifiedConfig
 }

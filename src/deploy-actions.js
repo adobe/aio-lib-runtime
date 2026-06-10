@@ -57,9 +57,12 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   // checks
   // a. missing credentials
   utils.checkOpenWhiskCredentials(config)
-  // b. missing build files
+  // b. missing build files — only required when at least one package defines actions
   const dist = config.actions.dist
+  const hasAnyActions = Object.values(config.manifest.full.packages)
+    .some(pkg => Object.keys(pkg.actions || {}).length > 0)
   if (
+    hasAnyActions &&
     (!deployConfig.filterEntities || deployConfig.filterEntities.actions) &&
     (!fs.pathExistsSync(dist) || !fs.lstatSync(dist).isDirectory() || !fs.readdirSync(dist).length === 0)
   ) {
