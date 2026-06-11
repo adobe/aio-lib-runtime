@@ -61,6 +61,9 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   const dist = config.actions.dist
   const hasAnyActions = Object.values(config.manifest.full.packages)
     .some(pkg => Object.keys(pkg.actions || {}).length > 0)
+  if (!hasAnyActions) {
+    log('Warning: no actions defined in manifest — deploy is a no-op and will undeploy any previously-deployed actions for this project.')
+  }
   if (
     hasAnyActions &&
     (!deployConfig.filterEntities || deployConfig.filterEntities.actions) &&

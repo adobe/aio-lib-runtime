@@ -583,18 +583,22 @@ test('Deploy actions should pass if there are no build files and filter does not
   await expect(deployActions(global.sampleAppConfig, { filterEntities: { triggers: ['trigger1'] } })).resolves.toEqual({})
 })
 
-test('Deploy actions should succeed when packages: {} (empty packages, no actions defined)', async () => {
+test('Deploy actions should succeed and warn when packages: {} (empty packages, no actions defined)', async () => {
   const emptyPackagesConfig = deepCopy(global.sampleAppConfig)
   emptyPackagesConfig.manifest.full.packages = {}
   runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
-  await expect(deployActions(emptyPackagesConfig)).resolves.toBeDefined()
+  const logSpy = jest.fn()
+  await expect(deployActions(emptyPackagesConfig, {}, logSpy)).resolves.toBeDefined()
+  expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('no actions defined in manifest'))
 })
 
-test('Deploy actions should succeed when a package has no actions key (pkg.actions || {} guard)', async () => {
+test('Deploy actions should succeed and warn when a package has no actions key (pkg.actions || {} guard)', async () => {
   const noActionsPkgConfig = deepCopy(global.sampleAppConfig)
   noActionsPkgConfig.manifest.full.packages = { emptyPkg: {} }
   runtimeLibUtils.processPackage.mockReturnValue(deepCopy(mockEntities))
-  await expect(deployActions(noActionsPkgConfig)).resolves.toBeDefined()
+  const logSpy = jest.fn()
+  await expect(deployActions(noActionsPkgConfig, {}, logSpy)).resolves.toBeDefined()
+  expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('no actions defined in manifest'))
 })
 
 // lonely
