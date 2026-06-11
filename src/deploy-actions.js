@@ -57,13 +57,20 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   // checks
   // a. missing credentials
   utils.checkOpenWhiskCredentials(config)
-  // b. missing build files — only required when at least one package defines actions
-  const dist = config.actions.dist
-  const hasAnyActions = Object.values(config.manifest.full.packages)
-    .some(pkg => Object.keys(pkg.actions || {}).length > 0)
-  if (!hasAnyActions) {
-    log('Warning: no actions defined in manifest, deploy is a no-op and will undeploy any previously-deployed actions for this project.')
+  // b. no packages declared (e.g. `packages: {}`, used only to trigger database
+  // auto-provisioning). Skip deployment entirely. Proceeding would run a full
+  // sync against an empty manifest, undeploying every previously-deployed entity
+  // for the project. Use `aio app undeploy` to intentionally remove all entities.
+  const packages = config.manifest.full.packages
+  if (Object.keys(packages).length === 0) {
+    log('Warning: no packages defined in the manifest, skipping deployment. Existing deployed entities are left untouched; use \'aio app undeploy\' to remove them.')
+    return {}
   }
+
+  // c. missing build files — only required when at least one package defines actions
+  const dist = config.actions.dist
+  const hasAnyActions = Object.values(packages)
+    .some(pkg => Object.keys(pkg.actions || {}).length > 0)
   if (
     hasAnyActions &&
     (!deployConfig.filterEntities || deployConfig.filterEntities.actions) &&
