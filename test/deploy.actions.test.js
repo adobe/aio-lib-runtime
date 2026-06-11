@@ -577,10 +577,28 @@ test('Deploy actions should fail if there are no build files and action filter',
     .rejects.toThrow('missing files in dist')
 })
 
+test('Deploy actions should fail if the build directory exists but is empty', async () => {
+  addSampleAppFiles()
+  // dist exists as a directory but contains no built actions
+  global.fakeFileSystem.addJson({ [global.sampleAppConfig.actions.dist]: null })
+  await expect(deployActions(global.sampleAppConfig))
+    .rejects.toThrow('missing files in dist')
+})
+
 test('Deploy actions should pass if there are no build files and filter does not include actions', async () => {
   addSampleAppFiles()
   runtimeLibUtils.processPackage.mockReturnValue({})
   await expect(deployActions(global.sampleAppConfig, { filterEntities: { triggers: ['trigger1'] } })).resolves.toEqual({})
+})
+
+test('Deploy actions should be a no-op (no undeploy) and warn when packages: {} (empty packages)', async () => {
+  const emptyPackagesConfig = deepCopy(global.sampleAppConfig)
+  emptyPackagesConfig.manifest.full.packages = {}
+  const logSpy = jest.fn()
+  await expect(deployActions(emptyPackagesConfig, {}, logSpy)).resolves.toEqual({})
+  expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('no packages defined'))
+  // must not run a full sync that would undeploy previously-deployed entities
+  expect(runtimeLibUtils.syncProject).not.toHaveBeenCalled()
 })
 
 // lonely

@@ -3097,3 +3097,43 @@ describe('loadIMSCredentialsFromEnv', () => {
     expect(result.scopes).toBe('not json')
   })
 })
+
+describe('replacePackagePlaceHolder', () => {
+  test('leaves ow.package unchanged when packages is empty (packages: {})', () => {
+    const config = {
+      ow: { package: 'my-pkg' },
+      manifest: {
+        packagePlaceholder: '__APP_PACKAGE__',
+        full: { packages: {} }
+      }
+    }
+    const result = utils.replacePackagePlaceHolder(config)
+    expect(result.ow.package).toBe('my-pkg')
+  })
+
+  test('renames placeholder package to ow.package', () => {
+    const config = {
+      ow: { package: 'my-pkg' },
+      manifest: {
+        packagePlaceholder: '__APP_PACKAGE__',
+        full: { packages: { __APP_PACKAGE__: { actions: {} } } }
+      }
+    }
+    const result = utils.replacePackagePlaceHolder(config)
+    expect(result.ow.package).toBe('my-pkg')
+    expect(result.manifest.full.packages['my-pkg']).toBeDefined()
+    expect(result.manifest.full.packages.__APP_PACKAGE__).toBeUndefined()
+  })
+
+  test('sets ow.package to first package name when no placeholder matches', () => {
+    const config = {
+      ow: { package: 'ignored' },
+      manifest: {
+        packagePlaceholder: '__APP_PACKAGE__',
+        full: { packages: { 'custom-pkg': { actions: {} } } }
+      }
+    }
+    const result = utils.replacePackagePlaceHolder(config)
+    expect(result.ow.package).toBe('custom-pkg')
+  })
+})
