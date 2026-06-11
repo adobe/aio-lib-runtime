@@ -67,7 +67,7 @@ async function deployActions (config, deployConfig = {}, logFunc) {
   if (
     hasAnyActions &&
     (!deployConfig.filterEntities || deployConfig.filterEntities.actions) &&
-    (!fs.pathExistsSync(dist) || !fs.lstatSync(dist).isDirectory() || !fs.readdirSync(dist).length === 0)
+    (!fs.pathExistsSync(dist) || !fs.lstatSync(dist).isDirectory() || fs.readdirSync(dist).length === 0)
   ) {
     throw new Error(`missing files in ${utils._relApp(config.root, dist)}, maybe you forgot to build your actions ?`)
   }

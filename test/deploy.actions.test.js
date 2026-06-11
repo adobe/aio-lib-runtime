@@ -577,6 +577,14 @@ test('Deploy actions should fail if there are no build files and action filter',
     .rejects.toThrow('missing files in dist')
 })
 
+test('Deploy actions should fail if the build directory exists but is empty', async () => {
+  addSampleAppFiles()
+  // dist exists as a directory but contains no built actions
+  global.fakeFileSystem.addJson({ [global.sampleAppConfig.actions.dist]: null })
+  await expect(deployActions(global.sampleAppConfig))
+    .rejects.toThrow('missing files in dist')
+})
+
 test('Deploy actions should pass if there are no build files and filter does not include actions', async () => {
   addSampleAppFiles()
   runtimeLibUtils.processPackage.mockReturnValue({})
