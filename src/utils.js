@@ -18,7 +18,7 @@ const yaml = require('js-yaml')
 const { createFetch } = require('@adobe/aio-lib-core-networking')
 const globby = require('globby')
 const path = require('path')
-const archiver = require('archiver')
+// archiver 8 is ESM-only and exposes a class API; load it lazily via dynamic import from this CommonJS module
 // this is a static list that comes from here:  https://developer.adobe.com/runtime/docs/guides/reference/runtimes/
 const SupportedRuntimes = ['sequence', 'blackbox', 'nodejs:10', 'nodejs:12', 'nodejs:14', 'nodejs:16', 'nodejs:18', 'nodejs:20', 'nodejs:22', 'nodejs:24', 'nodejs:26']
 const { HttpProxyAgent } = require('http-proxy-agent')
@@ -451,8 +451,9 @@ function getActionEntryFile (pkgJsonPath) {
  * @param {boolean} pathInZip internal path in zip
  * @returns {Promise} returns with a blank promise when done
  */
-function zip (filePath, out, pathInZip = false) {
+async function zip (filePath, out, pathInZip = false) {
   aioLogger.debug(`Creating zip of file/folder ${filePath}`)
+  const { ZipArchive } = await import('archiver') // eslint-disable-line node/no-unsupported-features/es-syntax
 
   return new Promise((resolve, reject) => {
     let stats
@@ -463,7 +464,7 @@ function zip (filePath, out, pathInZip = false) {
     }
 
     const stream = fs.createWriteStream(out)
-    const archive = archiver('zip', { zlib: { level: 9 } })
+    const archive = new ZipArchive({ zlib: { level: 9 } })
     stream.on('close', () => resolve())
     archive.pipe(stream)
     archive.on('error', err => reject(err))
