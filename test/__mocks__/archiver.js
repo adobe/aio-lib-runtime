@@ -28,20 +28,25 @@ const mockArchive = () => {
   return ret
 }
 
-const archiver = function (...args) {
-  mockConstructor(args)
-  return mockArchive()
+// archiver 8 exposes a class API (`new ZipArchive(options)`); mock it as a class whose
+// constructor returns the fake archive stream, preserving the previous mock behavior.
+class ZipArchive {
+  constructor (...args) {
+    mockConstructor(args)
+    return mockArchive()
+  }
 }
 
-archiver.mockFile = mockFile
-archiver.mockDirectory = mockDirectory
-archiver.mockConstructor = mockConstructor
-archiver.setFakeError = function (e) { fakeError = e }
-archiver.mockReset = () => {
-  mockConstructor.mockReset()
-  mockDirectory.mockReset()
-  mockFile.mockReset()
-  fakeError = false
+module.exports = {
+  ZipArchive,
+  mockFile,
+  mockDirectory,
+  mockConstructor,
+  setFakeError: function (e) { fakeError = e },
+  mockReset: () => {
+    mockConstructor.mockReset()
+    mockDirectory.mockReset()
+    mockFile.mockReset()
+    fakeError = false
+  }
 }
-
-module.exports = archiver

@@ -1,6 +1,6 @@
 {
   "name": "@adobe/aio-lib-runtime",
-  "version": "7.4.2",
+  "version": "7.5.0",
   "license": "Apache-2.0",
   "main": "src/index.js",
   "bugs": {
@@ -14,7 +14,7 @@
     "@adobe/aio-lib-core-logging": "^3",
     "@adobe/aio-lib-core-networking": "^5",
     "@adobe/aio-lib-env": "^3.0.0",
-    "archiver": "^7.0.1",
+    "archiver": "^8.0.0",
     "dependency-tree": "^11.0.1",
     "execa": "^4.0.3",
     "folder-hash": "^4.0.4",
@@ -39,6 +39,7 @@
     "@types/node-fetch": "^2.5.4",
     "babel-runtime": "^6.26.0",
     "codecov": "^3.5.0",
+    "cross-env": "^7.0.3",
     "dotenv": "^16.3.1",
     "eol": "^0.9.1",
     "eslint": "^8.57.1",
@@ -70,7 +71,7 @@
     "beautify": "eslint src test e2e --fix",
     "test": "npm run unit-tests && npm run lint",
     "typings": "jsdoc -t node_modules/tsd-jsdoc/dist -r src -d .",
-    "unit-tests": "jest --ci",
+    "unit-tests": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --ci",
     "version": "npm run generate-docs && git add README.md"
   }
 }
